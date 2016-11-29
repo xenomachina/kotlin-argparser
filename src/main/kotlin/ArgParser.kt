@@ -56,36 +56,46 @@ import kotlin.reflect.KProperty
  *         }
  *     }
  */
-class ArgParser(val args: Array<String>) {
-    private val handlers = mutableMapOf<String, Value<*>>()
-
-    private val x: Int = "5".toInt()
-    private val f: (String) -> Int = String::toInt
+open class ArgParser(val args: Array<String>) {
+    protected fun <T> action(vararg names: String,
+                             help: String? = null,
+                             handler: Arg<T>.() -> T): Action<T> {
+        val action = Action<T>(help, handler)
+        return action
+    }
 
     data class Arg<T>(
             val name: String,
-            val oldValue: T,
-            val value: String)
+            val oldParsed: Holder<T>?,
+            val newUnparsed: String)
 
-    fun <T> handle(vararg names: String, handler: (Arg<T>, String) -> T) : Value<T> {
-        val result = Value(handler)
-        for (name in names) {
-            handlers.put(name, result)
-        }
-        return result
-    }
+//    private val handlers = mutableMapOf<String, Value<*>>()
+//
+//    private val x: Int = "5".toInt()
+//    private val f: (String) -> Int = String::toInt
+//
+//
+//    fun <T> handle(vararg names: String, handler: (Arg<T>, String) -> T) : Value<T> {
+//        val result = Value(handler)
+//        for (name in names) {
+//            handlers.put(name, result)
+//        }
+//        return result
+//    }
+//
+//    private fun parseArgs() {
+//        TODO()
+//    }
 
-    private fun parseArgs() {
-        TODO()
-    }
+    inner class Action<T>(val help: String?,
+                          val handler: Arg<T>.() -> T) {
 
-    inner class Value<T>(handler: (Arg<T>, String) -> T) {
-
-        private val holder: Holder<T>? = null
+//        private val holder: Holder<T>? = null
 
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            parseArgs()
-            return holder!!.value
+//            parseArgs()
+//            return holder!!.value
+            TODO()
         }
 
         operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T): Unit {
@@ -95,3 +105,11 @@ class ArgParser(val args: Array<String>) {
 }
 
 data class Holder<T> (val value: T)
+
+fun <T> Holder<T>?.orElse(f: () -> T) : T{
+    if (this == null) {
+        return f()
+    } else {
+        return value
+    }
+}
