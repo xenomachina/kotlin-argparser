@@ -59,4 +59,35 @@ class ArgParserTest {
 
         // TODO test with chaining
     }
+
+    @Test
+    fun testMixedShortFlags() {
+        class MyArguments(args: Array<String>) : ArgParser(args) {
+            val myFoo by action<MutableList<String>>("-d", "-e", "-f",
+                    needsValue = false,
+                    help="Foo"
+            ){
+                oldParsed.orElse{mutableListOf<String>()}.apply {
+                    add("$name")
+                }
+            }
+            val myBar by action<MutableList<String>>("-a", "-b", "-c",
+                    needsValue = false,
+                    help="Bar"
+            ){
+                oldParsed.orElse{mutableListOf<String>()}.apply {
+                    add("$name")
+                }
+            }
+        }
+
+        val a1 = MyArguments(arrayOf("-adbefccbafed"))
+
+        Assert.assertEquals(
+                listOf("d", "e", "f", "f", "e", "d"),
+                a1.myFoo)
+        Assert.assertEquals(
+                listOf("a", "b", "c", "c", "b", "a"),
+                a1.myBar)
+    }
 }

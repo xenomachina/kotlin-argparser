@@ -91,7 +91,7 @@ open class ArgParser(val args: Array<String>) {
             val oldParsed: Holder<T>?,
             val newUnparsed: String?)
 
-    private fun parseArgs() {
+    private val parseArgs by lazy {
         var i = 0
         while (i < args.size) {
             val arg = args[i]
@@ -106,6 +106,7 @@ open class ArgParser(val args: Array<String>) {
 
             i++
         }
+        // TODO: throw exception if any holders are null
     }
 
     private fun parsePositionalArg(arg: String) {
@@ -153,7 +154,7 @@ open class ArgParser(val args: Array<String>) {
         private var holder: Holder<T>? = null
 
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            parseArgs()
+            parseArgs
             return holder!!.value
         }
 
