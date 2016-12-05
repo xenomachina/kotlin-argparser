@@ -58,52 +58,123 @@ import kotlin.reflect.KProperty
  */
 open class ArgParser(val args: Array<String>) {
     protected fun <T> action(vararg names: String,
+                             needsValue: Boolean, // TODO: move into type system?
                              help: String? = null,
                              handler: Arg<T>.() -> T): Action<T> {
-        val action = Action<T>(help, handler)
+        val action = Action<T>(help, needsValue, handler)
+        for (name in names) {
+            register(name, action)
+        }
         return action
     }
+
+    private fun <T> register(name: String, action: ArgParser.Action<T>) {
+        if (name.startsWith("--")) {
+            TODO()
+        } else if (name.startsWith("-")) {
+            if (name.length != 2)
+                throw IllegalArgumentException("illegal short flag '$name' -- can only have one character after hyphen")
+            val key = name.get(1)
+            if (key in shortFlags)
+                throw IllegalStateException("short flag '$name' already in use")
+            shortFlags.put(key, action)
+        } else {
+            TODO()
+        }
+
+    }
+
+    open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message)
 
     data class Arg<T>(
             val name: String,
             val oldParsed: Holder<T>?,
-            val newUnparsed: String)
+            val newUnparsed: String?)
 
-//    private val handlers = mutableMapOf<String, Value<*>>()
-//
-//    private val x: Int = "5".toInt()
-//    private val f: (String) -> Int = String::toInt
-//
-//
-//    fun <T> handle(vararg names: String, handler: (Arg<T>, String) -> T) : Value<T> {
-//        val result = Value(handler)
-//        for (name in names) {
-//            handlers.put(name, result)
-//        }
-//        return result
-//    }
-//
-//    private fun parseArgs() {
-//        TODO()
-//    }
+    private fun parseArgs() {
+        var i = 0
+        while (i < args.size) {
+            val arg = args[i]
+            val arg2 = if (i + 1 < args.size) args[i + 1] else null
+            if (arg.startsWith("--")) {
+                if (parseLongArg(arg.substring(2), arg2)) i++
+            } else if (arg.startsWith("-")) {
+                if(parseShortArg(arg.substring(1), arg2)) i++
+                // TODO: handle chained short args
+            } else {
+                parsePositionalArg(arg)
+            }
 
-    inner class Action<T>(val help: String?,
+            i++
+        }
+    }
+
+    private fun parsePositionalArg(arg: String) {
+        TODO("not implemented -- $arg")
+    }
+
+    private fun parseLongArg(arg: String, arg2: String?): Boolean {
+        TODO("not implemented")
+    }
+
+    private val shortFlags = mutableMapOf<Char, Action<*>>()
+
+    private fun parseShortArg(arg: String, start: Int, arg2: String?): Boolean {
+        var pos = start
+        while (pos < arg.length) {
+            val argName = arg[pos]
+            val action = shortFlags.get(argName)
+            if (action == null) {
+                throw InvalidOption(argName.toString())
+            } else {
+                if (action.needsValue) {
+                    if (pos == arg.length - 1) {
+                        action.go(argName.toString(), arg2)
+                        return true
+                    } else {
+                        TODO()
+                        return false
+                    }
+                } else {
+                    action.go(argName.toString(), null)
+                }
+            }
+
+            pos++
+        }
+        return false
+    }
+
+    private fun parseShortArg(arg: String, arg2: String?) = parseShortArg(arg, 0, arg2)
+
+    inner class Action<T> internal constructor (val help: String?,
+                          val needsValue: Boolean,
                           val handler: Arg<T>.() -> T) {
 
-//        private val holder: Holder<T>? = null
+        private var holder: Holder<T>? = null
 
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-//            parseArgs()
-//            return holder!!.value
-            TODO()
+            parseArgs()
+            return holder!!.value
         }
 
         operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T): Unit {
             TODO()
         }
+
+        fun go(name: String, value: String?) {
+            holder = Holder(handler(Arg(name, holder, value)))
+        }
     }
 }
 
+data class InvalidOption(val argName: String) :
+        ArgParser.Exception("invalid option -- '$argName'", 2)
+
+/**
+ * Compensates for the fact that nullable types don't compose in Kotlin. If you want to be able to distinguish between a
+ * T (where T may or may not be a nullable type) and lack of a T, use a Holder<T>?.
+ */
 data class Holder<T> (val value: T)
 
 fun <T> Holder<T>?.orElse(f: () -> T) : T{
