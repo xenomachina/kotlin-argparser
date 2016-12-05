@@ -131,7 +131,7 @@ open class ArgParser(val args: Array<String>) {
                         action.go(argName.toString(), arg2)
                         return true
                     } else {
-                        TODO()
+                        action.go(argName.toString(), arg.substring(pos + 1))
                         return false
                     }
                 } else {
