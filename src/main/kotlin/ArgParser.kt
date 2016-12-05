@@ -99,8 +99,7 @@ open class ArgParser(val args: Array<String>) {
             if (arg.startsWith("--")) {
                 if (parseLongArg(arg.substring(2), arg2)) i++
             } else if (arg.startsWith("-")) {
-                if(parseShortArg(arg.substring(1), arg2)) i++
-                // TODO: handle chained short args
+                if(parseShortArgs(arg.substring(1), arg2)) i++
             } else {
                 parsePositionalArg(arg)
             }
@@ -119,7 +118,7 @@ open class ArgParser(val args: Array<String>) {
 
     private val shortFlags = mutableMapOf<Char, Action<*>>()
 
-    private fun parseShortArg(arg: String, start: Int, arg2: String?): Boolean {
+    private fun parseShortArgs(arg: String, start: Int, arg2: String?): Boolean {
         var pos = start
         while (pos < arg.length) {
             val argName = arg[pos]
@@ -145,7 +144,7 @@ open class ArgParser(val args: Array<String>) {
         return false
     }
 
-    private fun parseShortArg(arg: String, arg2: String?) = parseShortArg(arg, 0, arg2)
+    private fun parseShortArgs(arg: String, arg2: String?) = parseShortArgs(arg, 0, arg2)
 
     inner class Action<T> internal constructor (val help: String?,
                           val needsValue: Boolean,

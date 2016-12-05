@@ -20,8 +20,13 @@ class ArgParserTest {
             }
         }
 
-        val myArgs = MyArguments(arrayOf("-x", "-y", "-z", "-z", "-y"))
-        Assert.assertEquals(listOf("x", "y", "z", "z", "y"), myArgs.zaphod)
+        Assert.assertEquals(
+                listOf("x", "y", "z", "z", "y"),
+                MyArguments(arrayOf("-x", "-y", "-z", "-z", "-y")).zaphod)
+
+        Assert.assertEquals(
+                listOf("x", "y", "z"),
+                MyArguments(arrayOf("-xyz")).zaphod)
     }
 
 //    @Test
