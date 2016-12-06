@@ -87,7 +87,7 @@ open class ArgParser(val args: Array<String>) {
         }
 
         operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T): Unit {
-            TODO()
+            TODO("setValue not implemented")
         }
 
         fun go(name: String, value: String?) {
@@ -111,7 +111,7 @@ open class ArgParser(val args: Array<String>) {
                 throw IllegalStateException("short flag '$name' already in use")
             shortFlags.put(key, action)
         } else {
-            TODO()
+            TODO("registration of positional args not implemented")
         }
 
     }
