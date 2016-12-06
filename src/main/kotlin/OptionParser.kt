@@ -2,7 +2,7 @@
  * Copyright 2016 Laurence Gonsalves
  */
 
-package com.xenomachina.argparser
+package com.xenomachina.optionparser
 
 import kotlin.reflect.KProperty
 
@@ -11,30 +11,35 @@ import kotlin.reflect.KProperty
  *
  * Example usage:
  *
- *     // Define class to hold parsed argument
- *     class MyArguments(args: Array<String> : ArgParser(args) {
+ *     // Define class to hold parsed options
+ *     class MyOptions(args: Array<String>) : OptionParser(args) {
  *         // boolean flags
  *         val verbose by flag("-v", "--verbose")
  *
- *         // simple values
- *         val name by value("-N", "--name",
+ *         // simple options with arguments
+ *         val name by argument("-N", "--name",
  *             help="My Name")
- *         val size by value("-s", "--size"
+ *         val size by argument("-s", "--size"
  *             help="My Size"){toInt} = 8
  *
- *         // required values
- *         val name by required("-O", "--output",
+ *         // optional options
+ *         val name by argument("-O", "--output",
+ *             default = "./",
  *             help="Output location")
  *
  *         // accumulating values (turns into a List)
- *         val includeDirs by accumulate("-I",
+ *         val includeDirs by accumulator("-I",
  *             help="Directories to search for headers"
- *         ){File(this)}
+ *         ){
+ *             File(this)
+ *         }
  *
- *         // map flags to values
- *         val mode by map("--fast" to Mode.FAST,
- *                         "--small" to Mode.SMALL,
- *                         "--quiet" to Mode.QUIET,
+ *         // map options to values
+ *         val mode by mapping(
+ *                 "--fast" to Mode.FAST,
+ *                 "--small" to Mode.SMALL,
+ *                 "--quiet" to Mode.QUIET,
+ *             default = Mode.FAST,
  *             help="Operating mode")
  *
  *         // All of these methods are based upon the "action" method, which
@@ -43,34 +48,34 @@ import kotlin.reflect.KProperty
  *         val zaphod by action("-z", "--zaphod"
  *             help="Directories to search for headers"
  *         ){
- *             return newParsed(name, oldValue, argument)
+ *             return newParsed(name, value, argument)
  *         }
  *     }
  *
  *     fun main(args : Array<String>) {
  *         try {
- *             val myArgs = MyArguments(args)
+ *             val myOpts = MyOptions(args)
  *             println("Hello, {args.name}!")
- *         } catch (e: ArgParser.Exception) {
+ *         } catch (e: OptionParser.Exception) {
  *             e.printAndExit()
  *         }
  *     }
  */
-open class ArgParser(val args: Array<String>) {
+open class OptionParser(val args: Array<String>) {
     protected fun <T> action(vararg names: String,
                              help: String? = null,
-                             handler: Action.WithoutValue.Input<T>.() -> T): Action<T> {
-        val action = Action.WithoutValue<T>(this, help = help, handler = handler)
+                             handler: Action.WithoutArgument.Input<T>.() -> T): Action<T> {
+        val action = Action.WithoutArgument<T>(this, help = help, handler = handler)
         for (name in names) {
             register(name, action)
         }
         return action
     }
 
-    protected fun <T> actionWithValue(vararg names: String,
-                                      help: String? = null,
-                                      handler: Action.WithValue.Input<T>.() -> T): Action<T> {
-        val action = Action.WithValue<T>(this, help = help, handler = handler)
+    protected fun <T> actionWithArgument(vararg names: String,
+                                         help: String? = null,
+                                         handler: Action.WithArgument.Input<T>.() -> T): Action<T> {
+        val action = Action.WithArgument<T>(this, help = help, handler = handler)
         for (name in names) {
             register(name, action)
         }
@@ -80,28 +85,28 @@ open class ArgParser(val args: Array<String>) {
     open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message)
 
     class InvalidOption(val argName: String) :
-            ArgParser.Exception("invalid option -- '$argName'", 2)
+            OptionParser.Exception("invalid option -- '$argName'", 2)
 
-    sealed class Action<T>(private val argParser: ArgParser) {
+    sealed class Action<T>(private val argParser: OptionParser) {
         protected var holder: Holder<T>? = null
 
-        class WithValue<T>(argParser: ArgParser, val help: String?, val handler: Input<T>.() -> T) :
+        class WithArgument<T>(argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) :
                 Action<T>(argParser) {
 
             data class Input<T>(
-                    val oldValue: Holder<T>?,
+                    val value: Holder<T>?,
                     val name: String,
                     val argument: String)
 
-            fun parseNameValue(name: String, value: String) {
-                holder = Holder(handler(Input(holder, name, value)))
+            fun parseNameArgument(name: String, argument: String) {
+                holder = Holder(handler(Input(holder, name, argument)))
             }
         }
 
-        class WithoutValue<T>(argParser: ArgParser, val help: String?, val handler: Input<T>.() -> T) :
+        class WithoutArgument<T>(argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) :
                 Action<T>(argParser) {
             data class Input<T>(
-                    val oldValue: Holder<T>?,
+                    val value: Holder<T>?,
                     val name: String)
 
             fun parseName(name: String) {
@@ -110,7 +115,7 @@ open class ArgParser(val args: Array<String>) {
         }
 
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            argParser.parseArgs
+            argParser.parseOptions
             return holder!!.value
         }
 
@@ -123,7 +128,7 @@ open class ArgParser(val args: Array<String>) {
     private val shortFlags = mutableMapOf<Char, Action<*>>()
     private val longFlags = mutableMapOf<String, Action<*>>()
 
-    private fun <T> register(name: String, action: ArgParser.Action<T>) {
+    private fun <T> register(name: String, action: OptionParser.Action<T>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
                 throw IllegalArgumentException("illegal long flag '$name' -- must have at least one character after hyphen")
@@ -141,15 +146,16 @@ open class ArgParser(val args: Array<String>) {
 
     }
 
-    private val parseArgs by lazy {
+    private val parseOptions by lazy {
         var i = 0
         while (i < args.size) {
             val arg = args[i]
-            val arg2 = if (i + 1 < args.size) args[i + 1] else null
+            val nextArg = if (i + 1 < args.size) args[i + 1] else null
             if (arg.startsWith("--")) {
-                if (parseLongArg(arg.substring(2), arg2)) i++
+                // TODO: pass in hyphens to parseLongOpt?
+                if (parseLongOpt(arg.substring(2), nextArg)) i++
             } else if (arg.startsWith("-")) {
-                if(parseShortArgs(arg.substring(1), arg2)) i++
+                if(parseShortOpts(arg.substring(1), nextArg)) i++
             } else {
                 parsePositionalArg(arg)
             }
@@ -163,42 +169,42 @@ open class ArgParser(val args: Array<String>) {
         TODO("not implemented -- $arg")
     }
 
-    private fun parseLongArg(arg: String, arg2: String?): Boolean {
-        val argName: String
-        val argValue: String?
+    private fun parseLongOpt(arg: String, nextArg: String?): Boolean {
+        val optName: String
+        val optArg: String?
         val sawEqual: Boolean
         val m = NAME_EQUALS_VALUE_REGEX.matchEntire(arg)
         if (m == null) {
-            argName = arg
-            argValue = arg2
+            optName = arg
+            optArg = nextArg
             sawEqual = false
         } else {
-            argName = m.groups[1]!!.value
-            argValue = m.groups[2]!!.value
+            optName = m.groups[1]!!.value
+            optArg = m.groups[2]!!.value
             sawEqual = true
         }
-        val action = longFlags.get(argName)
+        val action = longFlags.get(optName)
         if (action == null) {
-            throw InvalidOption(argName)
+            throw InvalidOption(optName)
         } else {
             when(action) {
-                is Action.WithValue -> {
-                    if (argValue == null)
-                        TODO("throw exception: option '--$argName' requires an argument")
-                    action.parseNameValue(argName, argValue)
+                is Action.WithArgument -> {
+                    if (optArg == null)
+                        TODO("throw exception: option '--$optName' requires an argument")
+                    action.parseNameArgument(optName, optArg)
                     return !sawEqual
                 }
-                is Action.WithoutValue -> {
+                is Action.WithoutArgument -> {
                     if (sawEqual)
-                        TODO("throw exception: option '--$argName' doesn't allow an argument")
-                    action.parseName(argName)
+                        TODO("throw exception: option '--$optName' doesn't allow an argument")
+                    action.parseName(optName)
                     return false
                 }
             }
         }
     }
 
-    private fun parseShortArgs(arg: String, start: Int, arg2: String?): Boolean {
+    private fun parseShortOpts(arg: String, start: Int, nextArg: String?): Boolean {
         var pos = start
         while (pos < arg.length) {
             val argName = arg[pos]
@@ -207,18 +213,18 @@ open class ArgParser(val args: Array<String>) {
                 throw InvalidOption(argName.toString())
             } else {
                 when(action) {
-                    is Action.WithValue -> {
+                    is Action.WithArgument -> {
                         if (pos == arg.length - 1) {
-                            if (arg2 == null)
+                            if (nextArg == null)
                                 TODO("throw exception: option '--$argName' requires an argument")
-                            action.parseNameValue(argName.toString(), arg2)
+                            action.parseNameArgument(argName.toString(), nextArg)
                             return true
                         } else {
-                            action.parseNameValue(argName.toString(), arg.substring(pos + 1))
+                            action.parseNameArgument(argName.toString(), arg.substring(pos + 1))
                             return false
                         }
                     }
-                    is Action.WithoutValue -> {
+                    is Action.WithoutArgument -> {
                         action.parseName(argName.toString())
                     }
                 }
@@ -229,7 +235,7 @@ open class ArgParser(val args: Array<String>) {
         return false
     }
 
-    private fun parseShortArgs(arg: String, arg2: String?) = parseShortArgs(arg, 0, arg2)
+    private fun parseShortOpts(arg: String, nextArg: String?) = parseShortOpts(arg, 0, nextArg)
 }
 
 /**
