@@ -155,6 +155,35 @@ class ArgParserTest {
                 MyArguments(arrayOf("--xray", "--yellow", "--zebra")).xyz)
     }
 
+    @Test
+    fun testLongFlagsWithValues() {
+        class MyArguments(args: Array<String>) : ArgParser(args) {
+            val xyz by action<MutableList<String>>("--xray", "--yellow", "--zaphod",
+                    needsValue = true,
+                    help="Xyz"
+            ){
+                oldParsed.orElse{mutableListOf<String>()}.apply {
+                    add("$name:$newUnparsed")
+                }
+            }
+        }
+
+        // Test with value as separate arg
+        Assert.assertEquals(
+                listOf("xray:0", "yellow:1", "zaphod:2", "zaphod:3", "yellow:4"),
+                MyArguments(arrayOf("--xray", "0", "--yellow", "1", "--zaphod", "2", "--zaphod", "3", "--yellow", "4")).xyz)
+
+        // Test with value concatenated TODO should fail
+//        Assert.assertEquals(
+//                listOf("xray:0", "yellow:1", "zaphod:2", "zaphod:3", "yellow:4"),
+//                MyArguments(arrayOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz)
+
+        // Test with = between flag and value
+        Assert.assertEquals(
+                listOf("xray:0", "yellow:1", "zaphod:2", "zaphod:3", "yellow:4"),
+                MyArguments(arrayOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
+    }
+
     // TODO test InvalidOption
     // TODO test short arg needs value at end
     // TODO test long arg needs value at end

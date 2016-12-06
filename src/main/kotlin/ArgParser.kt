@@ -148,8 +148,8 @@ open class ArgParser(val args: Array<String>) {
             argValue = arg2
             sawEqual = false
         } else {
-            argName = m.groups[1].toString()
-            argValue = m.groups[2].toString()
+            argName = m.groups[1]!!.value
+            argValue = m.groups[2]!!.value
             sawEqual = true
         }
         val action = longFlags.get(argName)
