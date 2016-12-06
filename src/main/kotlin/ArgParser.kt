@@ -68,9 +68,41 @@ open class ArgParser(val args: Array<String>) {
         return action
     }
 
+    data class Arg<T>(
+            val name: String,
+            val oldParsed: Holder<T>?,
+            val newUnparsed: String?)
+
+    open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message)
+
+    inner class Action<T> internal constructor (val help: String?,
+                                                val needsValue: Boolean,
+                                                val handler: Arg<T>.() -> T) {
+
+        private var holder: Holder<T>? = null
+
+        operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
+            parseArgs
+            return holder!!.value
+        }
+
+        operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T): Unit {
+            TODO()
+        }
+
+        fun go(name: String, value: String?) {
+            holder = Holder(handler(Arg(name, holder, value)))
+        }
+    }
+
+    private val shortFlags = mutableMapOf<Char, Action<*>>()
+    private val longFlags = mutableMapOf<String, Action<*>>()
+
     private fun <T> register(name: String, action: ArgParser.Action<T>) {
         if (name.startsWith("--")) {
-            TODO()
+            if (name.length <= 2)
+                throw IllegalArgumentException("illegal long flag '$name' -- must have at least one character after hyphen")
+            longFlags.put(name.substring(2), action)
         } else if (name.startsWith("-")) {
             if (name.length != 2)
                 throw IllegalArgumentException("illegal short flag '$name' -- can only have one character after hyphen")
@@ -83,13 +115,6 @@ open class ArgParser(val args: Array<String>) {
         }
 
     }
-
-    open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message)
-
-    data class Arg<T>(
-            val name: String,
-            val oldParsed: Holder<T>?,
-            val newUnparsed: String?)
 
     private val parseArgs by lazy {
         var i = 0
@@ -114,10 +139,34 @@ open class ArgParser(val args: Array<String>) {
     }
 
     private fun parseLongArg(arg: String, arg2: String?): Boolean {
-        TODO("not implemented")
+        val argName: String
+        val argValue: String?
+        val sawEqual: Boolean
+        val m = NAME_EQUALS_VALUE_REGEX.matchEntire(arg)
+        if (m == null) {
+            argName = arg
+            argValue = arg2
+            sawEqual = false
+        } else {
+            argName = m.groups[1].toString()
+            argValue = m.groups[2].toString()
+            sawEqual = true
+        }
+        val action = longFlags.get(argName)
+        if (action == null) {
+            throw InvalidOption(argName)
+        } else {
+            if (action.needsValue) {
+                action.go(argName, argValue)
+                return !sawEqual
+            } else {
+                if (sawEqual)
+                    TODO("throw exception: option '--$argName' doesn't allow an argument")
+                action.go(argName, null)
+                return false
+            }
+        }
     }
-
-    private val shortFlags = mutableMapOf<Char, Action<*>>()
 
     private fun parseShortArgs(arg: String, start: Int, arg2: String?): Boolean {
         var pos = start
@@ -146,29 +195,9 @@ open class ArgParser(val args: Array<String>) {
     }
 
     private fun parseShortArgs(arg: String, arg2: String?) = parseShortArgs(arg, 0, arg2)
-
-    inner class Action<T> internal constructor (val help: String?,
-                          val needsValue: Boolean,
-                          val handler: Arg<T>.() -> T) {
-
-        private var holder: Holder<T>? = null
-
-        operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            parseArgs
-            return holder!!.value
-        }
-
-        operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T): Unit {
-            TODO()
-        }
-
-        fun go(name: String, value: String?) {
-            holder = Holder(handler(Arg(name, holder, value)))
-        }
-    }
 }
 
-data class InvalidOption(val argName: String) :
+class InvalidOption(val argName: String) :
         ArgParser.Exception("invalid option -- '$argName'", 2)
 
 /**
@@ -184,3 +213,5 @@ fun <T> Holder<T>?.orElse(f: () -> T) : T{
         return value
     }
 }
+
+val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")

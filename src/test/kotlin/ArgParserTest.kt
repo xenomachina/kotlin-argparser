@@ -132,4 +132,30 @@ class ArgParserTest {
                 listOf("y:5", "x:0", "z:xy"),
                 myArgs.myBaz)
     }
+
+    @Test
+    fun testValuelessLongFlags() {
+        class MyArguments(args: Array<String>) : ArgParser(args) {
+            val xyz by action<MutableList<String>>("--xray", "--yellow", "--zebra",
+                    needsValue = false,
+                    help="Really hoopy frood"
+            ){
+                oldParsed.orElse{mutableListOf<String>()}.apply {
+                    add("$name")
+                }
+            }
+        }
+
+        Assert.assertEquals(
+                listOf("xray", "yellow", "zebra", "zebra", "yellow"),
+                MyArguments(arrayOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")).xyz)
+
+        Assert.assertEquals(
+                listOf("xray", "yellow", "zebra"),
+                MyArguments(arrayOf("--xray", "--yellow", "--zebra")).xyz)
+    }
+
+    // TODO test InvalidOption
+    // TODO test short arg needs value at end
+    // TODO test long arg needs value at end
 }
