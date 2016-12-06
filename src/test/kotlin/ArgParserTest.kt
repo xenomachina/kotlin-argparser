@@ -184,6 +184,38 @@ class ArgParserTest {
                 MyArguments(arrayOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
     }
 
+    @Test
+    fun testSettingValues() {
+        class MyArguments(args: Array<String>) : ArgParser(args) {
+            val xyz by action<Int>("-x",
+                    needsValue = true,
+                    help="an integer"
+            ){
+                (newUnparsed?:"").toInt()
+            }.default(5)
+        }
+
+        // Test with no value
+        Assert.assertEquals(
+                5,
+                MyArguments(arrayOf()).xyz)
+
+        // Test with value
+        Assert.assertEquals(
+                6,
+                MyArguments(arrayOf("-x6")).xyz)
+
+        // Test with value as separate arg
+        Assert.assertEquals(
+                7,
+                MyArguments(arrayOf("-x", "7")).xyz)
+
+        // Test with multiple values
+        Assert.assertEquals(
+                8,
+                MyArguments(arrayOf("-x9", "-x8")).xyz)
+    }
+
     // TODO test InvalidOption
     // TODO test short arg needs value at end
     // TODO test long arg needs value at end

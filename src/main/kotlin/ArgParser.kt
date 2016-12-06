@@ -93,6 +93,11 @@ open class ArgParser(val args: Array<String>) {
         fun go(name: String, value: String?) {
             holder = Holder(handler(Arg(name, holder, value)))
         }
+
+        fun  default(value: T): Action<T> {
+            holder = Holder(value)
+            return this
+        }
     }
 
     private val shortFlags = mutableMapOf<Char, Action<*>>()
