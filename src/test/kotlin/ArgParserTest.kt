@@ -11,7 +11,6 @@ class ArgParserTest {
     fun testValuelessShortFlags() {
         class MyArguments(args: Array<String>) : ArgParser(args) {
             val xyz by action<MutableList<String>>("-x", "-y", "-z",
-                    needsValue = false,
                     help="Really hoopy frood"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
@@ -32,8 +31,7 @@ class ArgParserTest {
     @Test
     fun testShortFlagsWithValues() {
         class MyArguments(args: Array<String>) : ArgParser(args) {
-            val xyz by action<MutableList<String>>("-x", "-y", "-z",
-                    needsValue = true,
+            val xyz by actionWithValue<MutableList<String>>("-x", "-y", "-z",
                     help="Really hoopy frood"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
@@ -64,7 +62,6 @@ class ArgParserTest {
     fun testMixedShortFlags() {
         class MyArguments(args: Array<String>) : ArgParser(args) {
             val myFoo by action<MutableList<String>>("-d", "-e", "-f",
-                    needsValue = false,
                     help="Foo"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
@@ -72,7 +69,6 @@ class ArgParserTest {
                 }
             }
             val myBar by action<MutableList<String>>("-a", "-b", "-c",
-                    needsValue = false,
                     help="Bar"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
@@ -95,7 +91,6 @@ class ArgParserTest {
     fun testMixedShortFlagsWithValues() {
         class MyArguments(args: Array<String>) : ArgParser(args) {
             val myFoo by action<MutableList<String>>("-d", "-e", "-f",
-                    needsValue = false,
                     help="Foo"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
@@ -103,15 +98,13 @@ class ArgParserTest {
                 }
             }
             val myBar by action<MutableList<String>>("-a", "-b", "-c",
-                    needsValue = false,
                     help="Bar"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val myBaz by action<MutableList<String>>("-x", "-y", "-z",
-                    needsValue = true,
+            val myBaz by actionWithValue<MutableList<String>>("-x", "-y", "-z",
                     help="Baz"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
@@ -137,7 +130,6 @@ class ArgParserTest {
     fun testValuelessLongFlags() {
         class MyArguments(args: Array<String>) : ArgParser(args) {
             val xyz by action<MutableList<String>>("--xray", "--yellow", "--zebra",
-                    needsValue = false,
                     help="Really hoopy frood"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
@@ -158,8 +150,7 @@ class ArgParserTest {
     @Test
     fun testLongFlagsWithValues() {
         class MyArguments(args: Array<String>) : ArgParser(args) {
-            val xyz by action<MutableList<String>>("--xray", "--yellow", "--zaphod",
-                    needsValue = true,
+            val xyz by actionWithValue<MutableList<String>>("--xray", "--yellow", "--zaphod",
                     help="Xyz"
             ){
                 oldParsed.orElse{mutableListOf<String>()}.apply {
@@ -187,11 +178,10 @@ class ArgParserTest {
     @Test
     fun testSettingValues() {
         class MyArguments(args: Array<String>) : ArgParser(args) {
-            val xyz by action<Int>("-x",
-                    needsValue = true,
+            val xyz by actionWithValue<Int>("-x",
                     help="an integer"
             ){
-                (newUnparsed?:"").toInt()
+                newUnparsed.toInt()
             }.default(5)
         }
 

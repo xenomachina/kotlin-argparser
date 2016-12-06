@@ -57,11 +57,21 @@ import kotlin.reflect.KProperty
  *     }
  */
 open class ArgParser(val args: Array<String>) {
+    // TODO: tidy up
+    protected fun <T> actionWithValue(vararg names: String,
+                                      help: String? = null,
+                                      handler: ArgWithValue<T>.() -> T): Action<T> {
+        val action = Action.WithValue<T>(this, help = help, handler = handler)
+        for (name in names) {
+            register(name, action)
+        }
+        return action
+    }
+
     protected fun <T> action(vararg names: String,
-                             needsValue: Boolean, // TODO: move into type system?
                              help: String? = null,
                              handler: Arg<T>.() -> T): Action<T> {
-        val action = Action<T>(help, needsValue, handler)
+        val action = Action.WithoutValue<T>(this, help = help, handler = handler)
         for (name in names) {
             register(name, action)
         }
@@ -70,28 +80,37 @@ open class ArgParser(val args: Array<String>) {
 
     data class Arg<T>(
             val name: String,
-            val oldParsed: Holder<T>?,
-            val newUnparsed: String?)
+            val oldParsed: Holder<T>?) // TODO: rename
+
+    // TODO: make subclass of Arg?
+    // TODO: make holder first property
+    data class ArgWithValue<T>(
+            val name: String,
+            val oldParsed: Holder<T>?, // TODO: rename
+            val newUnparsed: String) // TODO: rename
 
     open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message)
 
-    inner class Action<T> internal constructor (val help: String?,
-                                                val needsValue: Boolean,
-                                                val handler: Arg<T>.() -> T) {
+    sealed class Action<T>(private val argParser: ArgParser) {
+        protected var holder: Holder<T>? = null
 
-        private var holder: Holder<T>? = null
+        class WithValue<T>(argParser: ArgParser, val help: String?, val handler: ArgWithValue<T>.() -> T) :
+                Action<T>(argParser) {
+            fun parseNameValue(name: String, value: String) {
+                holder = Holder(handler(ArgWithValue(name, holder, value)))
+            }
+        }
+
+        class WithoutValue<T>(argParser: ArgParser, val help: String?, val handler: Arg<T>.() -> T) :
+                Action<T>(argParser) {
+            fun parseName(name: String) {
+                holder = Holder(handler(Arg(name, holder)))
+            }
+        }
 
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            parseArgs
+            argParser.parseArgs
             return holder!!.value
-        }
-
-        operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T): Unit {
-            TODO("setValue not implemented")
-        }
-
-        fun go(name: String, value: String?) {
-            holder = Holder(handler(Arg(name, holder, value)))
         }
 
         fun  default(value: T): Action<T> {
@@ -161,14 +180,19 @@ open class ArgParser(val args: Array<String>) {
         if (action == null) {
             throw InvalidOption(argName)
         } else {
-            if (action.needsValue) {
-                action.go(argName, argValue)
-                return !sawEqual
-            } else {
-                if (sawEqual)
-                    TODO("throw exception: option '--$argName' doesn't allow an argument")
-                action.go(argName, null)
-                return false
+            when(action) {
+                is Action.WithValue -> {
+                    if (argValue == null)
+                        TODO("throw exception: option '--$argName' requires an argument")
+                    action.parseNameValue(argName, argValue)
+                    return !sawEqual
+                }
+                is Action.WithoutValue -> {
+                    if (sawEqual)
+                        TODO("throw exception: option '--$argName' doesn't allow an argument")
+                    action.parseName(argName)
+                    return false
+                }
             }
         }
     }
@@ -181,16 +205,21 @@ open class ArgParser(val args: Array<String>) {
             if (action == null) {
                 throw InvalidOption(argName.toString())
             } else {
-                if (action.needsValue) {
-                    if (pos == arg.length - 1) {
-                        action.go(argName.toString(), arg2)
-                        return true
-                    } else {
-                        action.go(argName.toString(), arg.substring(pos + 1))
-                        return false
+                when(action) {
+                    is Action.WithValue -> {
+                        if (pos == arg.length - 1) {
+                            if (arg2 == null)
+                                TODO("throw exception: option '--$argName' requires an argument")
+                            action.parseNameValue(argName.toString(), arg2)
+                            return true
+                        } else {
+                            action.parseNameValue(argName.toString(), arg.substring(pos + 1))
+                            return false
+                        }
                     }
-                } else {
-                    action.go(argName.toString(), null)
+                    is Action.WithoutValue -> {
+                        action.parseName(argName.toString())
+                    }
                 }
             }
 
