@@ -43,7 +43,7 @@ import kotlin.reflect.KProperty
  *         val zaphod by action("-z", "--zaphod"
  *             help="Directories to search for headers"
  *         ){
- *             return newParsed(name, oldParsed, newUnparsed)
+ *             return newParsed(name, oldValue, argument)
  *         }
  *     }
  *
@@ -57,20 +57,9 @@ import kotlin.reflect.KProperty
  *     }
  */
 open class ArgParser(val args: Array<String>) {
-    // TODO: tidy up
-    protected fun <T> actionWithValue(vararg names: String,
-                                      help: String? = null,
-                                      handler: ArgWithValue<T>.() -> T): Action<T> {
-        val action = Action.WithValue<T>(this, help = help, handler = handler)
-        for (name in names) {
-            register(name, action)
-        }
-        return action
-    }
-
     protected fun <T> action(vararg names: String,
                              help: String? = null,
-                             handler: Arg<T>.() -> T): Action<T> {
+                             handler: Action.WithoutValue.Input<T>.() -> T): Action<T> {
         val action = Action.WithoutValue<T>(this, help = help, handler = handler)
         for (name in names) {
             register(name, action)
@@ -78,33 +67,45 @@ open class ArgParser(val args: Array<String>) {
         return action
     }
 
-    data class Arg<T>(
-            val name: String,
-            val oldParsed: Holder<T>?) // TODO: rename
-
-    // TODO: make subclass of Arg?
-    // TODO: make holder first property
-    data class ArgWithValue<T>(
-            val name: String,
-            val oldParsed: Holder<T>?, // TODO: rename
-            val newUnparsed: String) // TODO: rename
+    protected fun <T> actionWithValue(vararg names: String,
+                                      help: String? = null,
+                                      handler: Action.WithValue.Input<T>.() -> T): Action<T> {
+        val action = Action.WithValue<T>(this, help = help, handler = handler)
+        for (name in names) {
+            register(name, action)
+        }
+        return action
+    }
 
     open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message)
+
+    class InvalidOption(val argName: String) :
+            ArgParser.Exception("invalid option -- '$argName'", 2)
 
     sealed class Action<T>(private val argParser: ArgParser) {
         protected var holder: Holder<T>? = null
 
-        class WithValue<T>(argParser: ArgParser, val help: String?, val handler: ArgWithValue<T>.() -> T) :
+        class WithValue<T>(argParser: ArgParser, val help: String?, val handler: Input<T>.() -> T) :
                 Action<T>(argParser) {
+
+            data class Input<T>(
+                    val oldValue: Holder<T>?,
+                    val name: String,
+                    val argument: String)
+
             fun parseNameValue(name: String, value: String) {
-                holder = Holder(handler(ArgWithValue(name, holder, value)))
+                holder = Holder(handler(Input(holder, name, value)))
             }
         }
 
-        class WithoutValue<T>(argParser: ArgParser, val help: String?, val handler: Arg<T>.() -> T) :
+        class WithoutValue<T>(argParser: ArgParser, val help: String?, val handler: Input<T>.() -> T) :
                 Action<T>(argParser) {
+            data class Input<T>(
+                    val oldValue: Holder<T>?,
+                    val name: String)
+
             fun parseName(name: String) {
-                holder = Holder(handler(Arg(name, holder)))
+                holder = Holder(handler(Input(holder, name)))
             }
         }
 
@@ -231,9 +232,6 @@ open class ArgParser(val args: Array<String>) {
     private fun parseShortArgs(arg: String, arg2: String?) = parseShortArgs(arg, 0, arg2)
 }
 
-class InvalidOption(val argName: String) :
-        ArgParser.Exception("invalid option -- '$argName'", 2)
-
 /**
  * Compensates for the fact that nullable types don't compose in Kotlin. If you want to be able to distinguish between a
  * T (where T may or may not be a nullable type) and lack of a T, use a Holder<T>?.
@@ -248,4 +246,4 @@ fun <T> Holder<T>?.orElse(f: () -> T) : T{
     }
 }
 
-val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
+private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")

@@ -13,7 +13,7 @@ class ArgParserTest {
             val xyz by action<MutableList<String>>("-x", "-y", "-z",
                     help="Really hoopy frood"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
+                oldValue.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
@@ -34,8 +34,8 @@ class ArgParserTest {
             val xyz by actionWithValue<MutableList<String>>("-x", "-y", "-z",
                     help="Really hoopy frood"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
-                    add("$name:$newUnparsed")
+                oldValue.orElse{mutableListOf<String>()}.apply {
+                    add("$name:$argument")
                 }
             }
         }
@@ -64,14 +64,14 @@ class ArgParserTest {
             val myFoo by action<MutableList<String>>("-d", "-e", "-f",
                     help="Foo"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
+                oldValue.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
             val myBar by action<MutableList<String>>("-a", "-b", "-c",
                     help="Bar"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
+                oldValue.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
@@ -93,22 +93,22 @@ class ArgParserTest {
             val myFoo by action<MutableList<String>>("-d", "-e", "-f",
                     help="Foo"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
+                oldValue.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
             val myBar by action<MutableList<String>>("-a", "-b", "-c",
                     help="Bar"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
+                oldValue.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
             val myBaz by actionWithValue<MutableList<String>>("-x", "-y", "-z",
                     help="Baz"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
-                    add("$name:$newUnparsed")
+                oldValue.orElse{mutableListOf<String>()}.apply {
+                    add("$name:$argument")
                 }
             }
         }
@@ -132,7 +132,7 @@ class ArgParserTest {
             val xyz by action<MutableList<String>>("--xray", "--yellow", "--zebra",
                     help="Really hoopy frood"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
+                oldValue.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
@@ -153,8 +153,8 @@ class ArgParserTest {
             val xyz by actionWithValue<MutableList<String>>("--xray", "--yellow", "--zaphod",
                     help="Xyz"
             ){
-                oldParsed.orElse{mutableListOf<String>()}.apply {
-                    add("$name:$newUnparsed")
+                oldValue.orElse{mutableListOf<String>()}.apply {
+                    add("$name:$argument")
                 }
             }
         }
@@ -181,7 +181,7 @@ class ArgParserTest {
             val xyz by actionWithValue<Int>("-x",
                     help="an integer"
             ){
-                newUnparsed.toInt()
+                argument.toInt()
             }.default(5)
         }
 
