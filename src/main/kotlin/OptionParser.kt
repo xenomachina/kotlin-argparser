@@ -27,8 +27,8 @@ import kotlin.system.exitProcess
  *
  *         // optional options
  *         val name by parser.argument("-O", "--output",
- *             default = "./",
  *             help="Output location")
+ *             .default("./")
  *
  *         // accumulating values (turns into a List)
  *         val includeDirs by parser.accumulator("-I",
@@ -88,14 +88,11 @@ open class OptionParser(val args: Array<String>) {
     fun <T> argument(vararg names: String,
                      help: String? = null,
                      parser: String.()->T): Action<T> =
-            actionWithArgument(*names, help=help) { parser(this.argument)}
+            actionWithArgument(*names, help=help) {parser(this.argument)}
 
-    // TODO: should this even exist?
-    fun <T> argument(vararg names: String,
-                     default: T,
-                     help: String? = null,
-                     parser: String.()->T): Action<T> =
-            actionWithArgument<T>(*names, help=help) { parser(this.argument)}.default(default)
+    fun argument(vararg names: String,
+                 help: String? = null): Action<String> =
+            argument(*names, help=help){this}
 
     fun <T> accumulator(vararg names: String,
                      help: String? = null,

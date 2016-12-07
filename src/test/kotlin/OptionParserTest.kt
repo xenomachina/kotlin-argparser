@@ -245,11 +245,55 @@ class OptionParserTest {
         Assert.assertTrue(opts4.z)
     }
 
+    @Test
+    fun testArgument_noParser() {
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val x by parser.argument("-x", "--ecks",
+                    help="X")
+        }
+
+        val opts1 = MyOpts(arrayOf("-x", "foo"))
+        Assert.assertEquals("foo", opts1.x)
+
+        val opts2 = MyOpts(arrayOf("-x", "bar", "-x", "baz"))
+        Assert.assertEquals("baz", opts2.x)
+
+        val opts3 = MyOpts(arrayOf("--ecks", "long", "-x", "short"))
+        Assert.assertEquals("short", opts3.x)
+
+        val opts4 = MyOpts(arrayOf("-x", "short", "--ecks", "long"))
+        Assert.assertEquals("long", opts4.x)
+
+        // TODO test missing
+    }
+
+    @Test
+    fun testArgument_withParser() {
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val x by parser.argument("-x", "--ecks",
+                    help="X"){this.toInt()}
+        }
+
+        val opts1 = MyOpts(arrayOf("-x", "5"))
+        Assert.assertEquals(5, opts1.x)
+
+        val opts2 = MyOpts(arrayOf("-x", "1", "-x", "2"))
+        Assert.assertEquals(2, opts2.x)
+
+        val opts3 = MyOpts(arrayOf("--ecks", "3", "-x", "4"))
+        Assert.assertEquals(4, opts3.x)
+
+        val opts4 = MyOpts(arrayOf("-x", "5", "--ecks", "6"))
+        Assert.assertEquals(6, opts4.x)
+
+        // TODO test missing
+    }
+
     // TODO test InvalidOption
     // TODO test short option needs arg at end
     // TODO test long option needs arg at end
-    // TODO: test argument()
-    // TODO: test argument()'s default
     // TODO: test accumulator()
     // TODO: test printAndExit()
 }
