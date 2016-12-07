@@ -8,7 +8,7 @@ import org.junit.Test
 
 class OptionParserTest {
     @Test
-    fun testValuelessShortFlags() {
+    fun testValuelessShortOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
             val xyz by parser.action<MutableList<String>>("-x", "-y", "-z",
@@ -30,7 +30,7 @@ class OptionParserTest {
     }
 
     @Test
-    fun testShortFlagsWithValues() {
+    fun testShortOptionsWithValues() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
             val xyz by parser.actionWithArgument<MutableList<String>>("-x", "-y", "-z",
@@ -61,7 +61,7 @@ class OptionParserTest {
     }
 
     @Test
-    fun testMixedShortFlags() {
+    fun testMixedShortOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
             val myFoo by parser.action<MutableList<String>>("-d", "-e", "-f",
@@ -91,7 +91,7 @@ class OptionParserTest {
     }
 
     @Test
-    fun testMixedShortFlagsWithValues() {
+    fun testMixedShortOptionsWithValues() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
             val myFoo by parser.action<MutableList<String>>("-d", "-e", "-f",
@@ -131,7 +131,7 @@ class OptionParserTest {
     }
 
     @Test
-    fun testValuelessLongFlags() {
+    fun testValuelessLongOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
             val xyz by parser.action<MutableList<String>>("--xray", "--yellow", "--zebra",
@@ -153,7 +153,7 @@ class OptionParserTest {
     }
 
     @Test
-    fun testLongFlagsWithValues() {
+    fun testLongOptionsWithValues() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
             val xyz by parser.actionWithArgument<MutableList<String>>("--xray", "--yellow", "--zaphod",
