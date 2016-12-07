@@ -9,8 +9,9 @@ import org.junit.Test
 class OptionParserTest {
     @Test
     fun testValuelessShortFlags() {
-        class MyOpts(args: Array<String>) : OptionParser(args) {
-            val xyz by action<MutableList<String>>("-x", "-y", "-z",
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val xyz by parser.action<MutableList<String>>("-x", "-y", "-z",
                     help="Really hoopy frood"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -30,8 +31,9 @@ class OptionParserTest {
 
     @Test
     fun testShortFlagsWithValues() {
-        class MyOpts(args: Array<String>) : OptionParser(args) {
-            val xyz by actionWithArgument<MutableList<String>>("-x", "-y", "-z",
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val xyz by parser.actionWithArgument<MutableList<String>>("-x", "-y", "-z",
                     help="Really hoopy frood"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -60,15 +62,16 @@ class OptionParserTest {
 
     @Test
     fun testMixedShortFlags() {
-        class MyOpts(args: Array<String>) : OptionParser(args) {
-            val myFoo by action<MutableList<String>>("-d", "-e", "-f",
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val myFoo by parser.action<MutableList<String>>("-d", "-e", "-f",
                     help="Foo"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val myBar by action<MutableList<String>>("-a", "-b", "-c",
+            val myBar by parser.action<MutableList<String>>("-a", "-b", "-c",
                     help="Bar"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -89,22 +92,23 @@ class OptionParserTest {
 
     @Test
     fun testMixedShortFlagsWithValues() {
-        class MyOpts(args: Array<String>) : OptionParser(args) {
-            val myFoo by action<MutableList<String>>("-d", "-e", "-f",
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val myFoo by parser.action<MutableList<String>>("-d", "-e", "-f",
                     help="Foo"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val myBar by action<MutableList<String>>("-a", "-b", "-c",
+            val myBar by parser.action<MutableList<String>>("-a", "-b", "-c",
                     help="Bar"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val myBaz by actionWithArgument<MutableList<String>>("-x", "-y", "-z",
+            val myBaz by parser.actionWithArgument<MutableList<String>>("-x", "-y", "-z",
                     help="Baz"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -128,8 +132,9 @@ class OptionParserTest {
 
     @Test
     fun testValuelessLongFlags() {
-        class MyOpts(args: Array<String>) : OptionParser(args) {
-            val xyz by action<MutableList<String>>("--xray", "--yellow", "--zebra",
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val xyz by parser.action<MutableList<String>>("--xray", "--yellow", "--zebra",
                     help="Really hoopy frood"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -149,8 +154,9 @@ class OptionParserTest {
 
     @Test
     fun testLongFlagsWithValues() {
-        class MyOpts(args: Array<String>) : OptionParser(args) {
-            val xyz by actionWithArgument<MutableList<String>>("--xray", "--yellow", "--zaphod",
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val xyz by parser.actionWithArgument<MutableList<String>>("--xray", "--yellow", "--zaphod",
                     help="Xyz"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -177,8 +183,9 @@ class OptionParserTest {
 
     @Test
     fun testSettingValues() {
-        class MyOpts(args: Array<String>) : OptionParser(args) {
-            val xyz by actionWithArgument<Int>("-x",
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val xyz by parser.actionWithArgument<Int>("-x",
                     help="an integer"
             ){
                 argument.toInt()

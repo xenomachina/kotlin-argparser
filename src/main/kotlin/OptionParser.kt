@@ -7,35 +7,42 @@ package com.xenomachina.optionparser
 import kotlin.reflect.KProperty
 
 /**
- * A parser of command-line arguments.
+ * A command-line option/argument parser.
  *
  * Example usage:
  *
  *     // Define class to hold parsed options
- *     class MyOptions(args: Array<String>) : OptionParser(args) {
- *         // boolean flags
- *         val verbose by flag("-v", "--verbose")
+ *     class MyOptions(args: Array<String>) {
+ *         private val parser = OptionParser(args)
  *
+ *         // TODO: implement flag()
+ *         // boolean flags
+ *         val verbose by parser.flag("-v", "--verbose")
+ *
+ *         // TODO: implement argument()
  *         // simple options with arguments
- *         val name by argument("-N", "--name",
+ *         val name by parser.argument("-N", "--name",
  *             help="My Name")
- *         val size by argument("-s", "--size"
+ *         val size by parser.argument("-s", "--size"
  *             help="My Size"){toInt} = 8
  *
+ *         // TODO: implement argument()'s default
  *         // optional options
- *         val name by argument("-O", "--output",
+ *         val name by parser.argument("-O", "--output",
  *             default = "./",
  *             help="Output location")
  *
+ *         // TODO: implement accumulator()
  *         // accumulating values (turns into a List)
- *         val includeDirs by accumulator("-I",
+ *         val includeDirs by parser.accumulator("-I",
  *             help="Directories to search for headers"
  *         ){
  *             File(this)
  *         }
  *
+ *         // TODO: implement mapping()
  *         // map options to values
- *         val mode by mapping(
+ *         val mode by parser.mapping(
  *                 "--fast" to Mode.FAST,
  *                 "--small" to Mode.SMALL,
  *                 "--quiet" to Mode.QUIET,
@@ -45,24 +52,39 @@ import kotlin.reflect.KProperty
  *         // All of these methods are based upon the "action" method, which
  *         // can do anything they can do and more (but is harder to use in the
  *         // common cases)
- *         val zaphod by action("-z", "--zaphod"
+ *         val zaphod by parser.action("-z", "--zaphod"
  *             help="Directories to search for headers"
  *         ){
- *             return newParsed(name, value, argument)
+ *             return parseZaphod(name, value, argument)
  *         }
  *     }
+ *
+ *  Your main function can look like this:
  *
  *     fun main(args : Array<String>) {
  *         try {
  *             val myOpts = MyOptions(args)
- *             println("Hello, {args.name}!")
+ *             println("Hello, {myOpts.name}!")
  *         } catch (e: OptionParser.Exception) {
- *             e.printAndExit()
+ *             e.printAndExit() // TODO: add printAndExit
+ *         }
+ *     }
+ *
+ *  If you subclass OptionParser, you can be even more concise:
+ *
+ *     // TODO: implement runMain
+ *     // TODO: test sublclassing
+ *     fun main(args : Array<String>) {
+ *         MyOptions(args).runMain {
+ *             // `this` is the MyOptions instance, and will already be parsed
+ *             // at this point.
+ *             println("Hello, {name}!")
+ *             return EXIT_SUCCESS
  *         }
  *     }
  */
 open class OptionParser(val args: Array<String>) {
-    protected fun <T> action(vararg names: String,
+    fun <T> action(vararg names: String,
                              help: String? = null,
                              handler: Action.WithoutArgument.Input<T>.() -> T): Action<T> {
         val action = Action.WithoutArgument<T>(this, help = help, handler = handler)
@@ -72,7 +94,7 @@ open class OptionParser(val args: Array<String>) {
         return action
     }
 
-    protected fun <T> actionWithArgument(vararg names: String,
+    fun <T> actionWithArgument(vararg names: String,
                                          help: String? = null,
                                          handler: Action.WithArgument.Input<T>.() -> T): Action<T> {
         val action = Action.WithArgument<T>(this, help = help, handler = handler)
@@ -120,6 +142,7 @@ open class OptionParser(val args: Array<String>) {
         }
 
         fun  default(value: T): Action<T> {
+            // TODO: make this lazy?
             holder = Holder(value)
             return this
         }
