@@ -5,6 +5,7 @@
 package com.xenomachina.optionparser
 
 import kotlin.reflect.KProperty
+import kotlin.system.exitProcess
 
 /**
  * A command-line option/argument parser.
@@ -15,24 +16,20 @@ import kotlin.reflect.KProperty
  *     class MyOptions(args: Array<String>) {
  *         private val parser = OptionParser(args)
  *
- *         // TODO: implement flag()
  *         // boolean flags
  *         val verbose by parser.flag("-v", "--verbose")
  *
- *         // TODO: implement argument()
  *         // simple options with arguments
  *         val name by parser.argument("-N", "--name",
  *             help="My Name")
  *         val size by parser.argument("-s", "--size"
  *             help="My Size"){toInt} = 8
  *
- *         // TODO: implement argument()'s default
  *         // optional options
  *         val name by parser.argument("-O", "--output",
  *             default = "./",
  *             help="Output location")
  *
- *         // TODO: implement accumulator()
  *         // accumulating values (turns into a List)
  *         val includeDirs by parser.accumulator("-I",
  *             help="Directories to search for headers"
@@ -66,7 +63,7 @@ import kotlin.reflect.KProperty
  *             val myOpts = MyOptions(args)
  *             println("Hello, {myOpts.name}!")
  *         } catch (e: OptionParser.Exception) {
- *             e.printAndExit() // TODO: add printAndExit
+ *             e.printAndExit()
  *         }
  *     }
  *
@@ -84,9 +81,33 @@ import kotlin.reflect.KProperty
  *     }
  */
 open class OptionParser(val args: Array<String>) {
+    fun flag(vararg names: String,
+             help: String? = null): Action<Boolean> =
+            action<Boolean>(*names, help=help) {true}.default(false)
+
+    fun <T> argument(vararg names: String,
+                     help: String? = null,
+                     parser: String.()->T): Action<T> =
+            actionWithArgument(*names, help=help) { parser(this.argument)}
+
+    // TODO: should this even exist?
+    fun <T> argument(vararg names: String,
+                     default: T,
+                     help: String? = null,
+                     parser: String.()->T): Action<T> =
+            actionWithArgument<T>(*names, help=help) { parser(this.argument)}.default(default)
+
+    fun <T> accumulator(vararg names: String,
+                     help: String? = null,
+                     parser: String.()->T): Action<MutableList<T>> =
+            actionWithArgument<MutableList<T>>(*names, help=help) {
+                value!!.value.add(parser(argument))
+                value.value
+            }.default(mutableListOf<T>())
+
     fun <T> action(vararg names: String,
-                             help: String? = null,
-                             handler: Action.WithoutArgument.Input<T>.() -> T): Action<T> {
+                   help: String? = null,
+                   handler: Action.WithoutArgument.Input<T>.() -> T): Action<T> {
         val action = Action.WithoutArgument<T>(this, help = help, handler = handler)
         for (name in names) {
             register(name, action)
@@ -104,7 +125,13 @@ open class OptionParser(val args: Array<String>) {
         return action
     }
 
-    open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message)
+    open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message) {
+        fun printAndExit(): Nothing {
+            // TODO: include program name?
+            System.err.println(message)
+            exitProcess(returnCode)
+        }
+    }
 
     class InvalidOption(val argName: String) :
             OptionParser.Exception("invalid option -- '$argName'", 2)
