@@ -213,10 +213,41 @@ class OptionParserTest {
                 MyOpts(arrayOf("-x9", "-x8")).xyz)
     }
 
+    @Test
+    fun testFlag() {
+        class MyOpts(args: Array<String>) {
+            private val parser = OptionParser(args)
+            val x by parser.flag("-x", "--ecks",
+                    help="X")
+            val y by parser.flag("-y",
+                    help="Y")
+            val z by parser.flag("--zed",
+                    help="Z")
+        }
+
+        val opts1 = MyOpts(arrayOf("-x", "-y", "--zed", "--zed", "-y"))
+        Assert.assertTrue(opts1.x)
+        Assert.assertTrue(opts1.y)
+        Assert.assertTrue(opts1.z)
+
+        val opts2 = MyOpts(arrayOf())
+        Assert.assertFalse(opts2.x)
+        Assert.assertFalse(opts2.y)
+        Assert.assertFalse(opts2.z)
+
+        val opts3 = MyOpts(arrayOf("-y", "--ecks"))
+        Assert.assertTrue(opts3.x)
+        Assert.assertTrue(opts3.y)
+
+        val opts4 = MyOpts(arrayOf("--zed"))
+        Assert.assertFalse(opts4.x)
+        Assert.assertFalse(opts4.y)
+        Assert.assertTrue(opts4.z)
+    }
+
     // TODO test InvalidOption
     // TODO test short option needs arg at end
     // TODO test long option needs arg at end
-    // TODO: test flag()
     // TODO: test argument()
     // TODO: test argument()'s default
     // TODO: test accumulator()
