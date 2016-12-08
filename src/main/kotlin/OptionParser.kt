@@ -183,8 +183,11 @@ open class OptionParser(val args: Array<String>) {
             return holder!!.value
         }
 
+        /**
+         * Sets the value for this Action. Should be called prior to parsing.
+         */
         fun  default(value: T): Action<T> {
-            // TODO: make this lazy?
+            // TODO: throw exception if parsing already complete?
             holder = Holder(value)
             return this
         }
