@@ -81,6 +81,7 @@ import kotlin.system.exitProcess
  *     }
  */
 open class OptionParser(val args: Array<String>) {
+    // TODO: rename these to flagging, storing, adding?
     fun flag(vararg names: String,
              help: String? = null): Action<Boolean> =
             action<Boolean>(*names, help=help) {true}.default(false)
@@ -95,12 +96,16 @@ open class OptionParser(val args: Array<String>) {
             argument(*names, help=help){this}
 
     fun <T> accumulator(vararg names: String,
-                     help: String? = null,
-                     parser: String.()->T): Action<MutableList<T>> =
+                        help: String? = null,
+                        parser: String.()->T): Action<MutableList<T>> =
             actionWithArgument<MutableList<T>>(*names, help=help) {
                 value!!.value.add(parser(argument))
                 value.value
             }.default(mutableListOf<T>())
+
+    fun accumulator(vararg names: String,
+                     help: String? = null): Action<MutableList<String>> =
+        accumulator(*names, help = help){this}
 
     fun <T> action(vararg names: String,
                    help: String? = null,
