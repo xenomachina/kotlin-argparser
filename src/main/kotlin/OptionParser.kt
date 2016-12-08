@@ -15,21 +15,21 @@ import kotlin.system.exitProcess
  *     // Define class to hold parsed options
  *     class MyOptions(parser: OptionParser) {
  *         // boolean flags
- *         val verbose by parser.flag("-v", "--verbose")
+ *         val verbose by parser.flagging("-v", "--verbose")
  *
  *         // simple options with arguments
- *         val name by parser.argument("-N", "--name",
+ *         val name by parser.storing("-N", "--name",
  *             help="My Name")
- *         val size by parser.argument("-s", "--size"
+ *         val size by parser.storing("-s", "--size"
  *             help="My Size"){toInt} = 8
  *
  *         // optional options
- *         val name by parser.argument("-O", "--output",
+ *         val name by parser.storing("-O", "--output",
  *             help="Output location")
  *             .default("./")
  *
  *         // accumulating values (turns into a List)
- *         val includeDirs by parser.accumulator("-I",
+ *         val includeDirs by parser.adding("-I",
  *             help="Directories to search for headers"
  *         ){
  *             File(this)
@@ -66,31 +66,54 @@ import kotlin.system.exitProcess
 open class OptionParser(val args: Array<String>) {
     // TODO: add --help support
     // TODO: add addValidator method
-    // TODO: rename these to flagging, storing, adding?
-    fun flag(vararg names: String,
-             help: String? = null): Action<Boolean> =
+    fun flagging(vararg names: String,
+                 help: String? = null): Action<Boolean> =
             action<Boolean>(*names, help=help) {true}.default(false)
 
-    fun <T> argument(vararg names: String,
-                     help: String? = null,
-                     parser: String.()->T): Action<T> =
+    fun <T> storing(vararg names: String,
+                    help: String? = null,
+                    parser: String.()->T): Action<T> =
             actionWithArgument(*names, help=help) {parser(this.argument)}
 
-    fun argument(vararg names: String,
-                 help: String? = null): Action<String> =
-            argument(*names, help=help){this}
+    fun storing(vararg names: String,
+                help: String? = null): Action<String> =
+            storing(*names, help=help){this}
 
-    fun <T> accumulator(vararg names: String,
-                        help: String? = null,
-                        parser: String.()->T): Action<MutableList<T>> =
-            actionWithArgument<MutableList<T>>(*names, help=help) {
+    /**
+     * Adds argument to a MutableCollection.
+     */
+    fun <E, T : MutableCollection<E>> adding(vararg names: String,
+                                             help: String? = null,
+                                             initialValue: T,
+                                             parser: String.()->E): Action<T> =
+            actionWithArgument<T>(*names, help=help) {
                 value!!.value.add(parser(argument))
                 value.value
-            }.default(mutableListOf<T>())
+            }.default(initialValue)
 
-    fun accumulator(vararg names: String,
-                     help: String? = null): Action<MutableList<String>> =
-        accumulator(*names, help = help){this}
+// TODO: figure out why this causes "cannot choose among the following candidates" errors everywhere.
+//    /**
+//     * Convenience for adding argument as an unmodified String to a MutableCollection.
+//     */
+//    fun <T : MutableCollection<String>> adding(vararg names: String,
+//                   help: String? = null,
+//                   initialValue: T): Action<T> =
+//            adding(*names, help = help, initialValue = initialValue){this}
+
+    /**
+     * Convenience for adding argument to a MutableList.
+     */
+    fun <T> adding(vararg names: String,
+                   help: String? = null,
+                   parser: String.()->T) =
+         adding(*names, help = help, initialValue = mutableListOf(), parser = parser)
+
+    /**
+     * Convenience for adding argument as an unmodified String to a MutableList.
+     */
+    fun adding(vararg names: String,
+               help: String? = null): Action<MutableList<String>> =
+        adding(*names, help = help){this}
 
     fun <T> action(vararg names: String,
                    help: String? = null,
@@ -173,14 +196,14 @@ open class OptionParser(val args: Array<String>) {
     private fun <T> register(name: String, action: OptionParser.Action<T>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
-                throw IllegalArgumentException("illegal long flag '$name' -- must have at least one character after hyphen")
+                throw IllegalArgumentException("illegal long option '$name' -- must have at least one character after hyphen")
             longFlags.put(name.substring(2), action)
         } else if (name.startsWith("-")) {
             if (name.length != 2)
-                throw IllegalArgumentException("illegal short flag '$name' -- can only have one character after hyphen")
+                throw IllegalArgumentException("illegal short option '$name' -- can only have one character after hyphen")
             val key = name.get(1)
             if (key in shortFlags)
-                throw IllegalStateException("short flag '$name' already in use")
+                throw IllegalStateException("short option '$name' already in use")
             shortFlags.put(key, action)
         } else {
             TODO("registration of positional args not implemented")

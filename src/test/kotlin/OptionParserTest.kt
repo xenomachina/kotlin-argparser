@@ -52,7 +52,7 @@ class OptionParserTest {
                 listOf("x:0", "y:1", "z:2", "z:3", "y:4"),
                 MyOpts(arrayOf("-x0", "-y1", "-z2", "-z3", "-y4")).xyz)
 
-        // Test with = between flag and value
+        // Test with = between option and value
         Assert.assertEquals(
                 listOf("x:=0", "y:=1", "z:=2", "z:=3", "y:=4"),
                 MyOpts(arrayOf("-x=0", "-y=1", "-z=2", "-z=3", "-y=4")).xyz)
@@ -175,7 +175,7 @@ class OptionParserTest {
 //                listOf("xray:0", "yellow:1", "zaphod:2", "zaphod:3", "yellow:4"),
 //                MyOpts(arrayOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz)
 
-        // Test with = between flag and value
+        // Test with = between option and value
         Assert.assertEquals(
                 listOf("xray:0", "yellow:1", "zaphod:2", "zaphod:3", "yellow:4"),
                 MyOpts(arrayOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
@@ -217,11 +217,11 @@ class OptionParserTest {
     fun testFlag() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val x by parser.flag("-x", "--ecks",
+            val x by parser.flagging("-x", "--ecks",
                     help="X")
-            val y by parser.flag("-y",
+            val y by parser.flagging("-y",
                     help="Y")
-            val z by parser.flag("--zed",
+            val z by parser.flagging("--zed",
                     help="Z")
         }
 
@@ -249,7 +249,7 @@ class OptionParserTest {
     fun testArgument_noParser() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val x by parser.argument("-x", "--ecks",
+            val x by parser.storing("-x", "--ecks",
                     help="X")
         }
 
@@ -272,7 +272,7 @@ class OptionParserTest {
     fun testArgument_withParser() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val x by parser.argument("-x", "--ecks",
+            val x by parser.storing("-x", "--ecks",
                     help="X"){this.toInt()}
         }
 
@@ -294,7 +294,7 @@ class OptionParserTest {
     @Test
     fun testAccumulator_noParser() {
         class MyOpts(args: Array<String>) : OptionParser(args) {
-            val x by accumulator("-x", "--ecks",
+            val x by adding("-x", "--ecks",
                     help="X")
         }
 
@@ -323,7 +323,7 @@ class OptionParserTest {
     fun testAccumulator_withParser() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val x by parser.accumulator("-x", "--ecks",
+            val x by parser.adding("-x", "--ecks",
                     help="X"){this.toInt()}
         }
 
@@ -334,8 +334,8 @@ class OptionParserTest {
         Assert.assertEquals(listOf(5, 6), MyOpts(arrayOf("-x", "5", "--ecks", "6")).x)
     }
 
-    // TODO test InvalidOption
-    // TODO test short option needs arg at end
-    // TODO test long option needs arg at end
+    // TODO: test InvalidOption
+    // TODO: test short option needs arg at end
+    // TODO: test long option needs arg at end
     // TODO: test printAndExit()
 }
