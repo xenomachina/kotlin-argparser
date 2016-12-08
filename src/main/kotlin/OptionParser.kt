@@ -13,9 +13,7 @@ import kotlin.system.exitProcess
  * Example usage:
  *
  *     // Define class to hold parsed options
- *     class MyOptions(args: Array<String>) {
- *         private val parser = OptionParser(args)
- *
+ *     class MyOptions(parser: OptionParser) {
  *         // boolean flags
  *         val verbose by parser.flag("-v", "--verbose")
  *
@@ -56,31 +54,18 @@ import kotlin.system.exitProcess
  *         }
  *     }
  *
- *  Your main function can look like this:
+ *  Your main function can then look like this:
  *
- *     fun main(args : Array<String>) {
- *         try {
- *             val myOpts = MyOptions(args)
- *             println("Hello, {myOpts.name}!")
- *         } catch (e: OptionParser.Exception) {
- *             e.printAndExit()
- *         }
- *     }
- *
- *  If you subclass OptionParser, you can be even more concise:
- *
- *     // TODO: implement runMain
- *     // TODO: test sublclassing
- *     fun main(args : Array<String>) {
+ *     fun main(args : Array<String>) =
  *         MyOptions(args).runMain {
  *             // `this` is the MyOptions instance, and will already be parsed
- *             // at this point.
+ *             // and validated at this point.
  *             println("Hello, {name}!")
- *             return EXIT_SUCCESS
  *         }
- *     }
  */
 open class OptionParser(val args: Array<String>) {
+    // TODO: add --help support
+    // TODO: add addValidator method
     // TODO: rename these to flagging, storing, adding?
     fun flag(vararg names: String,
              help: String? = null): Action<Boolean> =
@@ -310,3 +295,11 @@ fun <T> Holder<T>?.orElse(f: () -> T) : T{
 }
 
 private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
+
+fun <T, R> T.runMain(f: T.() -> R): R {
+    try {
+        return f()
+    } catch (e: OptionParser.Exception) {
+        e.printAndExit()
+    }
+}
