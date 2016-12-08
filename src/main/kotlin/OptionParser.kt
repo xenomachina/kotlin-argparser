@@ -121,6 +121,9 @@ open class OptionParser(val args: Array<String>) {
                                          help: String? = null,
                                          handler: Action.WithArgument.Input<T>.() -> T): Action<T> {
         val action = Action.WithArgument<T>(this, help = help, handler = handler)
+        // TODO: verify that there is at least one name
+        // TODO: verify that all names are of same type (or split positional actions into their own method?)
+        // TODO: verify that positional actions have exactly one name
         for (name in names) {
             register(name, action)
         }
@@ -138,6 +141,8 @@ open class OptionParser(val args: Array<String>) {
     class InvalidOption(val argName: String) :
             OptionParser.Exception("invalid option -- '$argName'", 2)
 
+    // TODO: rename to Delegate?
+    // TODO: merge with/without argument, and change Input to allow collection of 0 to n arguments
     sealed class Action<T>(private val argParser: OptionParser) {
         protected var holder: Holder<T>? = null
 
