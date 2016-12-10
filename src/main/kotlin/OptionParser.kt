@@ -176,7 +176,6 @@ open class OptionParser(val args: Array<String>) {
             fun peek(): String {
                 TODO()
             }
-
         }
 
         private var holder: Holder<T>? = null
@@ -222,7 +221,7 @@ open class OptionParser(val args: Array<String>) {
             if (arg.startsWith("--")) {
                 i += parseLongOpt(i, args)
             } else if (arg.startsWith("-")) {
-                i += parseShortOpts(1, args[i], i + 1, args)
+                i += parseShortOpts(i, args)
             } else {
                 i += parsePositionalArg(i, args)
             }
@@ -234,6 +233,11 @@ open class OptionParser(val args: Array<String>) {
         TODO("${args.slice(index..args.size)}")
     }
 
+    /**
+     * @param index index into args, starting at a long option, eg: "--verbose"
+     * @param args array of command-line arguments
+     * @return number of arguments that have been processed
+     */
     private fun parseLongOpt(index: Int, args: Array<String>): Int {
         val name: String
         val firstArg: String?
@@ -258,19 +262,25 @@ open class OptionParser(val args: Array<String>) {
         }
     }
 
-    private fun parseShortOpts(optIndex: Int, opts: String, index: Int, args: Array<String>): Int {
-        var pos = optIndex
-        while (pos < opts.length) {
-            val optName = opts[pos]
-            pos++ // pos now points just after optName
+    /**
+     * @param index index into args, starting at a set of short options, eg: "-abXv"
+     * @param args array of command-line arguments
+     * @return number of arguments that have been processed
+     */
+    private fun parseShortOpts(index: Int, args: Array<String>): Int {
+        val opts = args[index]
+        var optIndex = 1
+        while (optIndex < opts.length) {
+            val optName = opts[optIndex]
+            optIndex++ // optIndex now points just after optName
 
             val action = shortOptions.get(optName)
             if (action == null) {
                 throw InvalidOption(optName.toString())
             } else {
                 // TODO: move substring construction into Input.next()?
-                val firstArg = if (pos >= opts.length) null else opts.substring(pos)
-                val consumed = action.parseOption(optName.toString(), firstArg, index, args)
+                val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
+                val consumed = action.parseOption(optName.toString(), firstArg, index + 1, args)
                 if (consumed > 0) {
                     return consumed + (if (firstArg == null) 1 else 0)
                 }
