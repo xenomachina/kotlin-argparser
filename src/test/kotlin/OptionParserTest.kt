@@ -33,11 +33,11 @@ class OptionParserTest {
     fun testShortOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val xyz by parser.actionWithArgument<MutableList<String>>("-x", "-y", "-z",
+            val xyz by parser.action<MutableList<String>>("-x", "-y", "-z",
                     help="Really hoopy frood"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name:$argument")
+                    add("$name:${next()}")
                 }
             }
         }
@@ -108,11 +108,11 @@ class OptionParserTest {
                     add("$name")
                 }
             }
-            val myBaz by parser.actionWithArgument<MutableList<String>>("-x", "-y", "-z",
+            val myBaz by parser.action<MutableList<String>>("-x", "-y", "-z",
                     help="Baz"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name:$argument")
+                    add("$name:${next()}")
                 }
             }
         }
@@ -144,11 +144,11 @@ class OptionParserTest {
         }
 
         Assert.assertEquals(
-                listOf("xray", "yellow", "zebra", "zebra", "yellow"),
+                listOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow"),
                 MyOpts(arrayOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")).xyz)
 
         Assert.assertEquals(
-                listOf("xray", "yellow", "zebra"),
+                listOf("--xray", "--yellow", "--zebra"),
                 MyOpts(arrayOf("--xray", "--yellow", "--zebra")).xyz)
     }
 
@@ -156,18 +156,18 @@ class OptionParserTest {
     fun testLongOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val xyz by parser.actionWithArgument<MutableList<String>>("--xray", "--yellow", "--zaphod",
+            val xyz by parser.action<MutableList<String>>("--xray", "--yellow", "--zaphod",
                     help="Xyz"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name:$argument")
+                    add("$name:${next()}")
                 }
             }
         }
 
         // Test with value as separate arg
         Assert.assertEquals(
-                listOf("xray:0", "yellow:1", "zaphod:2", "zaphod:3", "yellow:4"),
+                listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
                 MyOpts(arrayOf("--xray", "0", "--yellow", "1", "--zaphod", "2", "--zaphod", "3", "--yellow", "4")).xyz)
 
         // Test with value concatenated TODO should fail
@@ -177,7 +177,7 @@ class OptionParserTest {
 
         // Test with = between option and value
         Assert.assertEquals(
-                listOf("xray:0", "yellow:1", "zaphod:2", "zaphod:3", "yellow:4"),
+                listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
                 MyOpts(arrayOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
     }
 
@@ -185,10 +185,10 @@ class OptionParserTest {
     fun testDefault() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val xyz by parser.actionWithArgument<Int>("-x",
+            val xyz by parser.action<Int>("-x",
                     help="an integer"
             ){
-                argument.toInt()
+                next().toInt()
             }.default(5)
         }
 

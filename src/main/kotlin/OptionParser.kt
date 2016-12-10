@@ -73,7 +73,7 @@ open class OptionParser(val args: Array<String>) {
     fun <T> storing(vararg names: String,
                     help: String? = null,
                     parser: String.()->T): Action<T> =
-            actionWithArgument(*names, help=help) {parser(this.argument)}
+            action(*names, help=help) {parser(this.next())}
 
     fun storing(vararg names: String,
                 help: String? = null): Action<String> =
@@ -86,8 +86,8 @@ open class OptionParser(val args: Array<String>) {
                                              help: String? = null,
                                              initialValue: T,
                                              parser: String.()->E): Action<T> =
-            actionWithArgument<T>(*names, help=help) {
-                value!!.value.add(parser(argument))
+            action<T>(*names, help=help) {
+                value!!.value.add(parser(next()))
                 value.value
             }.default(initialValue)
 
@@ -117,18 +117,8 @@ open class OptionParser(val args: Array<String>) {
 
     fun <T> action(vararg names: String,
                    help: String? = null,
-                   handler: Action.WithoutArgument.Input<T>.() -> T): Action<T> {
-        val action = Action.WithoutArgument<T>(this, help = help, handler = handler)
-        for (name in names) {
-            register(name, action)
-        }
-        return action
-    }
-
-    fun <T> actionWithArgument(vararg names: String,
-                                         help: String? = null,
-                                         handler: Action.WithArgument.Input<T>.() -> T): Action<T> {
-        val action = Action.WithArgument<T>(this, help = help, handler = handler)
+                   handler: Action.Input<T>.() -> T): Action<T> {
+        val action = Action<T>(this, help = help, handler = handler)
         // TODO: verify that there is at least one name
         // TODO: verify that all names are of same type (or split positional actions into their own method?)
         // TODO: verify that positional actions have exactly one name
@@ -150,39 +140,7 @@ open class OptionParser(val args: Array<String>) {
             OptionParser.Exception("invalid option -- '$argName'", 2)
 
     // TODO: rename to Delegate?
-    // TODO: merge with/without argument, and change Input to allow collection of 0 to n arguments
-    sealed class Action<T>(private val argParser: OptionParser) {
-        protected var holder: Holder<T>? = null
-
-        class WithArgument<T>(argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) :
-                Action<T>(argParser) {
-
-            data class Input<T>(
-                    val value: Holder<T>?,
-                    val name: String,
-                    val argument: String)
-
-            fun parseNameArgument(name: String, argument: String) {
-                holder = Holder(handler(Input(holder, name, argument)))
-            }
-        }
-
-        class WithoutArgument<T>(argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) :
-                Action<T>(argParser) {
-            data class Input<T>(
-                    val value: Holder<T>?,
-                    val name: String)
-
-            fun parseName(name: String) {
-                holder = Holder(handler(Input(holder, name)))
-            }
-        }
-
-        operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            argParser.parseOptions
-            return holder!!.value
-        }
-
+    class Action<T>(private val argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) {
         /**
          * Sets the value for this Action. Should be called prior to parsing.
          */
@@ -190,6 +148,48 @@ open class OptionParser(val args: Array<String>) {
             // TODO: throw exception if parsing already complete?
             holder = Holder(value)
             return this
+        }
+
+        class Input<T>(val value: Holder<T>?,
+                       val name: String,
+                       val firstArg: String?,
+                       val offset: Int,
+                       val args: Array<String>) {
+
+            internal var consumed = 0
+
+            fun hasNext(): Boolean {
+                TODO()
+            }
+
+            fun next(): String {
+                val result : String
+                if (firstArg == null) {
+                    result = args[offset + consumed]
+                } else {
+                    result = if (consumed == 0) firstArg else args[offset + consumed - 1]
+                }
+                consumed++
+                return result
+            }
+
+            fun peek(): String {
+                TODO()
+            }
+
+        }
+
+        private var holder: Holder<T>? = null
+
+        internal fun parseOption(name: String, firstArg: String?, index: Int, args: Array<String>) : Int {
+            val input = Input(holder, name, firstArg, index, args)
+            holder = Holder(handler(input))
+            return input.consumed
+        }
+
+        operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
+            argParser.parseOptions
+            return holder!!.value
         }
     }
 
@@ -200,7 +200,7 @@ open class OptionParser(val args: Array<String>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
                 throw IllegalArgumentException("illegal long option '$name' -- must have at least one character after hyphen")
-            longFlags.put(name.substring(2), action)
+            longFlags.put(name, action)
         } else if (name.startsWith("-")) {
             if (name.length != 2)
                 throw IllegalArgumentException("illegal short option '$name' -- can only have one character after hyphen")
@@ -209,7 +209,7 @@ open class OptionParser(val args: Array<String>) {
                 throw IllegalStateException("short option '$name' already in use")
             shortFlags.put(key, action)
         } else {
-            TODO("registration of positional args not implemented")
+            TODO("registration of positional args")
         }
 
     }
@@ -218,92 +218,66 @@ open class OptionParser(val args: Array<String>) {
         var i = 0
         while (i < args.size) {
             val arg = args[i]
-            val nextArg = if (i + 1 < args.size) args[i + 1] else null
+            // TODO: use when here?
             if (arg.startsWith("--")) {
-                // TODO: pass in hyphens to parseLongOpt?
-                if (parseLongOpt(arg.substring(2), nextArg)) i++
+                i += parseLongOpt(i, args)
             } else if (arg.startsWith("-")) {
-                if(parseShortOpts(arg.substring(1), nextArg)) i++
+                i += parseShortOpts(1, args[i], i + 1, args)
             } else {
-                parsePositionalArg(arg)
+                i += parsePositionalArg(i, args)
             }
-
-            i++
         }
         // TODO: throw exception if any holders are null
     }
 
-    private fun parsePositionalArg(arg: String) {
-        TODO("not implemented -- $arg")
+    private fun parsePositionalArg(index: Int, args: Array<String>): Int {
+        TODO("${args.slice(index..args.size)}")
     }
 
-    private fun parseLongOpt(arg: String, nextArg: String?): Boolean {
-        val optName: String
-        val optArg: String?
-        val sawEqual: Boolean
-        val m = NAME_EQUALS_VALUE_REGEX.matchEntire(arg)
+    private fun parseLongOpt(index: Int, args: Array<String>): Int {
+        val name: String
+        val firstArg: String?
+        val m = NAME_EQUALS_VALUE_REGEX.matchEntire(args[index])
         if (m == null) {
-            optName = arg
-            optArg = nextArg
-            sawEqual = false
+            name = args[index]
+            firstArg = null
         } else {
-            optName = m.groups[1]!!.value
-            optArg = m.groups[2]!!.value
-            sawEqual = true
+            name = m.groups[1]!!.value
+            firstArg = m.groups[2]!!.value
         }
-        val action = longFlags.get(optName)
+        val action = longFlags.get(name)
         if (action == null) {
-            throw InvalidOption(optName)
+            throw InvalidOption(name)
         } else {
-            when(action) {
-                is Action.WithArgument -> {
-                    if (optArg == null)
-                        TODO("throw exception: option '--$optName' requires an argument")
-                    action.parseNameArgument(optName, optArg)
-                    return !sawEqual
-                }
-                is Action.WithoutArgument -> {
-                    if (sawEqual)
-                        TODO("throw exception: option '--$optName' doesn't allow an argument")
-                    action.parseName(optName)
-                    return false
-                }
+            var consumedArgs = action.parseOption(name, firstArg, index + 1, args)
+            if (firstArg != null) {
+                if (consumedArgs < 1) TODO("throw exception -- =argument not consumed")
+                consumedArgs -= 1
             }
+            return 1 + consumedArgs
         }
     }
 
-    private fun parseShortOpts(arg: String, start: Int, nextArg: String?): Boolean {
-        var pos = start
-        while (pos < arg.length) {
-            val argName = arg[pos]
-            val action = shortFlags.get(argName)
+    private fun parseShortOpts(optIndex: Int, opts: String, index: Int, args: Array<String>): Int {
+        var pos = optIndex
+        while (pos < opts.length) {
+            val optName = opts[pos]
+            pos++ // pos now points just after optName
+
+            val action = shortFlags.get(optName)
             if (action == null) {
-                throw InvalidOption(argName.toString())
+                throw InvalidOption(optName.toString())
             } else {
-                when(action) {
-                    is Action.WithArgument -> {
-                        if (pos == arg.length - 1) {
-                            if (nextArg == null)
-                                TODO("throw exception: option '--$argName' requires an argument")
-                            action.parseNameArgument(argName.toString(), nextArg)
-                            return true
-                        } else {
-                            action.parseNameArgument(argName.toString(), arg.substring(pos + 1))
-                            return false
-                        }
-                    }
-                    is Action.WithoutArgument -> {
-                        action.parseName(argName.toString())
-                    }
+                // TODO: move substring construction into Input.next()?
+                val firstArg = if (pos >= opts.length) null else opts.substring(pos)
+                val consumed = action.parseOption(optName.toString(), firstArg, index, args)
+                if (consumed > 0) {
+                    return consumed + (if (firstArg == null) 1 else 0)
                 }
             }
-
-            pos++
         }
-        return false
+        return 1
     }
-
-    private fun parseShortOpts(arg: String, nextArg: String?) = parseShortOpts(arg, 0, nextArg)
 }
 
 /**
