@@ -193,21 +193,21 @@ open class OptionParser(val args: Array<String>) {
         }
     }
 
-    private val shortFlags = mutableMapOf<Char, Action<*>>()
-    private val longFlags = mutableMapOf<String, Action<*>>()
+    private val shortOptions = mutableMapOf<Char, Action<*>>()
+    private val longOptions = mutableMapOf<String, Action<*>>()
 
     private fun <T> register(name: String, action: OptionParser.Action<T>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
                 throw IllegalArgumentException("illegal long option '$name' -- must have at least one character after hyphen")
-            longFlags.put(name, action)
+            longOptions.put(name, action)
         } else if (name.startsWith("-")) {
             if (name.length != 2)
                 throw IllegalArgumentException("illegal short option '$name' -- can only have one character after hyphen")
             val key = name.get(1)
-            if (key in shortFlags)
+            if (key in shortOptions)
                 throw IllegalStateException("short option '$name' already in use")
-            shortFlags.put(key, action)
+            shortOptions.put(key, action)
         } else {
             TODO("registration of positional args")
         }
@@ -245,7 +245,7 @@ open class OptionParser(val args: Array<String>) {
             name = m.groups[1]!!.value
             firstArg = m.groups[2]!!.value
         }
-        val action = longFlags.get(name)
+        val action = longOptions.get(name)
         if (action == null) {
             throw InvalidOption(name)
         } else {
@@ -264,7 +264,7 @@ open class OptionParser(val args: Array<String>) {
             val optName = opts[pos]
             pos++ // pos now points just after optName
 
-            val action = shortFlags.get(optName)
+            val action = shortOptions.get(optName)
             if (action == null) {
                 throw InvalidOption(optName.toString())
             } else {
