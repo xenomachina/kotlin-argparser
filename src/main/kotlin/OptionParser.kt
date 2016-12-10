@@ -217,13 +217,13 @@ open class OptionParser(val args: Array<String>) {
         var i = 0
         while (i < args.size) {
             val arg = args[i]
-            // TODO: use when here?
-            if (arg.startsWith("--")) {
-                i += parseLongOpt(i, args)
-            } else if (arg.startsWith("-")) {
-                i += parseShortOpts(i, args)
-            } else {
-                i += parsePositionalArg(i, args)
+            i += when {
+                arg.startsWith("--") ->
+                    parseLongOpt(i, args)
+                arg.startsWith("-") ->
+                    parseShortOpts(i, args)
+                else ->
+                    parsePositionalArg(i, args)
             }
         }
         // TODO: throw exception if any holders are null
