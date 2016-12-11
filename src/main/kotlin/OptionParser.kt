@@ -62,7 +62,7 @@ import kotlin.reflect.KProperty
  *             println("Hello, {name}!")
  *         }
  */
-open class OptionParser(val args: Array<String>) {
+open class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: add --help support
     // TODO: add addValidator method
     fun flagging(vararg names: String,
@@ -239,7 +239,7 @@ open class OptionParser(val args: Array<String>) {
         }
         val delegate = longOptions.get(name)
         if (delegate == null) {
-            throw InvalidOptionException(name)
+            throw InvalidOptionException(progName, name)
         } else {
             var consumedArgs = delegate.parseOption(name, firstArg, index + 1, args)
             if (firstArg != null) {
@@ -264,7 +264,7 @@ open class OptionParser(val args: Array<String>) {
 
             val delegate = shortOptions.get(optName)
             if (delegate == null) {
-                throw InvalidOptionException(optName.toString())
+                throw InvalidOptionException(progName, optName.toString())
             } else {
                 // TODO: move substring construction into Input.next()?
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
