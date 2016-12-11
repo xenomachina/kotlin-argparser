@@ -11,7 +11,7 @@ class OptionParserTest {
     fun testArglessShortOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val xyz by parser.action<MutableList<String>>("-x", "-y", "-z",
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
                     help="Really hoopy frood"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -33,7 +33,7 @@ class OptionParserTest {
     fun testShortOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val xyz by parser.action<MutableList<String>>("-x", "-y", "-z",
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
                     help="Really hoopy frood"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -64,14 +64,14 @@ class OptionParserTest {
     fun testMixedShortOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val myFoo by parser.action<MutableList<String>>("-d", "-e", "-f",
+            val myFoo by parser.option<MutableList<String>>("-d", "-e", "-f",
                     help="Foo"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val myBar by parser.action<MutableList<String>>("-a", "-b", "-c",
+            val myBar by parser.option<MutableList<String>>("-a", "-b", "-c",
                     help="Bar"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -94,21 +94,21 @@ class OptionParserTest {
     fun testMixedShortOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val myFoo by parser.action<MutableList<String>>("-d", "-e", "-f",
+            val myFoo by parser.option<MutableList<String>>("-d", "-e", "-f",
                     help="Foo"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val myBar by parser.action<MutableList<String>>("-a", "-b", "-c",
+            val myBar by parser.option<MutableList<String>>("-a", "-b", "-c",
                     help="Bar"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val myBaz by parser.action<MutableList<String>>("-x", "-y", "-z",
+            val myBaz by parser.option<MutableList<String>>("-x", "-y", "-z",
                     help="Baz"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -134,7 +134,7 @@ class OptionParserTest {
     fun testArglessLongOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val xyz by parser.action<MutableList<String>>("--xray", "--yellow", "--zebra",
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra",
                     help="Really hoopy frood"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -156,7 +156,7 @@ class OptionParserTest {
     fun testLongOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val xyz by parser.action<MutableList<String>>("--xray", "--yellow", "--zaphod",
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod",
                     help="Xyz"
             ){
                 value.orElse{mutableListOf<String>()}.apply {
@@ -185,7 +185,7 @@ class OptionParserTest {
     fun testDefault() {
         class MyOpts(args: Array<String>) {
             private val parser = OptionParser(args)
-            val xyz by parser.action<Int>("-x",
+            val xyz by parser.option<Int>("-x",
                     help="an integer"
             ){
                 next().toInt()

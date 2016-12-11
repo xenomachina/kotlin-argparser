@@ -43,10 +43,10 @@ import kotlin.reflect.KProperty
  *             default = Mode.FAST,
  *             help="Operating mode")
  *
- *         // All of these methods are based upon the "action" method, which
+ *         // All of these methods are based upon the "option" method, which
  *         // can do anything they can do and more (but is harder to use in the
  *         // common cases)
- *         val zaphod by parser.action("-z", "--zaphod"
+ *         val zaphod by parser.option("-z", "--zaphod"
  *             help="Directories to search for headers"
  *         ){
  *             return parseZaphod(name, value, argument)
@@ -66,16 +66,16 @@ open class OptionParser(val args: Array<String>) {
     // TODO: add --help support
     // TODO: add addValidator method
     fun flagging(vararg names: String,
-                 help: String? = null): Action<Boolean> =
-            action<Boolean>(*names, help = help) { true }.default(false)
+                 help: String? = null): Delegate<Boolean> =
+            option<Boolean>(*names, help = help) { true }.default(false)
 
     fun <T> storing(vararg names: String,
                     help: String? = null,
-                    parser: String.() -> T): Action<T> =
-            action(*names, help = help) { parser(this.next()) }
+                    parser: String.() -> T): Delegate<T> =
+            option(*names, help = help) { parser(this.next()) }
 
     fun storing(vararg names: String,
-                help: String? = null): Action<String> =
+                help: String? = null): Delegate<String> =
             storing(*names, help = help) { this }
 
     /**
@@ -84,8 +84,8 @@ open class OptionParser(val args: Array<String>) {
     fun <E, T : MutableCollection<E>> adding(vararg names: String,
                                              help: String? = null,
                                              initialValue: T,
-                                             parser: String.() -> E): Action<T> =
-            action<T>(*names, help = help) {
+                                             parser: String.() -> E): Delegate<T> =
+            option<T>(*names, help = help) {
                 value!!.value.add(parser(next()))
                 value.value
             }.default(initialValue)
@@ -96,7 +96,7 @@ open class OptionParser(val args: Array<String>) {
     */
     //fun <T : MutableCollection<String>> adding(vararg names: String,
     //               help: String? = null,
-    //               initialValue: T): Action<T> =
+    //               initialValue: T): Delegate<T> =
     //        adding(*names, help = help, initialValue = initialValue){this}
 
     /**
@@ -111,28 +111,28 @@ open class OptionParser(val args: Array<String>) {
      * Convenience for adding argument as an unmodified String to a MutableList.
      */
     fun adding(vararg names: String,
-               help: String? = null): Action<MutableList<String>> =
+               help: String? = null): Delegate<MutableList<String>> =
             adding(*names, help = help) { this }
 
-    fun <T> action(vararg names: String,
+    fun <T> option(vararg names: String,
                    help: String? = null,
-                   handler: Action.Input<T>.() -> T): Action<T> {
-        val action = Action<T>(this, help = help, handler = handler)
+                   handler: Delegate.Input<T>.() -> T): Delegate<T> {
+        val delegate = Delegate<T>(this, help = help, handler = handler)
         // TODO: verify that there is at least one name
-        // TODO: verify that all names are of same type (or split positional actions into their own method?)
-        // TODO: verify that positional actions have exactly one name
         for (name in names) {
-            register(name, action)
+            register(name, delegate)
         }
-        return action
+        return delegate
     }
 
-    // TODO: rename to Delegate?
-    class Action<T>(private val argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) {
+    // TODO: add `argument` method for positional argument handling
+    // TODO: verify that positional arguments have exactly one name
+
+    class Delegate<T>(private val argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) {
         /**
-         * Sets the value for this Action. Should be called prior to parsing.
+         * Sets the value for this Delegate. Should be called prior to parsing.
          */
-        fun default(value: T): Action<T> {
+        fun default(value: T): Delegate<T> {
             // TODO: throw exception if parsing already complete?
             holder = Holder(value)
             return this
@@ -180,21 +180,21 @@ open class OptionParser(val args: Array<String>) {
         }
     }
 
-    private val shortOptions = mutableMapOf<Char, Action<*>>()
-    private val longOptions = mutableMapOf<String, Action<*>>()
+    private val shortOptions = mutableMapOf<Char, Delegate<*>>()
+    private val longOptions = mutableMapOf<String, Delegate<*>>()
 
-    private fun <T> register(name: String, action: OptionParser.Action<T>) {
+    private fun <T> register(name: String, delegate: OptionParser.Delegate<T>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
                 throw IllegalArgumentException("illegal long option '$name' -- must have at least one character after hyphen")
-            longOptions.put(name, action)
+            longOptions.put(name, delegate)
         } else if (name.startsWith("-")) {
             if (name.length != 2)
                 throw IllegalArgumentException("illegal short option '$name' -- can only have one character after hyphen")
             val key = name.get(1)
             if (key in shortOptions)
                 throw IllegalStateException("short option '$name' already in use")
-            shortOptions.put(key, action)
+            shortOptions.put(key, delegate)
         } else {
             TODO("registration of positional args")
         }
@@ -237,11 +237,11 @@ open class OptionParser(val args: Array<String>) {
             name = m.groups[1]!!.value
             firstArg = m.groups[2]!!.value
         }
-        val action = longOptions.get(name)
-        if (action == null) {
+        val delegate = longOptions.get(name)
+        if (delegate == null) {
             throw InvalidOptionException(name)
         } else {
-            var consumedArgs = action.parseOption(name, firstArg, index + 1, args)
+            var consumedArgs = delegate.parseOption(name, firstArg, index + 1, args)
             if (firstArg != null) {
                 if (consumedArgs < 1) TODO("throw exception -- =argument not consumed")
                 consumedArgs -= 1
@@ -262,13 +262,13 @@ open class OptionParser(val args: Array<String>) {
             val optName = opts[optIndex]
             optIndex++ // optIndex now points just after optName
 
-            val action = shortOptions.get(optName)
-            if (action == null) {
+            val delegate = shortOptions.get(optName)
+            if (delegate == null) {
                 throw InvalidOptionException(optName.toString())
             } else {
                 // TODO: move substring construction into Input.next()?
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
-                val consumed = action.parseOption(optName.toString(), firstArg, index + 1, args)
+                val consumed = delegate.parseOption(optName.toString(), firstArg, index + 1, args)
                 if (consumed > 0) {
                     return consumed + (if (firstArg == null) 1 else 0)
                 }
