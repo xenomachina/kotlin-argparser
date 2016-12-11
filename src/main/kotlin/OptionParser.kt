@@ -90,14 +90,14 @@ open class OptionParser(val args: Array<String>) {
                 value.value
             }.default(initialValue)
 
-// TODO: figure out why this causes "cannot choose among the following candidates" errors everywhere.
-//    /**
-//     * Convenience for adding argument as an unmodified String to a MutableCollection.
-//     */
-//    fun <T : MutableCollection<String>> adding(vararg names: String,
-//                   help: String? = null,
-//                   initialValue: T): Action<T> =
-//            adding(*names, help = help, initialValue = initialValue){this}
+    // TODO: figure out why this causes "cannot choose among the following candidates" errors everywhere.
+    /**
+    * Convenience for adding argument as an unmodified String to a MutableCollection.
+    */
+    //fun <T : MutableCollection<String>> adding(vararg names: String,
+    //               help: String? = null,
+    //               initialValue: T): Action<T> =
+    //        adding(*names, help = help, initialValue = initialValue){this}
 
     /**
      * Convenience for adding argument to a MutableList.
