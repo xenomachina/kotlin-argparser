@@ -68,16 +68,16 @@ open class OptionParser(val args: Array<String>) {
     // TODO: add addValidator method
     fun flagging(vararg names: String,
                  help: String? = null): Action<Boolean> =
-            action<Boolean>(*names, help=help) {true}.default(false)
+            action<Boolean>(*names, help = help) { true }.default(false)
 
     fun <T> storing(vararg names: String,
                     help: String? = null,
-                    parser: String.()->T): Action<T> =
-            action(*names, help=help) {parser(this.next())}
+                    parser: String.() -> T): Action<T> =
+            action(*names, help = help) { parser(this.next()) }
 
     fun storing(vararg names: String,
                 help: String? = null): Action<String> =
-            storing(*names, help=help){this}
+            storing(*names, help = help) { this }
 
     /**
      * Adds argument to a MutableCollection.
@@ -85,8 +85,8 @@ open class OptionParser(val args: Array<String>) {
     fun <E, T : MutableCollection<E>> adding(vararg names: String,
                                              help: String? = null,
                                              initialValue: T,
-                                             parser: String.()->E): Action<T> =
-            action<T>(*names, help=help) {
+                                             parser: String.() -> E): Action<T> =
+            action<T>(*names, help = help) {
                 value!!.value.add(parser(next()))
                 value.value
             }.default(initialValue)
@@ -105,15 +105,15 @@ open class OptionParser(val args: Array<String>) {
      */
     fun <T> adding(vararg names: String,
                    help: String? = null,
-                   parser: String.()->T) =
-         adding(*names, help = help, initialValue = mutableListOf(), parser = parser)
+                   parser: String.() -> T) =
+            adding(*names, help = help, initialValue = mutableListOf(), parser = parser)
 
     /**
      * Convenience for adding argument as an unmodified String to a MutableList.
      */
     fun adding(vararg names: String,
                help: String? = null): Action<MutableList<String>> =
-        adding(*names, help = help){this}
+            adding(*names, help = help) { this }
 
     fun <T> action(vararg names: String,
                    help: String? = null,
@@ -144,7 +144,7 @@ open class OptionParser(val args: Array<String>) {
         /**
          * Sets the value for this Action. Should be called prior to parsing.
          */
-        fun  default(value: T): Action<T> {
+        fun default(value: T): Action<T> {
             // TODO: throw exception if parsing already complete?
             holder = Holder(value)
             return this
@@ -163,7 +163,7 @@ open class OptionParser(val args: Array<String>) {
             }
 
             fun next(): String {
-                val result : String
+                val result: String
                 if (firstArg == null) {
                     result = args[offset + consumed]
                 } else {
@@ -180,7 +180,7 @@ open class OptionParser(val args: Array<String>) {
 
         private var holder: Holder<T>? = null
 
-        internal fun parseOption(name: String, firstArg: String?, index: Int, args: Array<String>) : Int {
+        internal fun parseOption(name: String, firstArg: String?, index: Int, args: Array<String>): Int {
             val input = Input(holder, name, firstArg, index, args)
             holder = Holder(handler(input))
             return input.consumed
@@ -288,6 +288,10 @@ open class OptionParser(val args: Array<String>) {
         }
         return 1
     }
+
+    companion object {
+        private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
+    }
 }
 
 /**
@@ -303,8 +307,6 @@ fun <T> Holder<T>?.orElse(f: () -> T) : T{
         return value
     }
 }
-
-private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
 
 fun <T, R> T.runMain(f: T.() -> R): R {
     try {
