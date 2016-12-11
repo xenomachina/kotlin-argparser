@@ -334,7 +334,7 @@ class OptionParserTest {
         Assert.assertEquals(listOf(5, 6), MyOpts(arrayOf("-x", "5", "--ecks", "6")).x)
     }
 
-    // TODO: test InvalidOption
+    // TODO: test InvalidOptionException
     // TODO: test short option needs arg at end
     // TODO: test long option needs arg at end
     // TODO: test printAndExit()

@@ -5,7 +5,6 @@
 package com.xenomachina.optionparser
 
 import kotlin.reflect.KProperty
-import kotlin.system.exitProcess
 
 /**
  * A command-line option/argument parser.
@@ -128,17 +127,6 @@ open class OptionParser(val args: Array<String>) {
         return action
     }
 
-    open class Exception(message: String, val returnCode: Int) : java.lang.Exception(message) {
-        fun printAndExit(): Nothing {
-            // TODO: include program name?
-            System.err.println(message)
-            exitProcess(returnCode)
-        }
-    }
-
-    class InvalidOption(val argName: String) :
-            OptionParser.Exception("invalid option -- '$argName'", 2)
-
     // TODO: rename to Delegate?
     class Action<T>(private val argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) {
         /**
@@ -251,7 +239,7 @@ open class OptionParser(val args: Array<String>) {
         }
         val action = longOptions.get(name)
         if (action == null) {
-            throw InvalidOption(name)
+            throw InvalidOptionException(name)
         } else {
             var consumedArgs = action.parseOption(name, firstArg, index + 1, args)
             if (firstArg != null) {
@@ -276,7 +264,7 @@ open class OptionParser(val args: Array<String>) {
 
             val action = shortOptions.get(optName)
             if (action == null) {
-                throw InvalidOption(optName.toString())
+                throw InvalidOptionException(optName.toString())
             } else {
                 // TODO: move substring construction into Input.next()?
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
@@ -311,7 +299,7 @@ fun <T> Holder<T>?.orElse(f: () -> T) : T{
 fun <T, R> T.runMain(f: T.() -> R): R {
     try {
         return f()
-    } catch (e: OptionParser.Exception) {
+    } catch (e: UserErrorException) {
         e.printAndExit()
     }
 }
