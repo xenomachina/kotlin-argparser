@@ -273,16 +273,17 @@ open class OptionParser(val progName: String, val args: Array<String>) {
         val opts = args[index]
         var optIndex = 1
         while (optIndex < opts.length) {
-            val optName = opts[optIndex]
-            optIndex++ // optIndex now points just after optName
+            val optKey = opts[optIndex]
+            val optName = "-$optKey"
+            optIndex++ // optIndex now points just after optKey
 
-            val delegate = shortOptions.get(optName)
+            val delegate = shortOptions.get(optKey)
             if (delegate == null) {
-                throw InvalidOptionException(progName, optName.toString())
+                throw InvalidOptionException(progName, optName)
             } else {
                 // TODO: move substring construction into Input.next()?
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
-                val consumed = delegate.parseOption(optName.toString(), firstArg, index + 1, args)
+                val consumed = delegate.parseOption(optName, firstArg, index + 1, args)
                 if (consumed > 0) {
                     return consumed + (if (firstArg == null) 1 else 0)
                 }
