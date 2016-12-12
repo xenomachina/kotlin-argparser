@@ -79,6 +79,8 @@ import kotlin.reflect.KProperty
 open class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: add --help support
     // TODO: add addValidator method
+    // TODO: add "--" support
+    // TODO: make it possible to inline arguments from elsewhere (eg: -@filename)
     fun flagging(vararg names: String,
                  help: String? = null): Delegate<Boolean> =
             option<Boolean>(*names, help = help) { true }.default(false)
@@ -200,11 +202,13 @@ open class OptionParser(val progName: String, val args: Array<String>) {
     private fun <T> register(name: String, delegate: OptionParser.Delegate<T>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
-                throw IllegalArgumentException("illegal long option '$name' -- must have at least one character after hyphen")
+                throw IllegalArgumentException("long option '$name' must have at least one character after hyphen")
+            if (name in longOptions)
+                throw IllegalStateException("long option '$name' already in use")
             longOptions.put(name, delegate)
         } else if (name.startsWith("-")) {
             if (name.length != 2)
-                throw IllegalArgumentException("illegal short option '$name' -- can only have one character after hyphen")
+                throw IllegalArgumentException("short option '$name' can only have one character after hyphen")
             val key = name.get(1)
             if (key in shortOptions)
                 throw IllegalStateException("short option '$name' already in use")
