@@ -85,9 +85,9 @@ open class OptionParser(val progName: String, val args: Array<String>) {
                  help: String? = null): Delegate<Boolean> =
             option<Boolean>(*names, help = help) { true }.default(false)
 
-    fun <T> storing(vararg names: String,
-                    help: String? = null,
-                    parser: String.() -> T): Delegate<T> =
+    inline fun <T> storing(vararg names: String,
+                           help: String? = null,
+                           crossinline parser: String.() -> T): Delegate<T> =
             option(*names, help = help) { parser(this.next()) }
 
     fun storing(vararg names: String,
@@ -97,10 +97,10 @@ open class OptionParser(val progName: String, val args: Array<String>) {
     /**
      * Adds argument to a MutableCollection.
      */
-    fun <E, T : MutableCollection<E>> adding(vararg names: String,
-                                             help: String? = null,
-                                             initialValue: T,
-                                             parser: String.() -> E): Delegate<T> =
+    inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
+                                                    help: String? = null,
+                                                    initialValue: T,
+                                                    crossinline parser: String.() -> E): Delegate<T> =
             option<T>(*names, help = help) {
                 value!!.value.add(parser(next()))
                 value.value
@@ -108,8 +108,8 @@ open class OptionParser(val progName: String, val args: Array<String>) {
 
     // TODO: figure out why this causes "cannot choose among the following candidates" errors everywhere.
     /**
-    * Convenience for adding argument as an unmodified String to a MutableCollection.
-    */
+     * Convenience for adding argument as an unmodified String to a MutableCollection.
+     */
     //fun <T : MutableCollection<String>> adding(vararg names: String,
     //               help: String? = null,
     //               initialValue: T): Delegate<T> =
@@ -118,9 +118,9 @@ open class OptionParser(val progName: String, val args: Array<String>) {
     /**
      * Convenience for adding argument to a MutableList.
      */
-    fun <T> adding(vararg names: String,
-                   help: String? = null,
-                   parser: String.() -> T) =
+    inline fun <T> adding(vararg names: String,
+                          help: String? = null,
+                          crossinline parser: String.() -> T) =
             adding(*names, help = help, initialValue = mutableListOf(), parser = parser)
 
     /**
