@@ -323,11 +323,3 @@ fun <T> Holder<T>?.orElse(f: () -> T) : T{
         return value
     }
 }
-
-fun <T, R> T.runMain(f: T.() -> R): R {
-    try {
-        return f()
-    } catch (e: UserErrorException) {
-        e.printAndExit()
-    }
-}

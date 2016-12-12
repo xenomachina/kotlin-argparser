@@ -21,8 +21,12 @@ package com.xenomachina.optionparser
 import org.apache.commons.lang3.StringEscapeUtils
 import kotlin.system.exitProcess
 
-open class UserErrorException(val progName: String, message: String, val returnCode: Int) : java.lang.Exception(message) {
-    fun printAndExit(): Nothing {
+/**
+ * An exception that wants the process to terminate with a specific status code, and also (optionally) wants to display
+ * a message to [System.out] or [System.err].
+ */
+open class SystemExitException(val progName: String, message: String, val returnCode: Int) : Exception(message) {
+    open fun printAndExit(): Nothing {
         System.err.println("$progName: $message")
         exitProcess(returnCode)
     }
@@ -32,16 +36,27 @@ open class UserErrorException(val progName: String, message: String, val returnC
  * Indicates that an unrecognized option was supplied.
  */
 class UnrecognizedOptionException(progName: String, val optionName: String) :
-        UserErrorException(progName, "unrecognized option '$optionName'", 2)
+        SystemExitException(progName, "unrecognized option '$optionName'", 2)
 
 /**
  * Indicates that a required argument (that is, one with no default value) was not supplied.
  */
 class MissingArgumentException(progName: String, val argName: String) :
-        UserErrorException(progName, "missing $argName", 2)
+        SystemExitException(progName, "missing $argName", 2)
 
 /**
  * Indicates that the value of a supplied argument is invalid.
  */
 class InvalidArgumentException(progName: String, val argName: String, val argValue: String) :
-        UserErrorException(progName, "invalid $argName: ‘${StringEscapeUtils.escapeJava(argValue)}’", 2)
+        SystemExitException(progName, "invalid $argName: ‘${StringEscapeUtils.escapeJava(argValue)}’", 2)
+
+/**
+ * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any `SystemExitException` that is caught.
+ */
+fun <T, R> T.runMain(f: T.() -> R): R {
+    try {
+        return f()
+    } catch (e: SystemExitException) {
+        e.printAndExit()
+    }
+}
