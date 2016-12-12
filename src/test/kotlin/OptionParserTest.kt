@@ -294,7 +294,7 @@ class OptionParserTest {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
             val x by parser.storing("-x", "--ecks",
-                    help="X"){this.toInt()}
+                    help="X"){toInt()}
         }
 
         val opts1 = MyOpts(arrayOf("-x", "5"))
@@ -345,7 +345,7 @@ class OptionParserTest {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
             val x by parser.adding("-x", "--ecks",
-                    help="X"){this.toInt()}
+                    help="X"){toInt()}
         }
 
         Assert.assertEquals(listOf<Int>(), MyOpts(arrayOf()).x)
