@@ -76,7 +76,7 @@ import kotlin.reflect.KProperty
  *             println("Hello, {name}!")
  *         }
  */
-open class OptionParser(val progName: String, val args: Array<String>) {
+class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: add --help support
     // TODO: add addValidator method
     // TODO: add "--" support

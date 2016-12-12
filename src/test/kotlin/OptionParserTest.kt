@@ -314,30 +314,30 @@ class OptionParserTest {
 
     @Test
     fun testAccumulator_noParser() {
-        class MyOpts(args: Array<String>) : OptionParser("testArgument_noParser", args) {
-            val x by adding("-x", "--ecks",
+        class MyOpts(parser: OptionParser) {
+            val x by parser.adding("-x", "--ecks",
                     help="X")
         }
 
         Assert.assertEquals(
                 listOf<String>(),
-                MyOpts(arrayOf()).x)
+                MyOpts(optionParser(arrayOf())).x)
 
         Assert.assertEquals(
                 listOf("foo"),
-                MyOpts(arrayOf("-x", "foo")).x)
+                MyOpts(optionParser(arrayOf("-x", "foo"))).x)
 
         Assert.assertEquals(
                 listOf("bar", "baz"),
-                MyOpts(arrayOf("-x", "bar", "-x", "baz")).x)
+                MyOpts(optionParser(arrayOf("-x", "bar", "-x", "baz"))).x)
 
         Assert.assertEquals(
                 listOf("long", "short"),
-                MyOpts(arrayOf("--ecks", "long", "-x", "short")).x)
+                MyOpts(optionParser(arrayOf("--ecks", "long", "-x", "short"))).x)
 
         Assert.assertEquals(
                 listOf("short", "long"),
-                MyOpts(arrayOf("-x", "short", "--ecks", "long")).x)
+                MyOpts(optionParser(arrayOf("-x", "short", "--ecks", "long"))).x)
     }
 
     @Test
