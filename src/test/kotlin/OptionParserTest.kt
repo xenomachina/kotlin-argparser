@@ -355,8 +355,35 @@ class OptionParserTest {
         Assert.assertEquals(listOf(5, 6), MyOpts(arrayOf("-x", "5", "--ecks", "6")).x)
     }
 
+    enum class Color { RED, GREEN, BLUE }
+
+    @Test
+    fun testMapping() {
+        class MyOpts(args: Array<String>) {
+            private val parser = optionParser(args)
+            val color by parser.mapping(
+                    "--red" to Color.RED,
+                    "--green" to Color.GREEN,
+                    "--blue" to Color.BLUE,
+                    "--null" to null)
+        }
+
+        Assert.assertEquals(Color.RED,   MyOpts(arrayOf("--red")).color)
+        Assert.assertEquals(Color.GREEN, MyOpts(arrayOf("--green")).color)
+        Assert.assertEquals(Color.BLUE,  MyOpts(arrayOf("--blue")).color)
+
+        // Last one takes precedence
+        Assert.assertEquals(Color.RED,   MyOpts(arrayOf("--blue", "--red")).color)
+        Assert.assertEquals(Color.GREEN, MyOpts(arrayOf("--blue", "--green")).color)
+        Assert.assertEquals(Color.BLUE,  MyOpts(arrayOf("--red", "--blue")).color)
+
+        // TODO: test with no args
+        // TODO: test with default set
+    }
+
     // TODO: test UnrecognizedOptionException
     // TODO: test short option needs arg at end
     // TODO: test long option needs arg at end
     // TODO: test printAndExit()
+    // TODO: change help into a Delegate method
 }

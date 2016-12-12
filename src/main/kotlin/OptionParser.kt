@@ -130,6 +130,15 @@ open class OptionParser(val progName: String, val args: Array<String>) {
                help: String? = null): Delegate<MutableList<String>> =
             adding(*names, help = help) { this }
 
+    fun <T> mapping(vararg pairs: Pair<String, T>): Delegate<T> =
+            mapping(mapOf(*pairs))
+
+    fun <T> mapping(map: Map<String, T>): Delegate<T> {
+        return option(*map.keys.toTypedArray(), help = null){
+            map[name]!! // TODO: throw exception if not set
+        }
+    }
+
     fun <T> option(vararg names: String,
                    help: String? = null,
                    handler: Delegate.Input<T>.() -> T): Delegate<T> {
