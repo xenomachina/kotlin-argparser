@@ -18,6 +18,7 @@
 
 package com.xenomachina.optionparser
 
+import org.apache.commons.lang3.StringEscapeUtils
 import kotlin.system.exitProcess
 
 open class UserErrorException(val progName: String, message: String, val returnCode: Int) : java.lang.Exception(message) {
@@ -27,5 +28,20 @@ open class UserErrorException(val progName: String, message: String, val returnC
     }
 }
 
-class InvalidOptionException(progName: String, val name: String) :
-        UserErrorException(progName, "invalid option -- '$name'", 2)
+/**
+ * Indicates that an unrecognized option was supplied.
+ */
+class UnrecognizedOptionException(progName: String, val optionName: String) :
+        UserErrorException(progName, "unrecognized option '$optionName'", 2)
+
+/**
+ * Indicates that a required argument (that is, one with no default value) was not supplied.
+ */
+class MissingArgumentException(progName: String, val argName: String) :
+        UserErrorException(progName, "missing $argName", 2)
+
+/**
+ * Indicates that the value of a supplied argument is invalid.
+ */
+class InvalidArgumentException(progName: String, val argName: String, val argValue: String) :
+        UserErrorException(progName, "invalid $argName: ‘${StringEscapeUtils.escapeJava(argValue)}’", 2)

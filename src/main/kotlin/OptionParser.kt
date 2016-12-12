@@ -253,7 +253,7 @@ open class OptionParser(val progName: String, val args: Array<String>) {
         }
         val delegate = longOptions.get(name)
         if (delegate == null) {
-            throw InvalidOptionException(progName, name)
+            throw UnrecognizedOptionException(progName, name)
         } else {
             var consumedArgs = delegate.parseOption(name, firstArg, index + 1, args)
             if (firstArg != null) {
@@ -279,7 +279,7 @@ open class OptionParser(val progName: String, val args: Array<String>) {
 
             val delegate = shortOptions.get(optKey)
             if (delegate == null) {
-                throw InvalidOptionException(progName, optName)
+                throw UnrecognizedOptionException(progName, optName)
             } else {
                 // TODO: move substring construction into Input.next()?
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
