@@ -404,28 +404,47 @@ class OptionParserTest {
 
     enum class Color { RED, GREEN, BLUE }
 
+    class ColorOpts(parser: OptionParser) {
+        val color by parser.mapping(
+                "--red" to Color.RED,
+                "--green" to Color.GREEN,
+                "--blue" to Color.BLUE)
+    }
+
     @Test
     fun testMapping() {
-        class MyOpts(args: Array<String>) {
-            private val parser = optionParser(args)
-            val color by parser.mapping(
-                    "--red" to Color.RED,
-                    "--green" to Color.GREEN,
-                    "--blue" to Color.BLUE,
-                    "--null" to null)
-        }
-
-        Assert.assertEquals(Color.RED,   MyOpts(arrayOf("--red")).color)
-        Assert.assertEquals(Color.GREEN, MyOpts(arrayOf("--green")).color)
-        Assert.assertEquals(Color.BLUE,  MyOpts(arrayOf("--blue")).color)
+        Assert.assertEquals(Color.RED,   ColorOpts(optionParser(arrayOf("--red"))).color)
+        Assert.assertEquals(Color.GREEN, ColorOpts(optionParser(arrayOf("--green"))).color)
+        Assert.assertEquals(Color.BLUE,  ColorOpts(optionParser(arrayOf("--blue"))).color)
 
         // Last one takes precedence
-        Assert.assertEquals(Color.RED,   MyOpts(arrayOf("--blue", "--red")).color)
-        Assert.assertEquals(Color.GREEN, MyOpts(arrayOf("--blue", "--green")).color)
-        Assert.assertEquals(Color.BLUE,  MyOpts(arrayOf("--red", "--blue")).color)
+        Assert.assertEquals(Color.RED,   ColorOpts(optionParser(arrayOf("--blue", "--red"))).color)
+        Assert.assertEquals(Color.GREEN, ColorOpts(optionParser(arrayOf("--blue", "--green"))).color)
+        Assert.assertEquals(Color.BLUE,  ColorOpts(optionParser(arrayOf("--red", "--blue"))).color)
+    }
 
-        // TODO: test with no args
-        // TODO: test with default set
+    @Test
+    fun testMapping_noArgs() {
+        val opts = ColorOpts(optionParser(arrayOf()))
+        thrown.expect(MissingValueException::class.java)
+        thrown.expectMessage("missing --red|--green|--blue")
+        opts.color
+    }
+
+    class OptionalColorOpts(parser: OptionParser) {
+        val color by parser.mapping(
+                "--red" to Color.RED,
+                "--green" to Color.GREEN,
+                "--blue" to Color.BLUE)
+                .default(Color.GREEN)
+    }
+
+    @Test
+    fun testMapping_withDefault() {
+        Assert.assertEquals(Color.RED,   OptionalColorOpts(optionParser(arrayOf("--red"))).color)
+        Assert.assertEquals(Color.GREEN, OptionalColorOpts(optionParser(arrayOf("--green"))).color)
+        Assert.assertEquals(Color.BLUE,  OptionalColorOpts(optionParser(arrayOf("--blue"))).color)
+        Assert.assertEquals(Color.GREEN,  OptionalColorOpts(optionParser(arrayOf())).color)
     }
 
     // TODO: test UnrecognizedOptionException
