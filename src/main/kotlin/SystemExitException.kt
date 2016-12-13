@@ -32,6 +32,8 @@ open class SystemExitException(val progName: String, message: String, val return
     }
 }
 
+// TODO: move these exceptions below into OptionParser.kt and make constructors internal
+
 /**
  * Indicates that an unrecognized option was supplied.
  */
@@ -39,7 +41,7 @@ class UnrecognizedOptionException(progName: String, val optionName: String) :
         SystemExitException(progName, "unrecognized option '$optionName'", 2)
 
 /**
- * Indicates that a required argument (that is, one with no default value) was not supplied.
+ * Indicates that a value is missing after parsing has completed.
  */
 class MissingValueException(progName: String, val valueName: String) :
         SystemExitException(progName, "missing $valueName", 2)
@@ -48,7 +50,13 @@ class MissingValueException(progName: String, val valueName: String) :
  * Indicates that the value of a supplied argument is invalid.
  */
 class InvalidArgumentException(progName: String, val argName: String, val argValue: String) :
-        SystemExitException(progName, "invalid $argName: ‘${StringEscapeUtils.escapeJava(argValue)}’", 2)
+        SystemExitException(progName, "invalid $argName: '${StringEscapeUtils.escapeJava(argValue)}'", 2)
+
+/**
+ * Indicates that a required argument was not supplied.
+ */
+class OptionMissingRequiredArgumentException(progName: String, val optName: String) :
+        SystemExitException(progName, "option '$optName' is missing a required argument", 2)
 
 /**
  * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any `SystemExitException` that is caught.

@@ -461,9 +461,42 @@ class OptionParserTest {
         OptionalColorOpts(optionParser(arrayOf("--ecks"))).color
     }
 
+    @Test
+    fun testShortStoringNoArg() {
+        class Opts(parser: OptionParser) {
+            val x by parser.storing("-x", "--ecks")
+        }
 
-    // TODO: test short option needs arg at end
-    // TODO: test long option needs arg at end
-    // TODO: test printAndExit()
-    // TODO: change help into a Delegate method
+        // Note that name actually used for option is used in message
+        thrown.expect(OptionMissingRequiredArgumentException::class.java)
+        thrown.expectMessage("option '-x' is missing a required argument")
+        Opts(optionParser(arrayOf("-x"))).x
+    }
+
+    @Test
+    fun testLongStoringNoArg() {
+        class Opts(parser: OptionParser) {
+            val x by parser.storing("-x", "--ecks")
+        }
+
+        // Note that name actually used for option is used in message
+        thrown.expect(OptionMissingRequiredArgumentException::class.java)
+        thrown.expectMessage("option '--ecks' is missing a required argument")
+        Opts(optionParser(arrayOf("--ecks"))).x
+    }
+
+    @Test
+    fun testShortStoringNoArgChained() {
+        class Opts(parser: OptionParser) {
+            val y by parser.flagging("-y")
+            val x by parser.storing("-x")
+        }
+
+        // Note that despite chaining, hyphen appears in message
+        thrown.expect(OptionMissingRequiredArgumentException::class.java)
+        thrown.expectMessage("option '-x' is missing a required argument")
+        Opts(optionParser(arrayOf("-yx"))).x
+    }
+
+    // TODO: rename local opt classes to just "Opts"
 }

@@ -125,11 +125,13 @@ class OptionParser(val progName: String, val args: Array<String>) {
         }
 
         // TODO: pass valueName down to Input?
-        class Input<T>(val value: Holder<T>?,
-                       val name: String,
-                       val firstArg: String?,
-                       val offset: Int,
-                       val args: Array<String>) {
+        class Input<T> internal constructor (
+                val value: Holder<T>?,
+                val name: String,
+                val firstArg: String?,
+                val offset: Int,
+                val args: Array<String>,
+                private val parser: OptionParser) {
 
             internal var consumed = 0
 
@@ -138,14 +140,19 @@ class OptionParser(val progName: String, val args: Array<String>) {
             }
 
             fun next(): String {
-                val result: String
-                if (firstArg == null) {
-                    result = args[offset + consumed]
-                } else {
-                    result = if (consumed == 0) firstArg else args[offset + consumed - 1]
+                try {
+                    val result = if (firstArg == null) {
+                        args[offset + consumed]
+                    } else if (consumed == 0) {
+                        firstArg
+                    } else {
+                        args[offset + consumed - 1]
+                    }
+                    consumed++
+                    return result
+                } catch (aioobx: ArrayIndexOutOfBoundsException) {
+                    throw OptionMissingRequiredArgumentException(parser.progName, name)
                 }
-                consumed++
-                return result
             }
 
             fun peek(): String {
@@ -156,7 +163,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
         private var holder: Holder<T>? = null
 
         internal fun parseOption(name: String, firstArg: String?, index: Int, args: Array<String>): Int {
-            val input = Input(holder, name, firstArg, index, args)
+            val input = Input(holder, name, firstArg, index, args, parser)
             holder = Holder(handler(input))
             return input.consumed
         }
@@ -264,7 +271,6 @@ class OptionParser(val progName: String, val args: Array<String>) {
             if (delegate == null) {
                 throw UnrecognizedOptionException(progName, optName)
             } else {
-                // TODO: move substring construction into Input.next()?
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
                 val consumed = delegate.parseOption(optName, firstArg, index + 1, args)
                 if (consumed > 0) {
