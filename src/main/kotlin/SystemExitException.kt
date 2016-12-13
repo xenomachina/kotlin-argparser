@@ -41,8 +41,8 @@ class UnrecognizedOptionException(progName: String, val optionName: String) :
 /**
  * Indicates that a required argument (that is, one with no default value) was not supplied.
  */
-class MissingArgumentException(progName: String, val argName: String) :
-        SystemExitException(progName, "missing $argName", 2)
+class MissingValueException(progName: String, val valueName: String) :
+        SystemExitException(progName, "missing $valueName", 2)
 
 /**
  * Indicates that the value of a supplied argument is invalid.

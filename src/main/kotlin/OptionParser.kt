@@ -33,14 +33,14 @@ class OptionParser(val progName: String, val args: Array<String>) {
      * Returns a Delegate that returns true if and only if an option with one of specified names is present.
      */
     fun flagging(vararg names: String): Delegate<Boolean> =
-            option<Boolean>(*names, argName = bestOptionName(names)) { true }.default(false)
+            option<Boolean>(*names, valueName = bestOptionName(names)) { true }.default(false)
 
     /**
      * Returns an option Delegate that returns the option's parsed argument.
      */
     inline fun <T> storing(vararg names: String,
                            crossinline parser: String.() -> T): Delegate<T> =
-            option(*names, argName = optionNamesToBestArgName(names)) { parser(this.next()) }
+            option(*names, valueName = optionNamesToBestArgName(names)) { parser(this.next()) }
 
     /**
      * Returns an option Delegate that returns the option's unparsed argument.
@@ -54,7 +54,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
                                              initialValue: T,
                                              crossinline parser: String.() -> E): Delegate<T> =
-        option<T>(*names, argName = optionNamesToBestArgName(names) + ELLIPSIS) {
+        option<T>(*names, valueName = optionNamesToBestArgName(names) + ELLIPSIS) {
             value!!.value.add(parser(next()))
             value.value
         }.default(initialValue)
@@ -84,7 +84,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
     fun <T> mapping(map: Map<String, T>): Delegate<T> {
         val names = map.keys.toTypedArray()
         return option(*names,
-                argName = map.keys.joinToString("|")){
+                valueName = map.keys.joinToString("|")){
             map[name]!! // TODO: throw exception if not set
         }
     }
@@ -92,15 +92,15 @@ class OptionParser(val progName: String, val args: Array<String>) {
     /**
      * Returns an option Delegate that handles options with the specified names.
      * @param names names of options, with leading "-" or "--"
-     * @param argName name to use when talking about value of this option in errors or help
+     * @param valueName name to use when talking about value of this option in error messages or help text
      * @param handler A function that assists in parsing arguments by computing the value of this option
      */
     fun <T> option(vararg names: String,
-                   argName: String,
+                   valueName: String,
                    handler: Delegate.Input<T>.() -> T): Delegate<T> {
         val delegate = Delegate<T>(
                 parser = this,
-                argName = argName,
+                valueName = valueName,
                 handler = handler)
         delegates.add(delegate)
         for (name in names) {
@@ -113,7 +113,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: verify that positional arguments have exactly one name
 
     class Delegate<T> internal constructor (private val parser: OptionParser,
-                                            val argName: String,
+                                            val valueName: String,
                                             val handler: Input<T>.() -> T) {
         /**
          * Sets the value for this Delegate. Should be called prior to parsing.
@@ -124,6 +124,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
             return this
         }
 
+        // TODO: pass valueName down to Input?
         class Input<T>(val value: Holder<T>?,
                        val name: String,
                        val firstArg: String?,
@@ -167,7 +168,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
 
         internal fun validate() {
             if (holder == null)
-                throw MissingArgumentException(parser.progName, argName)
+                throw MissingValueException(parser.progName, valueName)
         }
     }
 
