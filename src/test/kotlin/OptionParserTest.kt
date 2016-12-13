@@ -21,10 +21,15 @@ package com.xenomachina.optionparser
 import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.TestName
 
 class OptionParserTest {
-    @JvmField @Rule val testName: TestName = TestName()
+    @JvmField @Rule
+    val testName: TestName = TestName()
+
+    @JvmField @Rule
+    val thrown = ExpectedException.none()
 
     private fun optionParser(args: Array<String>) = OptionParser(testName.getMethodName(), args)
 
@@ -173,15 +178,27 @@ class OptionParserTest {
                 listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
                 MyOpts(arrayOf("--xray", "0", "--yellow", "1", "--zaphod", "2", "--zaphod", "3", "--yellow", "4")).xyz)
 
-        // Test with value concatenated TODO should fail
-//        Assert.assertEquals(
-//                listOf("xray:0", "yellow:1", "zaphod:2", "zaphod:3", "yellow:4"),
-//                MyOpts(arrayOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz)
 
         // Test with = between option and value
         Assert.assertEquals(
                 listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
                 MyOpts(arrayOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
+    }
+
+    @Test
+    fun testLongOptionsWithConcatenatedArgs() {
+        class MyOpts(args: Array<String>) {
+            private val parser = optionParser(args)
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod"){
+                value.orElse{mutableListOf<String>()}.apply {
+                    add("$name:${next()}")
+                }
+            }
+        }
+
+        thrown.expect(UnrecognizedOptionException::class.java)
+        thrown.expectMessage("unrecognized option '--xray0'")
+        MyOpts(arrayOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz
     }
 
     @Test
