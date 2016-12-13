@@ -22,77 +22,34 @@ import kotlin.reflect.KProperty
 
 /**
  * A command-line option/argument parser.
- *
- * Example usage:
- *
- *     // Define class to hold parsed options
- *     class MyOptions(parser: OptionParser) {
- *         // boolean flags
- *         val verbose by parser.flagging("-v", "--verbose")
- *
- *         // simple options with arguments
- *         val name by parser.storing("-N", "--name",
- *             help="My Name")
- *         val size by parser.storing("-s", "--size"
- *             help="My Size"){toInt} = 8
- *
- *         // optional options
- *         val name by parser.storing("-O", "--output",
- *             help="Output location")
- *             .default("./")
- *
- *         // accumulating values (turns into a List)
- *         val includeDirs by parser.adding("-I",
- *             help="Directories to search for headers"
- *         ){
- *             File(this)
- *         }
- *
- *         // TODO: implement mapping()
- *         // map options to values
- *         val mode by parser.mapping(
- *                 "--fast" to Mode.FAST,
- *                 "--small" to Mode.SMALL,
- *                 "--quiet" to Mode.QUIET,
- *             default = Mode.FAST,
- *             help="Operating mode")
- *
- *         // All of these methods are based upon the "option" method, which
- *         // can do anything they can do and more (but is harder to use in the
- *         // common cases)
- *         val zaphod by parser.option("-z", "--zaphod"
- *             help="Directories to search for headers"
- *         ){
- *             return parseZaphod(name, value, argument)
- *         }
- *     }
- *
- *  Your main function can then look like this:
- *
- *     fun main(args : Array<String>) =
- *         MyOptions(args).runMain {
- *             // `this` is the MyOptions instance, and will already be parsed
- *             // and validated at this point.
- *             println("Hello, {name}!")
- *         }
  */
 class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: add --help support
     // TODO: add addValidator method
     // TODO: add "--" support
     // TODO: make it possible to inline arguments from elsewhere (eg: -@filename)
+
+    /**
+     * Returns a Delegate that returns true if and only if an option with one of specified names is present.
+     */
     fun flagging(vararg names: String): Delegate<Boolean> =
             option<Boolean>(*names) { true }.default(false)
 
+    /**
+     * Returns an option Delegate that returns the option's parsed argument.
+     */
     inline fun <T> storing(vararg names: String,
                            crossinline parser: String.() -> T): Delegate<T> =
             option(*names) { parser(this.next()) }
 
+    /**
+     * Returns an option Delegate that returns the option's unparsed argument.
+     */
     fun storing(vararg names: String): Delegate<String> =
             storing(*names) { this }
 
     /**
-     * Adds argument to a MutableCollection.
+     * Returns an option Delegate that adds the option's parsed argument to a MutableCollection.
      */
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
                                                     initialValue: T,
@@ -102,37 +59,37 @@ class OptionParser(val progName: String, val args: Array<String>) {
                 value.value
             }.default(initialValue)
 
-    // TODO: figure out why this causes "cannot choose among the following candidates" errors everywhere.
     /**
-     * Convenience for adding argument as an unmodified String to a MutableCollection.
-     */
-    //fun <T : MutableCollection<String>> adding(vararg names: String,
-    //               help: String? = null,
-    //               initialValue: T): Delegate<T> =
-    //        adding(*names, help = help, initialValue = initialValue){this}
-
-    /**
-     * Convenience for adding argument to a MutableList.
+     * Returns an option Delegate that adds the option's parsed argument to a MutableList.
      */
     inline fun <T> adding(vararg names: String,
                           crossinline parser: String.() -> T) =
             adding(*names, initialValue = mutableListOf(), parser = parser)
 
     /**
-     * Convenience for adding argument as an unmodified String to a MutableList.
+     * Returns an option Delegate that adds the option's unparsed argument to a MutableList.
      */
     fun adding(vararg names: String): Delegate<MutableList<String>> =
             adding(*names) { this }
 
+    /**
+     * Returns an option Delegate that maps from th option name to a value.
+     */
     fun <T> mapping(vararg pairs: Pair<String, T>): Delegate<T> =
             mapping(mapOf(*pairs))
 
+    /**
+     * Returns an option Delegate that maps from th option name to a value.
+     */
     fun <T> mapping(map: Map<String, T>): Delegate<T> {
         return option(*map.keys.toTypedArray()){
             map[name]!! // TODO: throw exception if not set
         }
     }
 
+    /**
+     * Returns an option Delegate that handles options with the specified names.
+     */
     fun <T> option(vararg names: String,
                    handler: Delegate.Input<T>.() -> T): Delegate<T> {
         val delegate = Delegate<T>(this, handler = handler)
@@ -146,7 +103,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: add `argument` method for positional argument handling
     // TODO: verify that positional arguments have exactly one name
 
-    class Delegate<T>(private val argParser: OptionParser, val handler: Input<T>.() -> T) {
+    class Delegate<T> internal constructor (private val argParser: OptionParser, val handler: Input<T>.() -> T) {
         /**
          * Sets the value for this Delegate. Should be called prior to parsing.
          */
