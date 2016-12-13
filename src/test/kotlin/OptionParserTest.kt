@@ -32,9 +32,7 @@ class OptionParserTest {
     fun testArglessShortOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                    help="Really hoopy frood"
-            ){
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
@@ -54,9 +52,7 @@ class OptionParserTest {
     fun testShortOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                    help="Really hoopy frood"
-            ){
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
                 }
@@ -85,16 +81,12 @@ class OptionParserTest {
     fun testMixedShortOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val def by parser.option<MutableList<String>>("-d", "-e", "-f",
-                    help="Foo"
-            ){
+            val def by parser.option<MutableList<String>>("-d", "-e", "-f"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val abc by parser.option<MutableList<String>>("-a", "-b", "-c",
-                    help="Bar"
-            ){
+            val abc by parser.option<MutableList<String>>("-a", "-b", "-c"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
@@ -115,23 +107,17 @@ class OptionParserTest {
     fun testMixedShortOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val def by parser.option<MutableList<String>>("-d", "-e", "-f",
-                    help="Foo"
-            ){
+            val def by parser.option<MutableList<String>>("-d", "-e", "-f"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val abc by parser.option<MutableList<String>>("-a", "-b", "-c",
-                    help="Bar"
-            ){
+            val abc by parser.option<MutableList<String>>("-a", "-b", "-c"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                    help="Baz"
-            ){
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
                 }
@@ -155,9 +141,7 @@ class OptionParserTest {
     fun testArglessLongOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra",
-                    help="Really hoopy frood"
-            ){
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
@@ -177,9 +161,7 @@ class OptionParserTest {
     fun testLongOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod",
-                    help="Xyz"
-            ){
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
                 }
@@ -206,9 +188,7 @@ class OptionParserTest {
     fun testDefault() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val x by parser.option<Int>("-x",
-                    help="an integer"
-            ){
+            val x by parser.option<Int>("-x"){
                 next().toInt()
             }.default(5)
         }
@@ -238,12 +218,9 @@ class OptionParserTest {
     fun testFlag() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val x by parser.flagging("-x", "--ecks",
-                    help="X")
-            val y by parser.flagging("-y",
-                    help="Y")
-            val z by parser.flagging("--zed",
-                    help="Z")
+            val x by parser.flagging("-x", "--ecks")
+            val y by parser.flagging("-y")
+            val z by parser.flagging("--zed")
         }
 
         val opts1 = MyOpts(arrayOf("-x", "-y", "--zed", "--zed", "-y"))
@@ -270,8 +247,7 @@ class OptionParserTest {
     fun testArgument_noParser() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val x by parser.storing("-x", "--ecks",
-                    help="X")
+            val x by parser.storing("-x", "--ecks")
         }
 
         val opts1 = MyOpts(arrayOf("-x", "foo"))
@@ -293,8 +269,7 @@ class OptionParserTest {
     fun testArgument_withParser() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val x by parser.storing("-x", "--ecks",
-                    help="X"){toInt()}
+            val x by parser.storing("-x", "--ecks"){toInt()}
         }
 
         val opts1 = MyOpts(arrayOf("-x", "5"))
@@ -315,8 +290,7 @@ class OptionParserTest {
     @Test
     fun testAccumulator_noParser() {
         class MyOpts(parser: OptionParser) {
-            val x by parser.adding("-x", "--ecks",
-                    help="X")
+            val x by parser.adding("-x", "--ecks")
         }
 
         Assert.assertEquals(
@@ -344,8 +318,7 @@ class OptionParserTest {
     fun testAccumulator_withParser() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val x by parser.adding("-x", "--ecks",
-                    help="X"){toInt()}
+            val x by parser.adding("-x", "--ecks"){toInt()}
         }
 
         Assert.assertEquals(listOf<Int>(), MyOpts(arrayOf()).x)

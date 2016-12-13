@@ -81,27 +81,23 @@ class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: add addValidator method
     // TODO: add "--" support
     // TODO: make it possible to inline arguments from elsewhere (eg: -@filename)
-    fun flagging(vararg names: String,
-                 help: String? = null): Delegate<Boolean> =
-            option<Boolean>(*names, help = help) { true }.default(false)
+    fun flagging(vararg names: String): Delegate<Boolean> =
+            option<Boolean>(*names) { true }.default(false)
 
     inline fun <T> storing(vararg names: String,
-                           help: String? = null,
                            crossinline parser: String.() -> T): Delegate<T> =
-            option(*names, help = help) { parser(this.next()) }
+            option(*names) { parser(this.next()) }
 
-    fun storing(vararg names: String,
-                help: String? = null): Delegate<String> =
-            storing(*names, help = help) { this }
+    fun storing(vararg names: String): Delegate<String> =
+            storing(*names) { this }
 
     /**
      * Adds argument to a MutableCollection.
      */
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
-                                                    help: String? = null,
                                                     initialValue: T,
                                                     crossinline parser: String.() -> E): Delegate<T> =
-            option<T>(*names, help = help) {
+            option<T>(*names) {
                 value!!.value.add(parser(next()))
                 value.value
             }.default(initialValue)
@@ -119,30 +115,27 @@ class OptionParser(val progName: String, val args: Array<String>) {
      * Convenience for adding argument to a MutableList.
      */
     inline fun <T> adding(vararg names: String,
-                          help: String? = null,
                           crossinline parser: String.() -> T) =
-            adding(*names, help = help, initialValue = mutableListOf(), parser = parser)
+            adding(*names, initialValue = mutableListOf(), parser = parser)
 
     /**
      * Convenience for adding argument as an unmodified String to a MutableList.
      */
-    fun adding(vararg names: String,
-               help: String? = null): Delegate<MutableList<String>> =
-            adding(*names, help = help) { this }
+    fun adding(vararg names: String): Delegate<MutableList<String>> =
+            adding(*names) { this }
 
     fun <T> mapping(vararg pairs: Pair<String, T>): Delegate<T> =
             mapping(mapOf(*pairs))
 
     fun <T> mapping(map: Map<String, T>): Delegate<T> {
-        return option(*map.keys.toTypedArray(), help = null){
+        return option(*map.keys.toTypedArray()){
             map[name]!! // TODO: throw exception if not set
         }
     }
 
     fun <T> option(vararg names: String,
-                   help: String? = null,
                    handler: Delegate.Input<T>.() -> T): Delegate<T> {
-        val delegate = Delegate<T>(this, help = help, handler = handler)
+        val delegate = Delegate<T>(this, handler = handler)
         // TODO: verify that there is at least one name
         for (name in names) {
             register(name, delegate)
@@ -153,7 +146,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: add `argument` method for positional argument handling
     // TODO: verify that positional arguments have exactly one name
 
-    class Delegate<T>(private val argParser: OptionParser, val help: String?, val handler: Input<T>.() -> T) {
+    class Delegate<T>(private val argParser: OptionParser, val handler: Input<T>.() -> T) {
         /**
          * Sets the value for this Delegate. Should be called prior to parsing.
          */
