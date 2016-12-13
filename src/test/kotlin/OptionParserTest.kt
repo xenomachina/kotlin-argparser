@@ -347,8 +347,18 @@ class OptionParserTest {
 
         val opts4 = MyOpts(arrayOf("-x", "5", "--ecks", "6"))
         Assert.assertEquals(6, opts4.x)
+    }
 
-        // TODO test missing
+    @Test
+    fun testArgument_missing_withParser() {
+        class MyOpts(parser: OptionParser) {
+            val x by parser.storing("-x", "--ecks"){toInt()}
+        }
+
+        val opts = MyOpts(optionParser(arrayOf()))
+        thrown.expect(MissingValueException::class.java)
+        thrown.expectMessage("missing ECKS")
+        opts.x
     }
 
     @Test
