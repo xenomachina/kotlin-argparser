@@ -57,6 +57,9 @@ class OptionParserTest {
     fun testShortOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
+            val a by parser.flagging("-a")
+            val b by parser.flagging("-b")
+            val c by parser.flagging("-c")
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
@@ -74,12 +77,23 @@ class OptionParserTest {
                 listOf("-x:0", "-y:1", "-z:2", "-z:3", "-y:4"),
                 MyOpts(arrayOf("-x0", "-y1", "-z2", "-z3", "-y4")).xyz)
 
-        // Test with = between option and value
+        // Test with = between option and value. Note that the "=" is treated as part of the option value for short options.
         Assert.assertEquals(
                 listOf("-x:=0", "-y:=1", "-z:=2", "-z:=3", "-y:=4"),
                 MyOpts(arrayOf("-x=0", "-y=1", "-z=2", "-z=3", "-y=4")).xyz)
 
-        // TODO test with chaining
+        // Test chained options. Note that an option with arguments must be last in the chain
+        val chain1 = MyOpts(arrayOf("-abxc"))
+        Assert.assertTrue(chain1.a)
+        Assert.assertTrue(chain1.b)
+        Assert.assertFalse(chain1.c)
+        Assert.assertEquals(listOf("-x:c"), chain1.xyz)
+
+        val chain2 = MyOpts(arrayOf("-axbc"))
+        Assert.assertTrue(chain2.a)
+        Assert.assertFalse(chain2.b)
+        Assert.assertFalse(chain2.c)
+        Assert.assertEquals(listOf("-x:bc"), chain2.xyz)
     }
 
     @Test
