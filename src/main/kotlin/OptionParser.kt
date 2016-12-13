@@ -33,14 +33,14 @@ class OptionParser(val progName: String, val args: Array<String>) {
      * Returns a Delegate that returns true if and only if an option with one of specified names is present.
      */
     fun flagging(vararg names: String): Delegate<Boolean> =
-            option<Boolean>(*names) { true }.default(false)
+            option<Boolean>(*names, argName = bestOptionName(names)) { true }.default(false)
 
     /**
      * Returns an option Delegate that returns the option's parsed argument.
      */
     inline fun <T> storing(vararg names: String,
                            crossinline parser: String.() -> T): Delegate<T> =
-            option(*names) { parser(this.next()) }
+            option(*names, argName = optionNamesToBestArgName(names)) { parser(this.next()) }
 
     /**
      * Returns an option Delegate that returns the option's unparsed argument.
@@ -52,18 +52,18 @@ class OptionParser(val progName: String, val args: Array<String>) {
      * Returns an option Delegate that adds the option's parsed argument to a MutableCollection.
      */
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
-                                                    initialValue: T,
-                                                    crossinline parser: String.() -> E): Delegate<T> =
-            option<T>(*names) {
-                value!!.value.add(parser(next()))
-                value.value
-            }.default(initialValue)
+                                             initialValue: T,
+                                             crossinline parser: String.() -> E): Delegate<T> =
+        option<T>(*names, argName = optionNamesToBestArgName(names) + ELLIPSIS) {
+            value!!.value.add(parser(next()))
+            value.value
+        }.default(initialValue)
 
     /**
      * Returns an option Delegate that adds the option's parsed argument to a MutableList.
      */
     inline fun <T> adding(vararg names: String,
-                          crossinline parser: String.() -> T) =
+                   crossinline parser: String.() -> T) =
             adding(*names, initialValue = mutableListOf(), parser = parser)
 
     /**
@@ -82,18 +82,27 @@ class OptionParser(val progName: String, val args: Array<String>) {
      * Returns an option Delegate that maps from th option name to a value.
      */
     fun <T> mapping(map: Map<String, T>): Delegate<T> {
-        return option(*map.keys.toTypedArray()){
+        val names = map.keys.toTypedArray()
+        return option(*names,
+                argName = map.keys.joinToString("|")){
             map[name]!! // TODO: throw exception if not set
         }
     }
 
     /**
      * Returns an option Delegate that handles options with the specified names.
+     * @param names names of options, with leading "-" or "--"
+     * @param argName name to use when talking about value of this option in errors or help
+     * @param handler A function that assists in parsing arguments by computing the value of this option
      */
     fun <T> option(vararg names: String,
+                   argName: String,
                    handler: Delegate.Input<T>.() -> T): Delegate<T> {
-        val delegate = Delegate<T>(this, handler = handler)
-        // TODO: verify that there is at least one name
+        val delegate = Delegate<T>(
+                parser = this,
+                argName = argName,
+                handler = handler)
+        delegates.add(delegate)
         for (name in names) {
             register(name, delegate)
         }
@@ -103,7 +112,9 @@ class OptionParser(val progName: String, val args: Array<String>) {
     // TODO: add `argument` method for positional argument handling
     // TODO: verify that positional arguments have exactly one name
 
-    class Delegate<T> internal constructor (private val argParser: OptionParser, val handler: Input<T>.() -> T) {
+    class Delegate<T> internal constructor (private val parser: OptionParser,
+                                            val argName: String,
+                                            val handler: Input<T>.() -> T) {
         /**
          * Sets the value for this Delegate. Should be called prior to parsing.
          */
@@ -150,13 +161,19 @@ class OptionParser(val progName: String, val args: Array<String>) {
         }
 
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            argParser.parseOptions
+            parser.parseOptions
             return holder!!.value
+        }
+
+        internal fun validate() {
+            if (holder == null)
+                throw MissingArgumentException(parser.progName, argName)
         }
     }
 
     private val shortOptions = mutableMapOf<Char, Delegate<*>>()
     private val longOptions = mutableMapOf<String, Delegate<*>>()
+    private val delegates = mutableListOf<Delegate<*>>()
 
     private fun <T> register(name: String, delegate: OptionParser.Delegate<T>) {
         if (name.startsWith("--")) {
@@ -191,7 +208,9 @@ class OptionParser(val progName: String, val args: Array<String>) {
                     parsePositionalArg(i, args)
             }
         }
-        // TODO: throw exception if any holders are null
+        for (delegate in delegates) {
+            delegate.validate()
+        }
     }
 
     private fun parsePositionalArg(index: Int, args: Array<String>): Int {
@@ -257,6 +276,29 @@ class OptionParser(val progName: String, val args: Array<String>) {
 
     companion object {
         private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
+        private val LEADING_HYPHENS = Regex("^-{1,2}")
+
+        val ELLIPSIS = "..."
+
+        fun bestOptionName(names: Array<out String>): String {
+            if (names.size < 1)
+                throw IllegalArgumentException("need at least one option name")
+            // Return first long option...
+            for (name in names) {
+                if (name.startsWith("--")) {
+                    return name
+                }
+            }
+            // ... but failing that just return first option.
+            return names[0]
+        }
+
+        fun optionNamesToBestArgName(names: Array<out String>): String {
+            return optionNameToArgName(bestOptionName(names))
+        }
+
+        private fun optionNameToArgName(name: String) =
+                LEADING_HYPHENS.replace(name, "").toUpperCase().replace('-', '_')
     }
 }
 

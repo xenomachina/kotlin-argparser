@@ -37,7 +37,7 @@ class OptionParserTest {
     fun testArglessShortOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z"){
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
@@ -57,7 +57,7 @@ class OptionParserTest {
     fun testShortOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z"){
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
                 }
@@ -86,12 +86,12 @@ class OptionParserTest {
     fun testMixedShortOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val def by parser.option<MutableList<String>>("-d", "-e", "-f"){
+            val def by parser.option<MutableList<String>>("-d", "-e", "-f", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val abc by parser.option<MutableList<String>>("-a", "-b", "-c"){
+            val abc by parser.option<MutableList<String>>("-a", "-b", "-c", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
@@ -112,17 +112,17 @@ class OptionParserTest {
     fun testMixedShortOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val def by parser.option<MutableList<String>>("-d", "-e", "-f"){
+            val def by parser.option<MutableList<String>>("-d", "-e", "-f", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val abc by parser.option<MutableList<String>>("-a", "-b", "-c"){
+            val abc by parser.option<MutableList<String>>("-a", "-b", "-c", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
             }
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z"){
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
                 }
@@ -146,7 +146,7 @@ class OptionParserTest {
     fun testArglessLongOptions() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra"){
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
                 }
@@ -166,7 +166,7 @@ class OptionParserTest {
     fun testLongOptionsWithArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod"){
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
                 }
@@ -189,7 +189,7 @@ class OptionParserTest {
     fun testLongOptionsWithConcatenatedArgs() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod"){
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", argName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
                 }
@@ -205,7 +205,7 @@ class OptionParserTest {
     fun testDefault() {
         class MyOpts(args: Array<String>) {
             private val parser = optionParser(args)
-            val x by parser.option<Int>("-x"){
+            val x by parser.option<Int>("-x", argName = "ARG_NAME"){
                 next().toInt()
             }.default(5)
         }
@@ -262,24 +262,57 @@ class OptionParserTest {
 
     @Test
     fun testArgument_noParser() {
-        class MyOpts(args: Array<String>) {
-            private val parser = optionParser(args)
-            val x by parser.storing("-x", "--ecks")
+        class StoringNoParserOpts(parser: OptionParser) {
+            val x by parser.storing("--ecks", "-x")
         }
 
-        val opts1 = MyOpts(arrayOf("-x", "foo"))
-        Assert.assertEquals("foo", opts1.x)
+        Assert.assertEquals("foo",
+                StoringNoParserOpts(optionParser(arrayOf("-x", "foo"))).x)
 
-        val opts2 = MyOpts(arrayOf("-x", "bar", "-x", "baz"))
-        Assert.assertEquals("baz", opts2.x)
+        Assert.assertEquals("baz",
+                StoringNoParserOpts(optionParser(arrayOf("-x", "bar", "-x", "baz"))).x)
 
-        val opts3 = MyOpts(arrayOf("--ecks", "long", "-x", "short"))
-        Assert.assertEquals("short", opts3.x)
+        Assert.assertEquals("short",
+                StoringNoParserOpts(optionParser(arrayOf("--ecks", "long", "-x", "short"))).x)
 
-        val opts4 = MyOpts(arrayOf("-x", "short", "--ecks", "long"))
-        Assert.assertEquals("long", opts4.x)
+        Assert.assertEquals("long",
+                StoringNoParserOpts(optionParser(arrayOf("-x", "short", "--ecks", "long"))).x)
+    }
 
-        // TODO test missing
+    @Test
+    fun testArgument_missing_long() {
+        class StoringNoParserOpts(parser: OptionParser) {
+            val x by parser.storing("--ecks")
+        }
+
+        val opts = StoringNoParserOpts(optionParser(arrayOf()))
+        thrown.expect(MissingArgumentException::class.java)
+        thrown.expectMessage("missing ECKS")
+        opts.x
+    }
+
+    @Test
+    fun testArgument_missing_short() {
+        class StoringNoParserOpts(parser: OptionParser) {
+            val x by parser.storing("-x")
+        }
+
+        val opts = StoringNoParserOpts(optionParser(arrayOf()))
+        thrown.expect(MissingArgumentException::class.java)
+        thrown.expectMessage("missing X")
+        opts.x
+    }
+
+    @Test
+    fun testArgument_missingShortAndLong() {
+        class StoringNoParserOpts(parser: OptionParser) {
+            val x by parser.storing("--ecks", "-x")
+        }
+
+        val opts = StoringNoParserOpts(optionParser(arrayOf()))
+        thrown.expect(MissingArgumentException::class.java)
+        thrown.expectMessage("missing ECKS")
+        opts.x
     }
 
     @Test
