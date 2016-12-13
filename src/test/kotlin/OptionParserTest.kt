@@ -447,7 +447,21 @@ class OptionParserTest {
         Assert.assertEquals(Color.GREEN,  OptionalColorOpts(optionParser(arrayOf())).color)
     }
 
-    // TODO: test UnrecognizedOptionException
+    @Test
+    fun testUnrecognizedShortOpt() {
+        thrown.expect(UnrecognizedOptionException::class.java)
+        thrown.expectMessage("unrecognized option '-x'")
+        OptionalColorOpts(optionParser(arrayOf("-x"))).color
+    }
+
+    @Test
+    fun testUnrecognizedLongOpt() {
+        thrown.expect(UnrecognizedOptionException::class.java)
+        thrown.expectMessage("unrecognized option '--ecks'")
+        OptionalColorOpts(optionParser(arrayOf("--ecks"))).color
+    }
+
+
     // TODO: test short option needs arg at end
     // TODO: test long option needs arg at end
     // TODO: test printAndExit()
