@@ -27,6 +27,7 @@ class OptionParser(val args: Array<out String>) {
     // TODO: add --help support
     // TODO: add "--" support
     // TODO: make it possible to inline arguments from elsewhere (eg: -@filename)
+    // TODO: add sub-command support
 
     /**
      * Returns a Delegate that returns true if and only if an option with one of specified names is present.
@@ -144,28 +145,24 @@ class OptionParser(val args: Array<out String>) {
 
             internal var consumed = 0
 
-            fun hasNext(): Boolean {
-                TODO("hasNext")
-            }
-
-            fun next(): String {
-                try {
-                    val result = if (firstArg == null) {
-                        args[offset + consumed]
-                    } else if (consumed == 0) {
-                        firstArg
+            fun peek(): String? {
+                return if (firstArg != null && consumed == 0) {
+                    firstArg
+                } else {
+                    val index = offset + consumed - (if (firstArg == null) 0 else 1)
+                    if (index >= args.size) {
+                        null
                     } else {
-                        args[offset + consumed - 1]
+                        args[index]
                     }
-                    consumed++
-                    return result
-                } catch (aioobx: ArrayIndexOutOfBoundsException) {
-                    throw OptionMissingRequiredArgumentException(optionName)
                 }
             }
 
-            fun peek(): String {
-                TODO("peek")
+            fun hasNext(): Boolean = peek() != null
+
+            fun next(): String {
+                return (peek() ?: throw OptionMissingRequiredArgumentException(optionName))
+                        .apply { consumed++ }
             }
         }
 
@@ -299,7 +296,6 @@ class OptionParser(val args: Array<out String>) {
             } else {
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
                 val consumed = delegate.parseOption(optName, firstArg, index + 1, args)
-                // TODO: test case where firstArg not consumed
                 if (consumed > 0) {
                     return consumed + (if (firstArg == null) 1 else 0)
                 }
