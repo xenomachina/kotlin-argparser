@@ -84,7 +84,7 @@ class OptionParser(val args: Array<out String>) {
         val names = map.keys.toTypedArray()
         return option(*names,
                 valueName = map.keys.joinToString("|")){
-            map[name]!! // TODO: throw exception if not set
+            map[name]!!
         }
     }
 
@@ -115,12 +115,21 @@ class OptionParser(val args: Array<out String>) {
     class Delegate<T> internal constructor (private val parser: OptionParser,
                                             val valueName: String,
                                             val handler: Input<T>.() -> T) {
+        init {
+            // TODO: throw exception if parsing already complete
+        }
+
         /**
          * Sets the value for this Delegate. Should be called prior to parsing.
          */
         fun default(value: T): Delegate<T> {
-            // TODO: throw exception if parsing already complete?
+            // TODO: throw exception if parsing already complete
             holder = Holder(value)
+            return this
+        }
+
+        fun help(help: String): Delegate<T> {
+            // TODO: throw exception if parsing already complete
             return this
         }
 
@@ -136,7 +145,7 @@ class OptionParser(val args: Array<out String>) {
             internal var consumed = 0
 
             fun hasNext(): Boolean {
-                TODO()
+                TODO("hasNext")
             }
 
             fun next(): String {
@@ -156,7 +165,7 @@ class OptionParser(val args: Array<out String>) {
             }
 
             fun peek(): String {
-                TODO()
+                TODO("peek")
             }
         }
 
@@ -232,7 +241,7 @@ class OptionParser(val args: Array<out String>) {
     }
 
     private fun parsePositionalArg(index: Int, args: Array<out String>): Int {
-        TODO("${args.slice(index..args.size)}")
+        TODO("parsePositionalArg ${args.slice(index..args.size)}")
     }
 
     /**
@@ -257,7 +266,7 @@ class OptionParser(val args: Array<out String>) {
         } else {
             var consumedArgs = delegate.parseOption(name, firstArg, index + 1, args)
             if (firstArg != null) {
-                if (consumedArgs < 1) TODO("throw exception -- =argument not consumed")
+                if (consumedArgs < 1) TODO("throw exception =argument not consumed")
                 consumedArgs -= 1
             }
             return 1 + consumedArgs
@@ -283,6 +292,7 @@ class OptionParser(val args: Array<out String>) {
             } else {
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
                 val consumed = delegate.parseOption(optName, firstArg, index + 1, args)
+                // TODO: test case where firstArg not consumed
                 if (consumed > 0) {
                     return consumed + (if (firstArg == null) 1 else 0)
                 }
