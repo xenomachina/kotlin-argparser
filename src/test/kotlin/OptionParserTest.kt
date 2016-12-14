@@ -31,10 +31,11 @@ class OptionParserTest {
     @JvmField @Rule
     val thrown = ExpectedException.none()
 
+    fun parserOf(vararg args: String) = OptionParser(args)
+
     @Test
     fun testArglessShortOptions() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
@@ -44,17 +45,16 @@ class OptionParserTest {
 
         Assert.assertEquals(
                 listOf("-x", "-y", "-z", "-z", "-y"),
-                Opts(arrayOf("-x", "-y", "-z", "-z", "-y")).xyz)
+                Opts(parserOf("-x", "-y", "-z", "-z", "-y")).xyz)
 
         Assert.assertEquals(
                 listOf("-x", "-y", "-z"),
-                Opts(arrayOf("-xyz")).xyz)
+                Opts(parserOf("-xyz")).xyz)
     }
 
     @Test
     fun testShortOptionsWithArgs() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val a by parser.flagging("-a")
             val b by parser.flagging("-b")
             val c by parser.flagging("-c")
@@ -68,26 +68,26 @@ class OptionParserTest {
         // Test with value as separate arg
         Assert.assertEquals(
                 listOf("-x:0", "-y:1", "-z:2", "-z:3", "-y:4"),
-                Opts(arrayOf("-x", "0", "-y", "1", "-z", "2", "-z", "3", "-y", "4")).xyz)
+                Opts(parserOf("-x", "0", "-y", "1", "-z", "2", "-z", "3", "-y", "4")).xyz)
 
         // Test with value concatenated
         Assert.assertEquals(
                 listOf("-x:0", "-y:1", "-z:2", "-z:3", "-y:4"),
-                Opts(arrayOf("-x0", "-y1", "-z2", "-z3", "-y4")).xyz)
+                Opts(parserOf("-x0", "-y1", "-z2", "-z3", "-y4")).xyz)
 
         // Test with = between option and value. Note that the "=" is treated as part of the option value for short options.
         Assert.assertEquals(
                 listOf("-x:=0", "-y:=1", "-z:=2", "-z:=3", "-y:=4"),
-                Opts(arrayOf("-x=0", "-y=1", "-z=2", "-z=3", "-y=4")).xyz)
+                Opts(parserOf("-x=0", "-y=1", "-z=2", "-z=3", "-y=4")).xyz)
 
         // Test chained options. Note that an option with arguments must be last in the chain
-        val chain1 = Opts(arrayOf("-abxc"))
+        val chain1 = Opts(parserOf("-abxc"))
         Assert.assertTrue(chain1.a)
         Assert.assertTrue(chain1.b)
         Assert.assertFalse(chain1.c)
         Assert.assertEquals(listOf("-x:c"), chain1.xyz)
 
-        val chain2 = Opts(arrayOf("-axbc"))
+        val chain2 = Opts(parserOf("-axbc"))
         Assert.assertTrue(chain2.a)
         Assert.assertFalse(chain2.b)
         Assert.assertFalse(chain2.c)
@@ -96,8 +96,7 @@ class OptionParserTest {
 
     @Test
     fun testMixedShortOptions() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
@@ -110,7 +109,7 @@ class OptionParserTest {
             }
         }
 
-        val myOpts = Opts(arrayOf("-adbefccbafed"))
+        val myOpts = Opts(parserOf("-adbefccbafed"))
 
         Assert.assertEquals(
                 listOf("-d", "-e", "-f", "-f", "-e", "-d"),
@@ -122,8 +121,7 @@ class OptionParserTest {
 
     @Test
     fun testMixedShortOptionsWithArgs() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
@@ -141,7 +139,7 @@ class OptionParserTest {
             }
         }
 
-        val myOpts = Opts(arrayOf("-adecfy5", "-x0", "-bzxy"))
+        val myOpts = Opts(parserOf("-adecfy5", "-x0", "-bzxy"))
 
         Assert.assertEquals(
                 listOf("-a", "-c", "-b"),
@@ -156,8 +154,7 @@ class OptionParserTest {
 
     @Test
     fun testArglessLongOptions() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name")
@@ -167,17 +164,16 @@ class OptionParserTest {
 
         Assert.assertEquals(
                 listOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow"),
-                Opts(arrayOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")).xyz)
+                Opts(parserOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")).xyz)
 
         Assert.assertEquals(
                 listOf("--xray", "--yellow", "--zebra"),
-                Opts(arrayOf("--xray", "--yellow", "--zebra")).xyz)
+                Opts(parserOf("--xray", "--yellow", "--zebra")).xyz)
     }
 
     @Test
     fun testLongOptionsWithArgs() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
@@ -188,19 +184,18 @@ class OptionParserTest {
         // Test with value as separate arg
         Assert.assertEquals(
                 listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
-                Opts(arrayOf("--xray", "0", "--yellow", "1", "--zaphod", "2", "--zaphod", "3", "--yellow", "4")).xyz)
+                Opts(parserOf("--xray", "0", "--yellow", "1", "--zaphod", "2", "--zaphod", "3", "--yellow", "4")).xyz)
 
 
         // Test with = between option and value
         Assert.assertEquals(
                 listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
-                Opts(arrayOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
+                Opts(parserOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
     }
 
     @Test
     fun testLongOptionsWithConcatenatedArgs() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
                     add("$name:${next()}")
@@ -210,13 +205,12 @@ class OptionParserTest {
 
         thrown.expect(UnrecognizedOptionException::class.java)
         thrown.expectMessage("unrecognized option '--xray0'")
-        Opts(arrayOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz
+        Opts(parserOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz
     }
 
     @Test
     fun testDefault() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val x by parser.option<Int>("-x", valueName = "ARG_NAME"){
                 next().toInt()
             }.default(5)
@@ -225,48 +219,47 @@ class OptionParserTest {
         // Test with no value
         Assert.assertEquals(
                 5,
-                Opts(arrayOf()).x)
+                Opts(parserOf()).x)
 
         // Test with value
         Assert.assertEquals(
                 6,
-                Opts(arrayOf("-x6")).x)
+                Opts(parserOf("-x6")).x)
 
         // Test with value as separate arg
         Assert.assertEquals(
                 7,
-                Opts(arrayOf("-x", "7")).x)
+                Opts(parserOf("-x", "7")).x)
 
         // Test with multiple values
         Assert.assertEquals(
                 8,
-                Opts(arrayOf("-x9", "-x8")).x)
+                Opts(parserOf("-x9", "-x8")).x)
     }
 
     @Test
     fun testFlag() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val x by parser.flagging("-x", "--ecks")
             val y by parser.flagging("-y")
             val z by parser.flagging("--zed")
         }
 
-        val opts1 = Opts(arrayOf("-x", "-y", "--zed", "--zed", "-y"))
+        val opts1 = Opts(parserOf("-x", "-y", "--zed", "--zed", "-y"))
         Assert.assertTrue(opts1.x)
         Assert.assertTrue(opts1.y)
         Assert.assertTrue(opts1.z)
 
-        val opts2 = Opts(arrayOf())
+        val opts2 = Opts(parserOf())
         Assert.assertFalse(opts2.x)
         Assert.assertFalse(opts2.y)
         Assert.assertFalse(opts2.z)
 
-        val opts3 = Opts(arrayOf("-y", "--ecks"))
+        val opts3 = Opts(parserOf("-y", "--ecks"))
         Assert.assertTrue(opts3.x)
         Assert.assertTrue(opts3.y)
 
-        val opts4 = Opts(arrayOf("--zed"))
+        val opts4 = Opts(parserOf("--zed"))
         Assert.assertFalse(opts4.x)
         Assert.assertFalse(opts4.y)
         Assert.assertTrue(opts4.z)
@@ -279,16 +272,16 @@ class OptionParserTest {
         }
 
         Assert.assertEquals("foo",
-                Opts(OptionParser(arrayOf("-x", "foo"))).x)
+                Opts(parserOf("-x", "foo")).x)
 
         Assert.assertEquals("baz",
-                Opts(OptionParser(arrayOf("-x", "bar", "-x", "baz"))).x)
+                Opts(parserOf("-x", "bar", "-x", "baz")).x)
 
         Assert.assertEquals("short",
-                Opts(OptionParser(arrayOf("--ecks", "long", "-x", "short"))).x)
+                Opts(parserOf("--ecks", "long", "-x", "short")).x)
 
         Assert.assertEquals("long",
-                Opts(OptionParser(arrayOf("-x", "short", "--ecks", "long"))).x)
+                Opts(parserOf("-x", "short", "--ecks", "long")).x)
     }
 
     @Test
@@ -297,7 +290,7 @@ class OptionParserTest {
             val x by parser.storing("--ecks")
         }
 
-        val opts = Opts(OptionParser(arrayOf()))
+        val opts = Opts(parserOf())
         thrown.expect(MissingValueException::class.java)
         thrown.expectMessage("missing ECKS")
         opts.x
@@ -309,7 +302,7 @@ class OptionParserTest {
             val x by parser.storing("-x")
         }
 
-        val opts = Opts(OptionParser(arrayOf()))
+        val opts = Opts(parserOf())
         thrown.expect(MissingValueException::class.java)
         thrown.expectMessage("missing X")
         opts.x
@@ -321,7 +314,7 @@ class OptionParserTest {
             val x by parser.storing("--ecks", "-x")
         }
 
-        val opts = Opts(OptionParser(arrayOf()))
+        val opts = Opts(parserOf())
         thrown.expect(MissingValueException::class.java)
         thrown.expectMessage("missing ECKS")
         opts.x
@@ -329,21 +322,20 @@ class OptionParserTest {
 
     @Test
     fun testArgument_withParser() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val x by parser.storing("-x", "--ecks"){toInt()}
         }
 
-        val opts1 = Opts(arrayOf("-x", "5"))
+        val opts1 = Opts(parserOf("-x", "5"))
         Assert.assertEquals(5, opts1.x)
 
-        val opts2 = Opts(arrayOf("-x", "1", "-x", "2"))
+        val opts2 = Opts(parserOf("-x", "1", "-x", "2"))
         Assert.assertEquals(2, opts2.x)
 
-        val opts3 = Opts(arrayOf("--ecks", "3", "-x", "4"))
+        val opts3 = Opts(parserOf("--ecks", "3", "-x", "4"))
         Assert.assertEquals(4, opts3.x)
 
-        val opts4 = Opts(arrayOf("-x", "5", "--ecks", "6"))
+        val opts4 = Opts(parserOf("-x", "5", "--ecks", "6"))
         Assert.assertEquals(6, opts4.x)
     }
 
@@ -353,7 +345,7 @@ class OptionParserTest {
             val x by parser.storing("-x", "--ecks"){toInt()}
         }
 
-        val opts = Opts(OptionParser(arrayOf()))
+        val opts = Opts(parserOf())
         thrown.expect(MissingValueException::class.java)
         thrown.expectMessage("missing ECKS")
         opts.x
@@ -367,37 +359,36 @@ class OptionParserTest {
 
         Assert.assertEquals(
                 listOf<String>(),
-                Opts(OptionParser(arrayOf())).x)
+                Opts(parserOf()).x)
 
         Assert.assertEquals(
                 listOf("foo"),
-                Opts(OptionParser(arrayOf("-x", "foo"))).x)
+                Opts(parserOf("-x", "foo")).x)
 
         Assert.assertEquals(
                 listOf("bar", "baz"),
-                Opts(OptionParser(arrayOf("-x", "bar", "-x", "baz"))).x)
+                Opts(parserOf("-x", "bar", "-x", "baz")).x)
 
         Assert.assertEquals(
                 listOf("long", "short"),
-                Opts(OptionParser(arrayOf("--ecks", "long", "-x", "short"))).x)
+                Opts(parserOf("--ecks", "long", "-x", "short")).x)
 
         Assert.assertEquals(
                 listOf("short", "long"),
-                Opts(OptionParser(arrayOf("-x", "short", "--ecks", "long"))).x)
+                Opts(parserOf("-x", "short", "--ecks", "long")).x)
     }
 
     @Test
     fun testAccumulator_withParser() {
-        class Opts(args: Array<String>) {
-            private val parser = OptionParser(args)
+        class Opts(parser: OptionParser) {
             val x by parser.adding("-x", "--ecks"){toInt()}
         }
 
-        Assert.assertEquals(listOf<Int>(), Opts(arrayOf()).x)
-        Assert.assertEquals(listOf(5), Opts(arrayOf("-x", "5")).x)
-        Assert.assertEquals(listOf(1, 2), Opts(arrayOf("-x", "1", "-x", "2")).x)
-        Assert.assertEquals(listOf(3, 4), Opts(arrayOf("--ecks", "3", "-x", "4")).x)
-        Assert.assertEquals(listOf(5, 6), Opts(arrayOf("-x", "5", "--ecks", "6")).x)
+        Assert.assertEquals(listOf<Int>(), Opts(parserOf()).x)
+        Assert.assertEquals(listOf(5), Opts(parserOf("-x", "5")).x)
+        Assert.assertEquals(listOf(1, 2), Opts(parserOf("-x", "1", "-x", "2")).x)
+        Assert.assertEquals(listOf(3, 4), Opts(parserOf("--ecks", "3", "-x", "4")).x)
+        Assert.assertEquals(listOf(5, 6), Opts(parserOf("-x", "5", "--ecks", "6")).x)
     }
 
     enum class Color { RED, GREEN, BLUE }
@@ -411,19 +402,19 @@ class OptionParserTest {
 
     @Test
     fun testMapping() {
-        Assert.assertEquals(Color.RED,   ColorOpts(OptionParser(arrayOf("--red"))).color)
-        Assert.assertEquals(Color.GREEN, ColorOpts(OptionParser(arrayOf("--green"))).color)
-        Assert.assertEquals(Color.BLUE,  ColorOpts(OptionParser(arrayOf("--blue"))).color)
+        Assert.assertEquals(Color.RED,   ColorOpts(parserOf("--red")).color)
+        Assert.assertEquals(Color.GREEN, ColorOpts(parserOf("--green")).color)
+        Assert.assertEquals(Color.BLUE,  ColorOpts(parserOf("--blue")).color)
 
         // Last one takes precedence
-        Assert.assertEquals(Color.RED,   ColorOpts(OptionParser(arrayOf("--blue", "--red"))).color)
-        Assert.assertEquals(Color.GREEN, ColorOpts(OptionParser(arrayOf("--blue", "--green"))).color)
-        Assert.assertEquals(Color.BLUE,  ColorOpts(OptionParser(arrayOf("--red", "--blue"))).color)
+        Assert.assertEquals(Color.RED,   ColorOpts(parserOf("--blue", "--red")).color)
+        Assert.assertEquals(Color.GREEN, ColorOpts(parserOf("--blue", "--green")).color)
+        Assert.assertEquals(Color.BLUE,  ColorOpts(parserOf("--red", "--blue")).color)
     }
 
     @Test
     fun testMapping_noArgs() {
-        val opts = ColorOpts(OptionParser(arrayOf()))
+        val opts = ColorOpts(parserOf())
         thrown.expect(MissingValueException::class.java)
         thrown.expectMessage("missing --red|--green|--blue")
         opts.color
@@ -439,24 +430,24 @@ class OptionParserTest {
 
     @Test
     fun testMapping_withDefault() {
-        Assert.assertEquals(Color.RED,   OptionalColorOpts(OptionParser(arrayOf("--red"))).color)
-        Assert.assertEquals(Color.GREEN, OptionalColorOpts(OptionParser(arrayOf("--green"))).color)
-        Assert.assertEquals(Color.BLUE,  OptionalColorOpts(OptionParser(arrayOf("--blue"))).color)
-        Assert.assertEquals(Color.GREEN, OptionalColorOpts(OptionParser(arrayOf())).color)
+        Assert.assertEquals(Color.RED,   OptionalColorOpts(parserOf("--red")).color)
+        Assert.assertEquals(Color.GREEN, OptionalColorOpts(parserOf("--green")).color)
+        Assert.assertEquals(Color.BLUE,  OptionalColorOpts(parserOf("--blue")).color)
+        Assert.assertEquals(Color.GREEN, OptionalColorOpts(parserOf()).color)
     }
 
     @Test
     fun testUnrecognizedShortOpt() {
         thrown.expect(UnrecognizedOptionException::class.java)
         thrown.expectMessage("unrecognized option '-x'")
-        OptionalColorOpts(OptionParser(arrayOf("-x"))).color
+        OptionalColorOpts(parserOf("-x")).color
     }
 
     @Test
     fun testUnrecognizedLongOpt() {
         thrown.expect(UnrecognizedOptionException::class.java)
         thrown.expectMessage("unrecognized option '--ecks'")
-        OptionalColorOpts(OptionParser(arrayOf("--ecks"))).color
+        OptionalColorOpts(parserOf("--ecks")).color
     }
 
     @Test
@@ -468,7 +459,7 @@ class OptionParserTest {
         // Note that name actually used for option is used in message
         thrown.expect(OptionMissingRequiredArgumentException::class.java)
         thrown.expectMessage("option '-x' is missing a required argument")
-        Opts(OptionParser(arrayOf("-x"))).x
+        Opts(parserOf("-x")).x
     }
 
     @Test
@@ -480,7 +471,7 @@ class OptionParserTest {
         // Note that name actually used for option is used in message
         thrown.expect(OptionMissingRequiredArgumentException::class.java)
         thrown.expectMessage("option '--ecks' is missing a required argument")
-        Opts(OptionParser(arrayOf("--ecks"))).x
+        Opts(parserOf("--ecks")).x
     }
 
     @Test
@@ -493,6 +484,6 @@ class OptionParserTest {
         // Note that despite chaining, hyphen appears in message
         thrown.expect(OptionMissingRequiredArgumentException::class.java)
         thrown.expectMessage("option '-x' is missing a required argument")
-        Opts(OptionParser(arrayOf("-yx"))).x
+        Opts(parserOf("-yx")).x
     }
 }
