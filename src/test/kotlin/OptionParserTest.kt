@@ -18,7 +18,7 @@
 
 package com.xenomachina.optionparser
 
-import org.junit.Assert
+import org.junit.Assert // TODO: import assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -28,8 +28,19 @@ class OptionParserTest {
     @JvmField @Rule
     val testName: TestName = TestName()
 
+    // TODO: replace uses of thrown with shouldThrow
     @JvmField @Rule
     val thrown = ExpectedException.none()
+
+    fun <X> shouldThrow(exceptionClass: Class<X>, f: () -> Unit): X {
+        try {
+            f()
+        } catch (exception: Exception) {
+            if (exceptionClass.isInstance(exception)) return exceptionClass.cast(exception)
+            throw exception
+        }
+        throw AssertionError("Expected ${exceptionClass.canonicalName} to be thrown")
+    }
 
     fun parserOf(vararg args: String) = OptionParser(args)
 
@@ -485,5 +496,40 @@ class OptionParserTest {
         thrown.expect(OptionMissingRequiredArgumentException::class.java)
         thrown.expectMessage("option '-x' is missing a required argument")
         Opts(parserOf("-yx")).x
+    }
+
+    @Test
+    fun testInitValidation() {
+        class Opts(parser: OptionParser) {
+            val yDelegate = parser.storing("-y"){toInt()}
+            val y by yDelegate
+
+            val xDelegate = parser.storing("-x"){toInt()}
+            val x by xDelegate
+
+            init {
+                if (y >= x)
+                    throw InvalidArgumentException("${yDelegate.valueName} must be less than ${xDelegate.valueName}")
+
+                // A better way to accomplish validation that only depends on one Delegate is to use Delegate.addValidator
+                if (x % 2 != 0)
+                    throw InvalidArgumentException("${xDelegate.valueName} must be even, $x is odd")
+            }
+        }
+
+        // This should pass validation
+        val opts0 = Opts(parserOf("-y1", "-x10"))
+        Assert.assertEquals(1, opts0.y)
+        Assert.assertEquals(10, opts0.x)
+
+        val iax1 = shouldThrow(InvalidArgumentException::class.java) {
+            Opts(parserOf("-y20", "-x10")).x
+        }
+        Assert.assertEquals("Y must be less than X", iax1.message)
+
+        val iax2 = shouldThrow(InvalidArgumentException::class.java) {
+            Opts(parserOf("-y10", "-x15")).x
+        }
+        Assert.assertEquals("X must be even, 15 is odd", iax2.message)
     }
 }
