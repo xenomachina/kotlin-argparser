@@ -23,7 +23,7 @@ import kotlin.reflect.KProperty
 /**
  * A command-line option/argument parser.
  */
-class OptionParser(val args: Array<String>) {
+class OptionParser(val args: Array<out String>) {
     // TODO: add --help support
     // TODO: add addValidator method
     // TODO: add "--" support
@@ -130,7 +130,7 @@ class OptionParser(val args: Array<String>) {
                 val name: String,
                 val firstArg: String?,
                 val offset: Int,
-                val args: Array<String>,
+                val args: Array<out String>,
                 private val parser: OptionParser) {
 
             internal var consumed = 0
@@ -162,7 +162,7 @@ class OptionParser(val args: Array<String>) {
 
         private var holder: Holder<T>? = null
 
-        internal fun parseOption(name: String, firstArg: String?, index: Int, args: Array<String>): Int {
+        internal fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
             val input = Input(holder, name, firstArg, index, args, parser)
             holder = Holder(handler(input))
             return input.consumed
@@ -221,7 +221,7 @@ class OptionParser(val args: Array<String>) {
         }
     }
 
-    private fun parsePositionalArg(index: Int, args: Array<String>): Int {
+    private fun parsePositionalArg(index: Int, args: Array<out String>): Int {
         TODO("${args.slice(index..args.size)}")
     }
 
@@ -230,7 +230,7 @@ class OptionParser(val args: Array<String>) {
      * @param args array of command-line arguments
      * @return number of arguments that have been processed
      */
-    private fun parseLongOpt(index: Int, args: Array<String>): Int {
+    private fun parseLongOpt(index: Int, args: Array<out String>): Int {
         val name: String
         val firstArg: String?
         val m = NAME_EQUALS_VALUE_REGEX.matchEntire(args[index])
@@ -259,7 +259,7 @@ class OptionParser(val args: Array<String>) {
      * @param args array of command-line arguments
      * @return number of arguments that have been processed
      */
-    private fun parseShortOpts(index: Int, args: Array<String>): Int {
+    private fun parseShortOpts(index: Int, args: Array<out String>): Int {
         val opts = args[index]
         var optIndex = 1
         while (optIndex < opts.length) {
