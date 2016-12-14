@@ -30,10 +30,6 @@ class OptionParserTest {
     @JvmField @Rule
     val testName: TestName = TestName()
 
-    // TODO: replace uses of thrown with shouldThrow
-    @JvmField @Rule
-    val thrown = ExpectedException.none()
-
     fun <X> shouldThrow(exceptionClass: Class<X>, f: () -> Unit): X {
         try {
             f()
@@ -204,21 +200,10 @@ class OptionParserTest {
         assertEquals(
                 listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
                 Opts(parserOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
-    }
 
-    @Test
-    fun testLongOptionsWithConcatenatedArgs() {
-        class Opts(parser: OptionParser) {
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
-                    add("$name:${next()}")
-                }
-            }
-        }
-
-        thrown.expect(UnrecognizedOptionException::class.java)
-        thrown.expectMessage("unrecognized option '--xray0'")
-        Opts(parserOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz
+        assertEquals("unrecognized option '--xray0'", shouldThrow(UnrecognizedOptionException::class.java) {
+            Opts(parserOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz
+        }.message)
     }
 
     @Test
@@ -295,6 +280,11 @@ class OptionParserTest {
 
         assertEquals("long",
                 Opts(parserOf("-x", "short", "--ecks", "long")).x)
+
+        val opts = Opts(parserOf())
+        assertEquals("missing ECKS", shouldThrow(MissingValueException::class.java) {
+            opts.x
+        }.message)
     }
 
     @Test
@@ -304,9 +294,9 @@ class OptionParserTest {
         }
 
         val opts = Opts(parserOf())
-        thrown.expect(MissingValueException::class.java)
-        thrown.expectMessage("missing ECKS")
-        opts.x
+        assertEquals("missing ECKS", shouldThrow(MissingValueException::class.java) {
+            opts.x
+        }.message)
     }
 
     @Test
@@ -316,21 +306,9 @@ class OptionParserTest {
         }
 
         val opts = Opts(parserOf())
-        thrown.expect(MissingValueException::class.java)
-        thrown.expectMessage("missing X")
-        opts.x
-    }
-
-    @Test
-    fun testArgument_missingShortAndLong() {
-        class Opts(parser: OptionParser) {
-            val x by parser.storing("--ecks", "-x")
-        }
-
-        val opts = Opts(parserOf())
-        thrown.expect(MissingValueException::class.java)
-        thrown.expectMessage("missing ECKS")
-        opts.x
+        assertEquals("missing X", shouldThrow(MissingValueException::class.java) {
+            opts.x
+        }.message)
     }
 
     @Test
@@ -350,18 +328,11 @@ class OptionParserTest {
 
         val opts4 = Opts(parserOf("-x", "5", "--ecks", "6"))
         assertEquals(6, opts4.x)
-    }
 
-    @Test
-    fun testArgument_missing_withParser() {
-        class Opts(parser: OptionParser) {
-            val x by parser.storing("-x", "--ecks"){toInt()}
-        }
-
-        val opts = Opts(parserOf())
-        thrown.expect(MissingValueException::class.java)
-        thrown.expectMessage("missing ECKS")
-        opts.x
+        val opts6 = Opts(parserOf())
+        assertEquals("missing ECKS", shouldThrow(MissingValueException::class.java) {
+            opts6.x
+        }.message)
     }
 
     @Test
@@ -423,14 +394,11 @@ class OptionParserTest {
         assertEquals(Color.RED,   ColorOpts(parserOf("--blue", "--red")).color)
         assertEquals(Color.GREEN, ColorOpts(parserOf("--blue", "--green")).color)
         assertEquals(Color.BLUE,  ColorOpts(parserOf("--red", "--blue")).color)
-    }
 
-    @Test
-    fun testMapping_noArgs() {
         val opts = ColorOpts(parserOf())
-        thrown.expect(MissingValueException::class.java)
-        thrown.expectMessage("missing --red|--green|--blue")
-        opts.color
+        assertEquals("missing --red|--green|--blue", shouldThrow(MissingValueException::class.java) {
+            opts.color
+        }.message)
     }
 
     class OptionalColorOpts(parser: OptionParser) {
@@ -451,40 +419,33 @@ class OptionParserTest {
 
     @Test
     fun testUnrecognizedShortOpt() {
-        thrown.expect(UnrecognizedOptionException::class.java)
-        thrown.expectMessage("unrecognized option '-x'")
-        OptionalColorOpts(parserOf("-x")).color
+        assertEquals("unrecognized option '-x'", shouldThrow(UnrecognizedOptionException::class.java) {
+            OptionalColorOpts(parserOf("-x")).color
+        }.message)
     }
 
     @Test
     fun testUnrecognizedLongOpt() {
-        thrown.expect(UnrecognizedOptionException::class.java)
-        thrown.expectMessage("unrecognized option '--ecks'")
-        OptionalColorOpts(parserOf("--ecks")).color
+        assertEquals("unrecognized option '--ecks'", shouldThrow(UnrecognizedOptionException::class.java) {
+            OptionalColorOpts(parserOf("--ecks")).color
+        }.message)
     }
 
     @Test
-    fun testShortStoringNoArg() {
+    fun testStoringNoArg() {
         class Opts(parser: OptionParser) {
             val x by parser.storing("-x", "--ecks")
         }
 
         // Note that name actually used for option is used in message
-        thrown.expect(OptionMissingRequiredArgumentException::class.java)
-        thrown.expectMessage("option '-x' is missing a required argument")
-        Opts(parserOf("-x")).x
-    }
-
-    @Test
-    fun testLongStoringNoArg() {
-        class Opts(parser: OptionParser) {
-            val x by parser.storing("-x", "--ecks")
-        }
+        assertEquals("option '-x' is missing a required argument", shouldThrow(OptionMissingRequiredArgumentException::class.java) {
+            Opts(parserOf("-x")).x
+        }.message)
 
         // Note that name actually used for option is used in message
-        thrown.expect(OptionMissingRequiredArgumentException::class.java)
-        thrown.expectMessage("option '--ecks' is missing a required argument")
-        Opts(parserOf("--ecks")).x
+        assertEquals("option '--ecks' is missing a required argument", shouldThrow(OptionMissingRequiredArgumentException::class.java) {
+            Opts(parserOf("--ecks")).x
+        }.message)
     }
 
     @Test
@@ -495,9 +456,9 @@ class OptionParserTest {
         }
 
         // Note that despite chaining, hyphen appears in message
-        thrown.expect(OptionMissingRequiredArgumentException::class.java)
-        thrown.expectMessage("option '-x' is missing a required argument")
-        Opts(parserOf("-yx")).x
+        assertEquals("option '-x' is missing a required argument", shouldThrow(OptionMissingRequiredArgumentException::class.java) {
+            Opts(parserOf("-yx")).x
+        }.message)
     }
 
     @Test
@@ -524,14 +485,12 @@ class OptionParserTest {
         assertEquals(1, opts0.y)
         assertEquals(10, opts0.x)
 
-        val iax1 = shouldThrow(InvalidArgumentException::class.java) {
+        assertEquals("Y must be less than X", shouldThrow(InvalidArgumentException::class.java) {
             Opts(parserOf("-y20", "-x10")).x
-        }
-        assertEquals("Y must be less than X", iax1.message)
+        }.message)
 
-        val iax2 = shouldThrow(InvalidArgumentException::class.java) {
+        assertEquals("X must be even, 15 is odd", shouldThrow(InvalidArgumentException::class.java) {
             Opts(parserOf("-y10", "-x15")).x
-        }
-        assertEquals("X must be even, 15 is odd", iax2.message)
+        }.message)
     }
 }
