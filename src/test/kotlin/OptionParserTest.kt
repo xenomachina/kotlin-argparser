@@ -47,7 +47,7 @@ class OptionParserTest {
         class Opts(parser: OptionParser) {
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name")
+                    add("$optionName")
                 }
             }
         }
@@ -69,7 +69,7 @@ class OptionParserTest {
             val c by parser.flagging("-c")
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name:${next()}")
+                    add("$optionName:${next()}")
                 }
             }
         }
@@ -108,12 +108,12 @@ class OptionParserTest {
         class Opts(parser: OptionParser) {
             val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name")
+                    add("$optionName")
                 }
             }
             val abc by parser.option<MutableList<String>>("-a", "-b", "-c", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name")
+                    add("$optionName")
                 }
             }
         }
@@ -133,17 +133,17 @@ class OptionParserTest {
         class Opts(parser: OptionParser) {
             val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name")
+                    add("$optionName")
                 }
             }
             val abc by parser.option<MutableList<String>>("-a", "-b", "-c", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name")
+                    add("$optionName")
                 }
             }
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name:${next()}")
+                    add("$optionName:${next()}")
                 }
             }
         }
@@ -166,7 +166,7 @@ class OptionParserTest {
         class Opts(parser: OptionParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name")
+                    add("$optionName")
                 }
             }
         }
@@ -185,7 +185,7 @@ class OptionParserTest {
         class Opts(parser: OptionParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", valueName = "ARG_NAME"){
                 value.orElse{mutableListOf<String>()}.apply {
-                    add("$name:${next()}")
+                    add("$optionName:${next()}")
                 }
             }
         }

@@ -84,7 +84,7 @@ class OptionParser(val args: Array<out String>) {
         val names = map.keys.toTypedArray()
         return option(*names,
                 valueName = map.keys.joinToString("|")){
-            map[name]!!
+            map[optionName]!!
         }
     }
 
@@ -136,10 +136,10 @@ class OptionParser(val args: Array<out String>) {
         // TODO: pass valueName down to Input?
         class Input<T> internal constructor (
                 val value: Holder<T>?,
-                val name: String,
-                val firstArg: String?,
-                val offset: Int,
-                val args: Array<out String>,
+                val optionName: String,
+                private val firstArg: String?,
+                private val offset: Int,
+                private val args: Array<out String>,
                 private val parser: OptionParser) {
 
             internal var consumed = 0
@@ -160,7 +160,7 @@ class OptionParser(val args: Array<out String>) {
                     consumed++
                     return result
                 } catch (aioobx: ArrayIndexOutOfBoundsException) {
-                    throw OptionMissingRequiredArgumentException(name)
+                    throw OptionMissingRequiredArgumentException(optionName)
                 }
             }
 
