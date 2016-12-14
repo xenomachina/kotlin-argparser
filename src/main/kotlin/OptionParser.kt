@@ -116,20 +116,20 @@ class OptionParser(val args: Array<out String>) {
                                             val valueName: String,
                                             val handler: Input<T>.() -> T) {
         init {
-            // TODO: throw exception if parsing already complete
+            parser.assertNotParsed("create ${javaClass.canonicalName}")
         }
 
         /**
          * Sets the value for this Delegate. Should be called prior to parsing.
          */
         fun default(value: T): Delegate<T> {
-            // TODO: throw exception if parsing already complete
+            parser.assertNotParsed("set default")
             holder = Holder(value)
             return this
         }
 
         fun help(help: String): Delegate<T> {
-            // TODO: throw exception if parsing already complete
+            parser.assertNotParsed("set help")
             return this
         }
 
@@ -225,7 +225,14 @@ class OptionParser(val args: Array<out String>) {
         }
     }
 
+    private var parseStarted = false
+
+    private fun assertNotParsed(verb: String) {
+        if (parseStarted) throw IllegalStateException("Cannot ${verb} after parsing arguments")
+    }
+
     private val parseOptions by lazy {
+        parseStarted = true
         var i = 0
         while (i < args.size) {
             val arg = args[i]
