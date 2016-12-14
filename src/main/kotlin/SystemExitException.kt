@@ -57,6 +57,14 @@ open class OptionMissingRequiredArgumentException(val optName: String) :
         SystemExitException("option '$optName' is missing a required argument", 2)
 
 /**
+ * Indicates that an argument was forced upon an option that does not take one.
+ *
+ * That is, "--foo=bar" where "--foo" takes no arguments.
+ */
+open class UnexpectedOptionArgumentException(val optName: String) :
+        SystemExitException("option '$optName' doesn't allow an argument", 2)
+
+/**
  * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any `SystemExitException` that is caught.
  */
 fun <T, R> T.runMain(progName: String? = null, f: T.() -> R): R {

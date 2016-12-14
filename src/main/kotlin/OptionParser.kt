@@ -273,7 +273,7 @@ class OptionParser(val args: Array<out String>) {
         } else {
             var consumedArgs = delegate.parseOption(name, firstArg, index + 1, args)
             if (firstArg != null) {
-                if (consumedArgs < 1) TODO("throw exception =argument not consumed")
+                if (consumedArgs < 1) throw UnexpectedOptionArgumentException(name)
                 consumedArgs -= 1
             }
             return 1 + consumedArgs

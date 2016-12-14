@@ -525,4 +525,52 @@ class OptionParserTest {
             assertEquals("X must be even, 15 is odd", message)
         }
     }
+
+    @Test
+    fun testUnconsumed() {
+        class Opts(parser: OptionParser) {
+            val y by parser.flagging("-y", "--why")
+            val x by parser.flagging("-x", "--ecks")
+        }
+
+        // No problem.
+        Opts(parserOf("-yx")).run {
+            assertTrue(x)
+            assertTrue(y)
+        }
+
+        // Attempting to give -y a parameter, "z", is treated as unrecognized option.
+        shouldThrow(UnrecognizedOptionException::class.java) {
+            Opts(parserOf("-yz")).y
+        }.run {
+            assertEquals("unrecognized option '-z'", message)
+        }
+
+        // Unconsumed "z" again, but note that it triggers even if we don't look at y.
+        shouldThrow(UnrecognizedOptionException::class.java) {
+            Opts(parserOf("-yz")).x
+        }.run {
+            assertEquals("unrecognized option '-z'", message)
+        }
+
+        // No problem again, this time with long opts.
+        Opts(parserOf("--why", "--ecks")).run {
+            assertTrue(x)
+            assertTrue(y)
+        }
+
+        // Attempting to give --why a parameter, "z" causes an error.
+        shouldThrow(UnexpectedOptionArgumentException::class.java) {
+            Opts(parserOf("--why=z")).y
+        }.run {
+            assertEquals("option '--why' doesn't allow an argument", message)
+        }
+
+        // Unconsumed "z" again, but note that it triggers even if we don't look at y.
+        shouldThrow(UnexpectedOptionArgumentException::class.java) {
+            Opts(parserOf("--why=z")).x
+        }.run {
+            assertEquals("option '--why' doesn't allow an argument", message)
+        }
+    }
 }
