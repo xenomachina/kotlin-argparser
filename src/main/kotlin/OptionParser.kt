@@ -23,7 +23,7 @@ import kotlin.reflect.KProperty
 /**
  * A command-line option/argument parser.
  */
-class OptionParser(val progName: String, val args: Array<String>) {
+class OptionParser(val args: Array<String>) {
     // TODO: add --help support
     // TODO: add addValidator method
     // TODO: add "--" support
@@ -151,7 +151,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
                     consumed++
                     return result
                 } catch (aioobx: ArrayIndexOutOfBoundsException) {
-                    throw OptionMissingRequiredArgumentException(parser.progName, name)
+                    throw OptionMissingRequiredArgumentException(name)
                 }
             }
 
@@ -175,7 +175,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
 
         internal fun validate() {
             if (holder == null)
-                throw MissingValueException(parser.progName, valueName)
+                throw MissingValueException(valueName)
         }
     }
 
@@ -243,7 +243,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
         }
         val delegate = longOptions.get(name)
         if (delegate == null) {
-            throw UnrecognizedOptionException(progName, name)
+            throw UnrecognizedOptionException(name)
         } else {
             var consumedArgs = delegate.parseOption(name, firstArg, index + 1, args)
             if (firstArg != null) {
@@ -269,7 +269,7 @@ class OptionParser(val progName: String, val args: Array<String>) {
 
             val delegate = shortOptions.get(optKey)
             if (delegate == null) {
-                throw UnrecognizedOptionException(progName, optName)
+                throw UnrecognizedOptionException(optName)
             } else {
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
                 val consumed = delegate.parseOption(optName, firstArg, index + 1, args)

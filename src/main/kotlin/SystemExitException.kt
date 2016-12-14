@@ -25,9 +25,10 @@ import kotlin.system.exitProcess
  * An exception that wants the process to terminate with a specific status code, and also (optionally) wants to display
  * a message to [System.out] or [System.err].
  */
-open class SystemExitException(val progName: String, message: String, val returnCode: Int) : Exception(message) {
-    open fun printAndExit(): Nothing {
-        System.err.println("$progName: $message")
+open class SystemExitException(message: String, val returnCode: Int) : Exception(message) {
+    open fun printAndExit(progName: String? = null): Nothing {
+        val leader = if (progName == null) "" else "$progName: "
+        System.err.println("$leader$message")
         exitProcess(returnCode)
     }
 }
@@ -35,34 +36,33 @@ open class SystemExitException(val progName: String, message: String, val return
 /**
  * Indicates that an unrecognized option was supplied.
  */
-open class UnrecognizedOptionException(progName: String, val optionName: String) :
-        SystemExitException(progName, "unrecognized option '$optionName'", 2)
+open class UnrecognizedOptionException(val optionName: String) :
+        SystemExitException("unrecognized option '$optionName'", 2)
 
 /**
  * Indicates that a value is missing after parsing has completed.
  */
-open class MissingValueException(progName: String, val valueName: String) :
-        SystemExitException(progName, "missing $valueName", 2)
+open class MissingValueException(val valueName: String) :
+        SystemExitException("missing $valueName", 2)
 
 /**
  * Indicates that the value of a supplied argument is invalid.
  */
-open class InvalidArgumentException(progName: String, val argName: String, val argValue: String) :
-        SystemExitException(progName, "invalid $argName: '${StringEscapeUtils.escapeJava(argValue)}'", 2)
+open class InvalidArgumentException(message: String) : SystemExitException(message, 2)
 
 /**
  * Indicates that a required argument was not supplied.
  */
-open class OptionMissingRequiredArgumentException(progName: String, val optName: String) :
-        SystemExitException(progName, "option '$optName' is missing a required argument", 2)
+open class OptionMissingRequiredArgumentException(val optName: String) :
+        SystemExitException("option '$optName' is missing a required argument", 2)
 
 /**
  * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any `SystemExitException` that is caught.
  */
-fun <T, R> T.runMain(f: T.() -> R): R {
+fun <T, R> T.runMain(progName: String? = null, f: T.() -> R): R {
     try {
         return f()
     } catch (e: SystemExitException) {
-        e.printAndExit()
+        e.printAndExit(progName)
     }
 }
