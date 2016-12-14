@@ -25,7 +25,6 @@ import kotlin.reflect.KProperty
  */
 class OptionParser(val args: Array<out String>) {
     // TODO: add --help support
-    // TODO: add addValidator method
     // TODO: add "--" support
     // TODO: make it possible to inline arguments from elsewhere (eg: -@filename)
 
@@ -112,6 +111,7 @@ class OptionParser(val args: Array<out String>) {
     // TODO: add `argument` method for positional argument handling
     // TODO: verify that positional arguments have exactly one name
 
+    // TODO: add addValidator method
     class Delegate<T> internal constructor (private val parser: OptionParser,
                                             val valueName: String,
                                             val handler: Input<T>.() -> T) {
@@ -169,7 +169,7 @@ class OptionParser(val args: Array<out String>) {
         }
 
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            parser.parseOptions
+            parser.force()
             return holder!!.value
         }
 
@@ -203,6 +203,19 @@ class OptionParser(val args: Array<out String>) {
 
     }
 
+    private var inValidation = false
+    private fun force() {
+        parseOptions
+        if (!inValidation) {
+            inValidation = true
+            try {
+                for (delegate in delegates) delegate.validate()
+            } finally {
+                inValidation = false
+            }
+        }
+    }
+
     private val parseOptions by lazy {
         var i = 0
         while (i < args.size) {
@@ -215,9 +228,6 @@ class OptionParser(val args: Array<out String>) {
                 else ->
                     parsePositionalArg(i, args)
             }
-        }
-        for (delegate in delegates) {
-            delegate.validate()
         }
     }
 
