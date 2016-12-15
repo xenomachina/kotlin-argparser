@@ -496,9 +496,55 @@ class OptionParserTest {
                 if (y >= x)
                     throw InvalidArgumentException("${yDelegate.valueName} must be less than ${xDelegate.valueName}")
 
-                // A better way to accomplish validation that only depends on one Delegate is to use Delegate.addValidator
+                // A better way to accomplish validation that only depends on one Delegate is to use
+                // Delegate.addValidator. See testAddValidator for an example of this.
                 if (x % 2 != 0)
                     throw InvalidArgumentException("${xDelegate.valueName} must be even, $x is odd")
+            }
+        }
+
+        // This should pass validation
+        val opts0 = Opts(parserOf("-y1", "-x10"))
+        assertEquals(1, opts0.y)
+        assertEquals(10, opts0.x)
+
+        shouldThrow(InvalidArgumentException::class.java) {
+            Opts(parserOf("-y20", "-x10")).x
+        }.run {
+            assertEquals("Y must be less than X", message)
+        }
+
+        shouldThrow(InvalidArgumentException::class.java) {
+            Opts(parserOf("-y10", "-x15")).x
+        }.run {
+            assertEquals("X must be even, 15 is odd", message)
+        }
+
+        shouldThrow(InvalidArgumentException::class.java) {
+            Opts(parserOf("-y10", "-x15")).x
+        }.run {
+            assertEquals("X must be even, 15 is odd", message)
+        }
+    }
+
+    @Test
+    fun testAddValidator() {
+        class Opts(parser: OptionParser) {
+            val yDelegate = parser.storing("-y"){toInt()}
+            val y by yDelegate
+
+            val xDelegate = parser.storing("-x"){toInt()}
+                    .addValidtator {
+                        if (value % 2 != 0)
+                            throw InvalidArgumentException("$valueName must be even, $value is odd")
+                    }
+            val x by xDelegate
+
+            init {
+                if (y >= x)
+                    throw InvalidArgumentException("${yDelegate.valueName} must be less than ${xDelegate.valueName}")
+
+                // A better way to accomplish validation that only depends on one Delegate is to use Delegate.addValidator
             }
         }
 

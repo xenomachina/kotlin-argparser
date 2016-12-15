@@ -112,7 +112,6 @@ class OptionParser(val args: Array<out String>) {
     // TODO: add `argument` method for positional argument handling
     // TODO: verify that positional arguments have exactly one name
 
-    // TODO: add addValidator method
     class Delegate<T> internal constructor (private val parser: OptionParser,
                                             val valueName: String,
                                             val handler: Input<T>.() -> T) {
@@ -134,6 +133,18 @@ class OptionParser(val args: Array<out String>) {
             return this
         }
 
+        val value: T
+            get() {
+                parser.force()
+                return holder!!.value
+            }
+
+        operator fun getValue(thisRef: Any?, property: KProperty<*>): T = value
+
+        fun addValidtator(validator: Delegate<T>.() -> Unit): Delegate<T> = apply {
+            validators.add(validator)
+        }
+
         // TODO: pass valueName down to Input?
         class Input<T> internal constructor (
                 val value: Holder<T>?,
@@ -143,7 +154,7 @@ class OptionParser(val args: Array<out String>) {
                 private val args: Array<out String>,
                 private val parser: OptionParser) {
 
-            internal var consumed = 0
+                internal var consumed = 0
 
             fun peek(): String? {
                 return if (firstArg != null && consumed == 0) {
@@ -174,15 +185,16 @@ class OptionParser(val args: Array<out String>) {
             return input.consumed
         }
 
-        operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            parser.force()
-            return holder!!.value
-        }
-
-        internal fun validate() {
+        internal fun preValidate() {
             if (holder == null)
                 throw MissingValueException(valueName)
         }
+
+        internal fun validate() {
+            for (validator in validators) validator()
+        }
+
+        private val validators = mutableListOf<Delegate<T>.() -> Unit>()
     }
 
     private val shortOptions = mutableMapOf<Char, Delegate<*>>()
@@ -215,6 +227,7 @@ class OptionParser(val args: Array<out String>) {
         if (!inValidation) {
             inValidation = true
             try {
+                for (delegate in delegates) delegate.preValidate()
                 for (delegate in delegates) delegate.validate()
             } finally {
                 inValidation = false
