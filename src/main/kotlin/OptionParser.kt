@@ -26,7 +26,7 @@ import kotlin.reflect.KProperty
 class OptionParser(val args: Array<out String>) {
     // TODO: add --help support
     // TODO: add "--" support
-    // TODO: make it possible to inline arguments from elsewhere (eg: -@filename)
+    // TODO: add support for inlining (eg: -@filename)
     // TODO: add sub-command support
 
     /**
@@ -97,7 +97,7 @@ class OptionParser(val args: Array<out String>) {
      */
     fun <T> option(vararg names: String,
                    valueName: String,
-                   handler: Delegate.Input<T>.() -> T): Delegate<T> {
+                   handler: OptionArgumentIterator<T>.() -> T): Delegate<T> {
         val delegate = Delegate<T>(
                 parser = this,
                 valueName = valueName,
@@ -114,7 +114,7 @@ class OptionParser(val args: Array<out String>) {
 
     class Delegate<T> internal constructor (private val parser: OptionParser,
                                             val valueName: String,
-                                            val handler: Input<T>.() -> T) {
+                                            val handler: OptionArgumentIterator<T>.() -> T) {
         init {
             parser.assertNotParsed("create ${javaClass.canonicalName}")
         }
@@ -145,42 +145,11 @@ class OptionParser(val args: Array<out String>) {
             validators.add(validator)
         }
 
-        // TODO: pass valueName down to Input?
-        class Input<T> internal constructor (
-                val value: Holder<T>?,
-                val optionName: String,
-                private val firstArg: String?,
-                private val offset: Int,
-                private val args: Array<out String>,
-                private val parser: OptionParser) {
-
-                internal var consumed = 0
-
-            fun peek(): String? {
-                return if (firstArg != null && consumed == 0) {
-                    firstArg
-                } else {
-                    val index = offset + consumed - (if (firstArg == null) 0 else 1)
-                    if (index >= args.size) {
-                        null
-                    } else {
-                        args[index]
-                    }
-                }
-            }
-
-            fun hasNext(): Boolean = peek() != null
-
-            fun next(): String {
-                return (peek() ?: throw OptionMissingRequiredArgumentException(optionName))
-                        .apply { consumed++ }
-            }
-        }
 
         private var holder: Holder<T>? = null
 
         internal fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
-            val input = Input(holder, name, firstArg, index, args, parser)
+            val input = OptionArgumentIterator(holder, name, firstArg, index, args)
             holder = Holder(handler(input))
             return input.consumed
         }
@@ -195,6 +164,57 @@ class OptionParser(val args: Array<out String>) {
         }
 
         private val validators = mutableListOf<Delegate<T>.() -> Unit>()
+    }
+
+    // TODO: pass valueName down to OptionArgumentIterator?
+    /**
+     * Iterator over arguments that follow the option being processed.
+     * @property value a Holder containing the current value associated with this option, or null if unset
+     * @property optionName the name of the option
+     */
+    class OptionArgumentIterator<T> internal constructor (
+            val value: Holder<T>?,
+            val optionName: String,
+            private val firstArg: String?,
+            private val offset: Int,
+            private val args: Array<out String>) {
+
+        internal var consumed = 0
+
+        /**
+         * Returns the next argument without advancing the current position, or null if there is no next argument. This
+         * should only be used to determine if the next argument is to be consumed. If its value will impact the value
+         * associated with this option then [next()] must be called to advance the current position.
+         *
+         * Do *not* use the presence of a leading hyphen ('-') as an indication that the next argument should not be
+         * consumed.
+         */
+        fun peek(): String? {
+            return if (firstArg != null && consumed == 0) {
+                firstArg
+            } else {
+                val index = offset + consumed - (if (firstArg == null) 0 else 1)
+                if (index >= args.size) {
+                    null
+                } else {
+                    args[index]
+                }
+            }
+        }
+
+        /**
+         * Indicates whether there is another argument available to this option
+         */
+        fun hasNext(): Boolean = peek() != null
+
+        /**
+         * @returns the next argument available to this option
+         * @throws OptionMissingRequiredArgumentException if no more arguments are available
+         */
+        fun next(): String {
+            return peek()?.apply { consumed++ }
+                    ?: throw OptionMissingRequiredArgumentException(optionName)
+        }
     }
 
     private val shortOptions = mutableMapOf<Char, Delegate<*>>()
