@@ -98,13 +98,13 @@ class OptionParser(val args: Array<out String>) {
     fun <T> option(vararg names: String,
                    valueName: String,
                    handler: OptionArgumentIterator<T>.() -> T): Delegate<T> {
-        val delegate = Delegate<T>(
+        val delegate = OptionDelegate<T>(
                 parser = this,
                 valueName = valueName,
                 handler = handler)
         delegates.add(delegate)
         for (name in names) {
-            register(name, delegate)
+            registerOption(name, delegate)
         }
         return delegate
     }
@@ -112,9 +112,34 @@ class OptionParser(val args: Array<out String>) {
     // TODO: add `argument` method for positional argument handling
     // TODO: verify that positional arguments have exactly one name
 
-    class Delegate<T> internal constructor (private val parser: OptionParser,
-                                            val valueName: String,
-                                            val handler: OptionArgumentIterator<T>.() -> T) {
+    interface Delegate<T> {
+        /** The value associated with this delegate */
+        val value: T
+
+        /** The name of the value associated with this delegate */
+        val valueName: String
+
+        /** Allows this object to act as a property delegate */
+        operator fun getValue(thisRef: Any?, property: KProperty<*>): T = value
+
+        // Fluent setters:
+
+        /** Set default value */
+        fun default(value: T): Delegate<T>
+
+        /** Set help text */
+        fun help(help: String): Delegate<T>
+
+        /** Add validation logic. Validator should throw a [SystemExitException] on failure. */
+        fun addValidtator(validator: Delegate<T>.() -> Unit): Delegate<T>
+    }
+
+    private abstract class ParsingDelegate<T>(
+            val parser: OptionParser,
+            override val valueName: String) : Delegate<T> {
+
+        protected var holder: Holder<T>? = null
+
         init {
             parser.assertNotParsed("create ${javaClass.canonicalName}")
         }
@@ -122,48 +147,49 @@ class OptionParser(val args: Array<out String>) {
         /**
          * Sets the value for this Delegate. Should be called prior to parsing.
          */
-        fun default(value: T): Delegate<T> {
+        override fun default(value: T): Delegate<T> {
             parser.assertNotParsed("set default")
             holder = Holder(value)
             return this
         }
 
-        fun help(help: String): Delegate<T> {
+        override fun help(help: String): Delegate<T> {
             parser.assertNotParsed("set help")
             return this
         }
 
-        val value: T
+        override fun addValidtator(validator: Delegate<T>.() -> Unit): Delegate<T> = apply {
+            validators.add(validator)
+        }
+
+        override val value: T
             get() {
                 parser.force()
                 return holder!!.value
             }
 
-        operator fun getValue(thisRef: Any?, property: KProperty<*>): T = value
-
-        fun addValidtator(validator: Delegate<T>.() -> Unit): Delegate<T> = apply {
-            validators.add(validator)
-        }
-
-
-        private var holder: Holder<T>? = null
-
-        internal fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
-            val input = OptionArgumentIterator(holder, name, firstArg, index, args)
-            holder = Holder(handler(input))
-            return input.consumed
-        }
-
-        internal fun preValidate() {
+        fun preValidate() {
             if (holder == null)
                 throw MissingValueException(valueName)
         }
 
-        internal fun validate() {
+        fun validate() {
             for (validator in validators) validator()
         }
 
         private val validators = mutableListOf<Delegate<T>.() -> Unit>()
+    }
+
+    private class OptionDelegate<T>(
+            parser: OptionParser,
+            valueName: String,
+            val handler: OptionArgumentIterator<T>.() -> T) : ParsingDelegate<T>(parser, valueName) {
+
+        fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
+            val input = OptionArgumentIterator(holder, name, firstArg, index, args)
+            holder = Holder(handler(input))
+            return input.consumed
+        }
     }
 
     // TODO: pass valueName down to OptionArgumentIterator?
@@ -217,11 +243,11 @@ class OptionParser(val args: Array<out String>) {
         }
     }
 
-    private val shortOptions = mutableMapOf<Char, Delegate<*>>()
-    private val longOptions = mutableMapOf<String, Delegate<*>>()
-    private val delegates = mutableListOf<Delegate<*>>()
+    private val shortOptions = mutableMapOf<Char, OptionDelegate<*>>()
+    private val longOptions = mutableMapOf<String, OptionDelegate<*>>()
+    private val delegates = mutableListOf<ParsingDelegate<*>>()
 
-    private fun <T> register(name: String, delegate: OptionParser.Delegate<T>) {
+    private fun <T> registerOption(name: String, delegate: OptionDelegate<T>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
                 throw IllegalArgumentException("long option '$name' must have at least one character after hyphen")
@@ -236,7 +262,7 @@ class OptionParser(val args: Array<out String>) {
                 throw IllegalStateException("short option '$name' already in use")
             shortOptions.put(key, delegate)
         } else {
-            TODO("registration of positional args")
+            throw IllegalArgumentException("illegal option name '$name' -- must start with '-' or '--'")
         }
 
     }
