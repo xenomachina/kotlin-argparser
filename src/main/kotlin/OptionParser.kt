@@ -118,11 +118,18 @@ class OptionParser(val args: Array<out String>) {
         }
     }
 
+    fun argument(name: String) =
+            argument(name) {this}
+
     fun <T> argumentList(name: String,
-                         sizeRange: IntRange,
+                         sizeRange: IntRange = 1..Int.MAX_VALUE,
                          parser: String.() -> T) : Delegate<List<T>> {
         return PositionalDelegate<T>(this, name, sizeRange, parser)
     }
+
+    fun argumentList(name: String,
+                     sizeRange: IntRange = 1..Int.MAX_VALUE) =
+            argumentList(name, sizeRange) {this}
 
     abstract class WrappingDelegate<U, W>(private val inner: Delegate<U>) : Delegate<W> {
 
@@ -135,8 +142,8 @@ class OptionParser(val args: Array<out String>) {
         override val valueName: String
             get() = inner.valueName
 
-        override fun default(w: W): Delegate<W> =
-                apply { inner.default(unwrap(w)) }
+        override fun default(value: W): Delegate<W> =
+                apply { inner.default(unwrap(value)) }
 
         override fun help(help: String): Delegate<W> =
                 apply { inner.help(help) }
@@ -234,7 +241,7 @@ class OptionParser(val args: Array<out String>) {
             val sizeRange: IntRange,
             val f: String.() -> T) : ParsingDelegate<List<T>>(parser, valueName) {
 
-        fun parseArguments(args: Array<out String>, indeRange: IntRange) {
+        fun parseArguments(args: Array<out String>, indexRange: IntRange) {
             TODO()
         }
     }

@@ -619,4 +619,14 @@ class OptionParserTest {
             assertEquals("option '--why' doesn't allow an argument", message)
         }
     }
+
+    @Test
+    fun testPositional() {
+        class Opts(parser: OptionParser) {
+            val y by parser.flagging("-y", "--why")
+            val x by parser.flagging("-x", "--ecks")
+            val sources by parser.argumentList("SOURCE")
+            val destination by parser.argument("DEST")
+        }
+    }
 }
