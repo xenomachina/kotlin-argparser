@@ -109,6 +109,42 @@ class OptionParser(val args: Array<out String>) {
         return delegate
     }
 
+    fun <T> argument(name: String,
+                     parser: String.() -> T) : Delegate<T> {
+        return object : WrappingDelegate<List<T>, T>(argumentList(name, 1..1, parser)) {
+            override fun wrap(u: List<T>): T = u[0]
+
+            override fun unwrap(w: T): List<T> = listOf(w)
+        }
+    }
+
+    fun <T> argumentList(name: String,
+                         sizeRange: IntRange,
+                         parser: String.() -> T) : Delegate<List<T>> {
+        return PositionalDelegate<T>(this, name, sizeRange, parser)
+    }
+
+    abstract class WrappingDelegate<U, W>(private val inner: Delegate<U>) : Delegate<W> {
+
+        abstract fun wrap(u: U) : W
+        abstract fun unwrap(w: W) : U
+
+        override val value: W
+            get() = wrap(inner.value)
+
+        override val valueName: String
+            get() = inner.valueName
+
+        override fun default(w: W): Delegate<W> =
+                apply { inner.default(unwrap(w)) }
+
+        override fun help(help: String): Delegate<W> =
+                apply { inner.help(help) }
+
+        override fun addValidtator(validator: Delegate<W>.() -> Unit): Delegate<W> =
+                apply { validator(this) }
+    }
+
     // TODO: add `argument` method for positional argument handling
     // TODO: verify that positional arguments have exactly one name
 
@@ -135,7 +171,7 @@ class OptionParser(val args: Array<out String>) {
     }
 
     private abstract class ParsingDelegate<T>(
-            val parser: OptionParser,
+            val parser: OptionParser, // TODO: replace with ParsingState
             override val valueName: String) : Delegate<T> {
 
         protected var holder: Holder<T>? = null
@@ -189,6 +225,17 @@ class OptionParser(val args: Array<out String>) {
             val input = OptionArgumentIterator(holder, name, firstArg, index, args)
             holder = Holder(handler(input))
             return input.consumed
+        }
+    }
+
+    private class PositionalDelegate<T>(
+            parser: OptionParser,
+            valueName: String,
+            val sizeRange: IntRange,
+            val f: String.() -> T) : ParsingDelegate<List<T>>(parser, valueName) {
+
+        fun parseArguments(args: Array<out String>, indeRange: IntRange) {
+            TODO()
         }
     }
 
