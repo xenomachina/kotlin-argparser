@@ -23,12 +23,13 @@ import kotlin.reflect.KProperty
 /**
  * A command-line option/argument parser.
  */
-class OptionParser(val args: Array<out String>) {
+class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
     // TODO: add --help support
     // TODO: add support for inlining (eg: -@filename)
     // TODO: add sub-command support
     // TODO: add ELLIPSIS and [] in usage automatically
-    // TODO: add POSIX/GNU property to determine how to deal with options that follow non-options arguments
+
+    enum class Mode { GNU, POSIX }
 
     /**
      * Returns a Delegate that returns true if and only if an option with one of specified names is present.
@@ -360,7 +361,13 @@ class OptionParser(val args: Array<out String>) {
                     parseShortOpts(i, args)
                 else -> {
                     positionalArguments.add(arg)
-                    1
+                    when (mode) {
+                        Mode.GNU -> 1
+                        Mode.POSIX -> {
+                            i++
+                            break@optionLoop
+                        }
+                    }
                 }
             }
         }

@@ -40,7 +40,8 @@ class OptionParserTest {
         throw AssertionError("Expected ${exceptionClass.canonicalName} to be thrown")
     }
 
-    fun parserOf(vararg args: String) = OptionParser(args)
+    fun parserOf(vararg args: String, mode: OptionParser.Mode = OptionParser.Mode.GNU) =
+            OptionParser(args, mode)
 
     @Test
     fun testArglessShortOptions() {
@@ -672,6 +673,13 @@ class OptionParserTest {
             assertFalse(flag)
             assertEquals("foo", store)
             assertEquals(listOf("bar", "--", "-f", "baz"), sources)
+            assertEquals("quux", destination)
+        }
+
+        Opts(parserOf("-s", "foo", "bar", "-f", "baz", "quux", mode=OptionParser.Mode.POSIX)).run {
+            assertFalse(flag)
+            assertEquals("foo", store)
+            assertEquals(listOf("bar", "-f", "baz"), sources)
             assertEquals("quux", destination)
         }
     }
