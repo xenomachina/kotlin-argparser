@@ -46,8 +46,8 @@ class OptionParserTest {
     @Test
     fun testArglessShortOptions() {
         class Opts(parser: OptionParser) {
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
@@ -68,8 +68,8 @@ class OptionParserTest {
             val a by parser.flagging("-a")
             val b by parser.flagging("-b")
             val c by parser.flagging("-c")
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName:${next()}")
                 }
             }
@@ -107,13 +107,13 @@ class OptionParserTest {
     @Test
     fun testMixedShortOptions() {
         class Opts(parser: OptionParser) {
-            val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
-            val abc by parser.option<MutableList<String>>("-a", "-b", "-c", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val abc by parser.option<MutableList<String>>("-a", "-b", "-c", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
@@ -132,18 +132,18 @@ class OptionParserTest {
     @Test
     fun testMixedShortOptionsWithArgs() {
         class Opts(parser: OptionParser) {
-            val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
-            val abc by parser.option<MutableList<String>>("-a", "-b", "-c", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val abc by parser.option<MutableList<String>>("-a", "-b", "-c", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName:${next()}")
                 }
             }
@@ -165,8 +165,8 @@ class OptionParserTest {
     @Test
     fun testArglessLongOptions() {
         class Opts(parser: OptionParser) {
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
@@ -184,8 +184,8 @@ class OptionParserTest {
     @Test
     fun testLongOptionsWithArgs() {
         class Opts(parser: OptionParser) {
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", valueName = "ARG_NAME"){
-                value.orElse{mutableListOf<String>()}.apply {
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", valueName = "ARG_NAME") {
+                value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName:${next()}")
                 }
             }
@@ -212,7 +212,7 @@ class OptionParserTest {
     @Test
     fun testDefault() {
         class Opts(parser: OptionParser) {
-            val x by parser.option<Int>("-x", valueName = "ARG_NAME"){
+            val x by parser.option<Int>("-x", valueName = "ARG_NAME") {
                 next().toInt()
             }.default(5)
         }
@@ -323,7 +323,7 @@ class OptionParserTest {
     @Test
     fun testArgument_withParser() {
         class Opts(parser: OptionParser) {
-            val x by parser.storing("-x", "--ecks"){toInt()}
+            val x by parser.storing("-x", "--ecks") { toInt() }
         }
 
         val opts1 = Opts(parserOf("-x", "5"))
@@ -376,7 +376,7 @@ class OptionParserTest {
     @Test
     fun testAccumulator_withParser() {
         class Opts(parser: OptionParser) {
-            val x by parser.adding("-x", "--ecks"){toInt()}
+            val x by parser.adding("-x", "--ecks") { toInt() }
         }
 
         assertEquals(listOf<Int>(), Opts(parserOf()).x)
@@ -397,14 +397,14 @@ class OptionParserTest {
 
     @Test
     fun testMapping() {
-        assertEquals(Color.RED,   ColorOpts(parserOf("--red")).color)
+        assertEquals(Color.RED, ColorOpts(parserOf("--red")).color)
         assertEquals(Color.GREEN, ColorOpts(parserOf("--green")).color)
-        assertEquals(Color.BLUE,  ColorOpts(parserOf("--blue")).color)
+        assertEquals(Color.BLUE, ColorOpts(parserOf("--blue")).color)
 
         // Last one takes precedence
-        assertEquals(Color.RED,   ColorOpts(parserOf("--blue", "--red")).color)
+        assertEquals(Color.RED, ColorOpts(parserOf("--blue", "--red")).color)
         assertEquals(Color.GREEN, ColorOpts(parserOf("--blue", "--green")).color)
-        assertEquals(Color.BLUE,  ColorOpts(parserOf("--red", "--blue")).color)
+        assertEquals(Color.BLUE, ColorOpts(parserOf("--red", "--blue")).color)
 
         val opts = ColorOpts(parserOf())
         shouldThrow(MissingValueException::class.java) {
@@ -424,9 +424,9 @@ class OptionParserTest {
 
     @Test
     fun testMapping_withDefault() {
-        assertEquals(Color.RED,   OptionalColorOpts(parserOf("--red")).color)
+        assertEquals(Color.RED, OptionalColorOpts(parserOf("--red")).color)
         assertEquals(Color.GREEN, OptionalColorOpts(parserOf("--green")).color)
-        assertEquals(Color.BLUE,  OptionalColorOpts(parserOf("--blue")).color)
+        assertEquals(Color.BLUE, OptionalColorOpts(parserOf("--blue")).color)
         assertEquals(Color.GREEN, OptionalColorOpts(parserOf()).color)
     }
 
@@ -487,10 +487,10 @@ class OptionParserTest {
     @Test
     fun testInitValidation() {
         class Opts(parser: OptionParser) {
-            val yDelegate = parser.storing("-y"){toInt()}
+            val yDelegate = parser.storing("-y") { toInt() }
             val y by yDelegate
 
-            val xDelegate = parser.storing("-x"){toInt()}
+            val xDelegate = parser.storing("-x") { toInt() }
             val x by xDelegate
 
             init {
@@ -531,10 +531,10 @@ class OptionParserTest {
     @Test
     fun testAddValidator() {
         class Opts(parser: OptionParser) {
-            val yDelegate = parser.storing("-y"){toInt()}
+            val yDelegate = parser.storing("-y") { toInt() }
             val y by yDelegate
 
-            val xDelegate = parser.storing("-x"){toInt()}
+            val xDelegate = parser.storing("-x") { toInt() }
                     .addValidtator {
                         if (value % 2 != 0)
                             throw InvalidArgumentException("$valueName must be even, $value is odd")
@@ -676,7 +676,7 @@ class OptionParserTest {
             assertEquals("quux", destination)
         }
 
-        Opts(parserOf("-s", "foo", "bar", "-f", "baz", "quux", mode=OptionParser.Mode.POSIX)).run {
+        Opts(parserOf("-s", "foo", "bar", "-f", "baz", "quux", mode = OptionParser.Mode.POSIX)).run {
             assertFalse(flag)
             assertEquals("foo", store)
             assertEquals(listOf("bar", "-f", "baz"), sources)
@@ -689,8 +689,8 @@ class OptionParserTest {
         class Opts(parser: OptionParser) {
             val flag by parser.flagging("-f", "--flag")
             val store by parser.storing("-s", "--store").default("DEFAULT")
-            val start by parser.argumentList("START...", 3..4){toInt()}
-            val end by parser.argumentList("END...", 3..5){toInt()}
+            val start by parser.argumentList("START...", 3..4) { toInt() }
+            val end by parser.argumentList("END...", 3..5) { toInt() }
         }
 
         shouldThrow(MissingRequiredPositionalArgumentException::class.java) {

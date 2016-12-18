@@ -21,7 +21,7 @@ which are in turn each represented by properties that delgate to an
 
         val name by parser.storing("-N", "--name")
 
-        val size by parser.storing("-s", "--size"){ toInt() }
+        val size by parser.storing("-s", "--size") { toInt() }
     }
 
 ## Delegate Types
@@ -29,7 +29,7 @@ which are in turn each represented by properties that delgate to an
 Boolean flags are created by asking the parser for a `flagging` delegate.  One
 or more option names, either short or long style, must be provided:
 
-        val verbose by parser.flagging("-v", "--verbose")
+    val verbose by parser.flagging("-v", "--verbose")
 
 Here the presence of either `-v` or `--verbose` options in the
 arguments will cause the `Boolean` property `verbose` to be `true`, otherwise
@@ -38,7 +38,7 @@ it will be `false`.
 Options that expect a single argument are created by asking the parser for a
 `storing` delegate.
 
-        val name by parser.storing("-N", "--name")
+    val name by parser.storing("-N", "--name")
 
 Here either `-N` or `--name` with an argument will cause `name` to have that
 argument as its value.
@@ -46,23 +46,23 @@ argument as its value.
 A parsing function can also be supplied. Here the `size` property will be an
 `Int` rather than a `String`:
 
-        val size by parser.storing("-s", "--size"){ toInt() }
+    val size by parser.storing("-s", "--size") { toInt() }
 
 It's also possible to create options that add to a `Collection` each time they
 appear in the arguments using the `adding` delegate. Just like `storing`
 delegates, a parsing function may optionally be supplied:
 
-        val includeDirs by parser.adding("-I"){ File(this) }
+    val includeDirs by parser.adding("-I") { File(this) }
 
 Now each time the `-I` option appears, its argument is appended to `includeDirs`.
 
 For choosing between a fixed set of values (typically, but not necessarily, from an
 enum), a `mapping` delegate can be used:
 
-        val mode by parser.mapping(
-                "--fast" to Mode.FAST,
-                "--small" to Mode.SMALL,
-                "--quiet" to Mode.QUIET)
+    val mode by parser.mapping(
+            "--fast" to Mode.FAST,
+            "--small" to Mode.SMALL,
+            "--quiet" to Mode.QUIET)
 
 Here the `mode` property will be set to the corresponding `Mode` value depending
 on which of `--fast`, `--small`, and `--quiet` appears (last) in the arguments.
@@ -72,18 +72,18 @@ The methods described above are convenience methods built on top of the
 more powerful `option` method can be used directly, though it is harder to use
 in these common cases.
 
-        val zaphod by parser.option("--fibonacci") {
-                    var prev = 0
-                    var current = 1
-                    var result = 0
-                    while (peek() == current) {
-                        result++
-                        prev, current = current, current + prev
-                        next()
-                    }
-                    return result
-                }
-                .help("collects fibonnaci sequence, remembers length")
+    val zaphod by parser.option("--fibonacci") {
+        var prev = 0
+        var current = 1
+        var result = 0
+        while (peek() == current) {
+            result++
+            prev, current = current, current+prev
+            next()
+        }
+        return result
+    }
+            .help("collects fibonnaci sequence, remembers length")
 
 Delegates also have a few methods for setting optional attributes.
 
@@ -91,13 +91,13 @@ For example, some types of options (notably `storing` and `mapping`) have no
 default value, and hence will be required options. To make them optional, a default
 value can be provided with the `default` method:
 
-        val name by parser.storing("-N", "--name")
-                .default("John Doe")
+    val name by parser.storing("-N", "--name")
+            .default("John Doe")
 
 Help text can also be provided through use of the `help` method:
 
-        val verbose by parser.flagging("-v", "--verbose")
-                .help("produce verbose output")
+    val verbose by parser.flagging("-v", "--verbose")
+            .help("produce verbose output")
 
 TODO: positional parameters
 
@@ -106,10 +106,10 @@ include a status code appropriate for passing to `exitProcess`. As a
 convenience you can handle these exceptions by using the `runMain` extension
 function:
 
-    fun main(args : Array<String>) =
-        MyOptions(OptionParser(args)).runMain {
-            println("Hello, {name}!")
-        }
+    fun main(args: Array<String>) =
+            MyOptions(OptionParser(args)).runMain {
+                println("Hello, {name}!")
+            }
 
 
 ## Parsing

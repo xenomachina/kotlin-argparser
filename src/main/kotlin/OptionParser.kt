@@ -54,18 +54,18 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
      * Returns an option Delegate that adds the option's parsed argument to a MutableCollection.
      */
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
-                                             initialValue: T,
-                                             crossinline transform: String.() -> E): Delegate<T> =
-        option<T>(*names, valueName = optionNamesToBestArgName(names) + ELLIPSIS) {
-            value!!.value.add(transform(next()))
-            value.value
-        }.default(initialValue)
+                                                    initialValue: T,
+                                                    crossinline transform: String.() -> E): Delegate<T> =
+            option<T>(*names, valueName = optionNamesToBestArgName(names) + ELLIPSIS) {
+                value!!.value.add(transform(next()))
+                value.value
+            }.default(initialValue)
 
     /**
      * Returns an option Delegate that adds the option's parsed argument to a MutableList.
      */
     inline fun <T> adding(vararg names: String,
-                   crossinline transform: String.() -> T) =
+                          crossinline transform: String.() -> T) =
             adding(*names, initialValue = mutableListOf(), transform = transform)
 
     /**
@@ -86,7 +86,7 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
     fun <T> mapping(map: Map<String, T>): Delegate<T> {
         val names = map.keys.toTypedArray()
         return option(*names,
-                valueName = map.keys.joinToString("|")){
+                valueName = map.keys.joinToString("|")) {
             map[optionName]!!
         }
     }
@@ -111,10 +111,10 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
     }
 
     fun argument(name: String) =
-            argument(name) {this}
+            argument(name) { this }
 
     fun <T> argument(name: String,
-                     transform: String.() -> T) : Delegate<T> {
+                     transform: String.() -> T): Delegate<T> {
         return object : WrappingDelegate<List<T>, T>(argumentList(name, 1..1, transform)) {
             override fun wrap(u: List<T>): T = u[0]
 
@@ -124,11 +124,11 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
 
     fun argumentList(name: String,
                      sizeRange: IntRange = 1..Int.MAX_VALUE) =
-            argumentList(name, sizeRange) {this}
+            argumentList(name, sizeRange) { this }
 
     fun <T> argumentList(name: String,
                          sizeRange: IntRange = 1..Int.MAX_VALUE,
-                         transform: String.() -> T) : Delegate<List<T>> {
+                         transform: String.() -> T): Delegate<List<T>> {
         // TODO: param checking
         return PositionalDelegate<T>(this, name, sizeRange, transform).apply {
             positionalDelegates.add(this)
@@ -137,8 +137,8 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
 
     abstract class WrappingDelegate<U, W>(private val inner: Delegate<U>) : Delegate<W> {
 
-        abstract fun wrap(u: U) : W
-        abstract fun unwrap(w: W) : U
+        abstract fun wrap(u: U): W
+        abstract fun unwrap(w: W): U
 
         override val value: W
             get() = wrap(inner.value)
@@ -254,7 +254,7 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
      * @property value a Holder containing the current value associated with this option, or null if unset
      * @property optionName the name of the option
      */
-    class OptionArgumentIterator<T> internal constructor (
+    class OptionArgumentIterator<T> internal constructor(
             val value: Holder<T>?,
             val optionName: String,
             private val firstArg: String?,
@@ -488,9 +488,9 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
  * Compensates for the fact that nullable types don't compose in Kotlin. If you want to be able to distinguish between a
  * T (where T may or may not be a nullable type) and lack of a T, use a Holder<T>?.
  */
-data class Holder<T> (val value: T)
+data class Holder<T>(val value: T)
 
-fun <T> Holder<T>?.orElse(f: () -> T) : T{
+fun <T> Holder<T>?.orElse(f: () -> T): T {
     if (this == null) {
         return f()
     } else {
