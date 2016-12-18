@@ -656,6 +656,24 @@ class OptionParserTest {
             assertEquals(listOf("bar", "baz"), sources)
             assertEquals("quux", destination)
         }
+
+        // "--" disables option processing for all further arguments.
+        // Note that "-f" is now considered a positional argument.
+        Opts(parserOf("-s", "foo", "--", "bar", "-f", "baz", "quux")).run {
+            assertFalse(flag)
+            assertEquals("foo", store)
+            assertEquals(listOf("bar", "-f", "baz"), sources)
+            assertEquals("quux", destination)
+        }
+
+        // "--" disables option processing for all further arguments.
+        // Note that the second "--" is also considered a positional argument.
+        Opts(parserOf("-s", "foo", "--", "bar", "--", "-f", "baz", "quux")).run {
+            assertFalse(flag)
+            assertEquals("foo", store)
+            assertEquals(listOf("bar", "--", "-f", "baz"), sources)
+            assertEquals("quux", destination)
+        }
     }
 
     @Test

@@ -25,11 +25,10 @@ import kotlin.reflect.KProperty
  */
 class OptionParser(val args: Array<out String>) {
     // TODO: add --help support
-    // TODO: add "--" support
     // TODO: add support for inlining (eg: -@filename)
     // TODO: add sub-command support
     // TODO: add ELLIPSIS and [] in usage automatically
-    // TODO: add ability disable option parsing after positional arguments have been found
+    // TODO: add POSIX/GNU property to determine how to deal with options that follow non-options arguments
 
     /**
      * Returns a Delegate that returns true if and only if an option with one of specified names is present.
@@ -348,9 +347,13 @@ class OptionParser(val args: Array<out String>) {
         val positionalArguments = mutableListOf<String>()
         parseStarted = true
         var i = 0
-        while (i < args.size) {
+        optionLoop@ while (i < args.size) {
             val arg = args[i]
             i += when {
+                arg == "--" -> {
+                    i++
+                    break@optionLoop
+                }
                 arg.startsWith("--") ->
                     parseLongOpt(i, args)
                 arg.startsWith("-") ->
@@ -361,6 +364,9 @@ class OptionParser(val args: Array<out String>) {
                 }
             }
         }
+
+        // Collect remaining arguments as positional-only arguments
+        positionalArguments.addAll(args.slice(i..args.size - 1))
 
         parsePositionalArguments(positionalArguments)
     }
