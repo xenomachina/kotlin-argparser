@@ -28,6 +28,8 @@ class OptionParser(val args: Array<out String>) {
     // TODO: add "--" support
     // TODO: add support for inlining (eg: -@filename)
     // TODO: add sub-command support
+    // TODO: add ELLIPSIS and [] in usage automatically
+    // TODO: add ability disable option parsing after positional arguments have been found
 
     /**
      * Returns a Delegate that returns true if and only if an option with one of specified names is present.
@@ -39,8 +41,8 @@ class OptionParser(val args: Array<out String>) {
      * Returns an option Delegate that returns the option's parsed argument.
      */
     inline fun <T> storing(vararg names: String,
-                           crossinline parser: String.() -> T): Delegate<T> =
-            option(*names, valueName = optionNamesToBestArgName(names)) { parser(this.next()) }
+                           crossinline transform: String.() -> T): Delegate<T> =
+            option(*names, valueName = optionNamesToBestArgName(names)) { transform(this.next()) }
 
     /**
      * Returns an option Delegate that returns the option's unparsed argument.
@@ -53,9 +55,9 @@ class OptionParser(val args: Array<out String>) {
      */
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
                                              initialValue: T,
-                                             crossinline parser: String.() -> E): Delegate<T> =
+                                             crossinline transform: String.() -> E): Delegate<T> =
         option<T>(*names, valueName = optionNamesToBestArgName(names) + ELLIPSIS) {
-            value!!.value.add(parser(next()))
+            value!!.value.add(transform(next()))
             value.value
         }.default(initialValue)
 
@@ -63,8 +65,8 @@ class OptionParser(val args: Array<out String>) {
      * Returns an option Delegate that adds the option's parsed argument to a MutableList.
      */
     inline fun <T> adding(vararg names: String,
-                   crossinline parser: String.() -> T) =
-            adding(*names, initialValue = mutableListOf(), parser = parser)
+                   crossinline transform: String.() -> T) =
+            adding(*names, initialValue = mutableListOf(), transform = transform)
 
     /**
      * Returns an option Delegate that adds the option's unparsed argument to a MutableList.
@@ -102,34 +104,36 @@ class OptionParser(val args: Array<out String>) {
                 parser = this,
                 valueName = valueName,
                 handler = handler)
-        delegates.add(delegate)
         for (name in names) {
             registerOption(name, delegate)
         }
         return delegate
     }
 
+    fun argument(name: String) =
+            argument(name) {this}
+
     fun <T> argument(name: String,
-                     parser: String.() -> T) : Delegate<T> {
-        return object : WrappingDelegate<List<T>, T>(argumentList(name, 1..1, parser)) {
+                     transform: String.() -> T) : Delegate<T> {
+        return object : WrappingDelegate<List<T>, T>(argumentList(name, 1..1, transform)) {
             override fun wrap(u: List<T>): T = u[0]
 
             override fun unwrap(w: T): List<T> = listOf(w)
         }
     }
 
-    fun argument(name: String) =
-            argument(name) {this}
-
-    fun <T> argumentList(name: String,
-                         sizeRange: IntRange = 1..Int.MAX_VALUE,
-                         parser: String.() -> T) : Delegate<List<T>> {
-        return PositionalDelegate<T>(this, name, sizeRange, parser)
-    }
-
     fun argumentList(name: String,
                      sizeRange: IntRange = 1..Int.MAX_VALUE) =
             argumentList(name, sizeRange) {this}
+
+    fun <T> argumentList(name: String,
+                         sizeRange: IntRange = 1..Int.MAX_VALUE,
+                         transform: String.() -> T) : Delegate<List<T>> {
+        // TODO: param checking
+        return PositionalDelegate<T>(this, name, sizeRange, transform).apply {
+            positionalDelegates.add(this)
+        }
+    }
 
     abstract class WrappingDelegate<U, W>(private val inner: Delegate<U>) : Delegate<W> {
 
@@ -151,9 +155,6 @@ class OptionParser(val args: Array<out String>) {
         override fun addValidtator(validator: Delegate<W>.() -> Unit): Delegate<W> =
                 apply { validator(this) }
     }
-
-    // TODO: add `argument` method for positional argument handling
-    // TODO: verify that positional arguments have exactly one name
 
     interface Delegate<T> {
         /** The value associated with this delegate */
@@ -184,20 +185,21 @@ class OptionParser(val args: Array<out String>) {
         protected var holder: Holder<T>? = null
 
         init {
-            parser.assertNotParsed("create ${javaClass.canonicalName}")
+            parser.assertNotParsed()
+            parser.delegates.add(this)
         }
 
         /**
          * Sets the value for this Delegate. Should be called prior to parsing.
          */
         override fun default(value: T): Delegate<T> {
-            parser.assertNotParsed("set default")
+            parser.assertNotParsed()
             holder = Holder(value)
             return this
         }
 
         override fun help(help: String): Delegate<T> {
-            parser.assertNotParsed("set help")
+            parser.assertNotParsed()
             return this
         }
 
@@ -241,8 +243,8 @@ class OptionParser(val args: Array<out String>) {
             val sizeRange: IntRange,
             val f: String.() -> T) : ParsingDelegate<List<T>>(parser, valueName) {
 
-        fun parseArguments(args: Array<out String>, indexRange: IntRange) {
-            TODO()
+        fun parseArguments(args: List<String>) {
+            holder = Holder(args.map(f))
         }
     }
 
@@ -297,24 +299,25 @@ class OptionParser(val args: Array<out String>) {
         }
     }
 
-    private val shortOptions = mutableMapOf<Char, OptionDelegate<*>>()
-    private val longOptions = mutableMapOf<String, OptionDelegate<*>>()
+    private val shortOptionDelegates = mutableMapOf<Char, OptionDelegate<*>>()
+    private val longOptionDelegates = mutableMapOf<String, OptionDelegate<*>>()
+    private val positionalDelegates = mutableListOf<PositionalDelegate<*>>()
     private val delegates = mutableListOf<ParsingDelegate<*>>()
 
     private fun <T> registerOption(name: String, delegate: OptionDelegate<T>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
                 throw IllegalArgumentException("long option '$name' must have at least one character after hyphen")
-            if (name in longOptions)
+            if (name in longOptionDelegates)
                 throw IllegalStateException("long option '$name' already in use")
-            longOptions.put(name, delegate)
+            longOptionDelegates.put(name, delegate)
         } else if (name.startsWith("-")) {
             if (name.length != 2)
                 throw IllegalArgumentException("short option '$name' can only have one character after hyphen")
             val key = name.get(1)
-            if (key in shortOptions)
+            if (key in shortOptionDelegates)
                 throw IllegalStateException("short option '$name' already in use")
-            shortOptions.put(key, delegate)
+            shortOptionDelegates.put(key, delegate)
         } else {
             throw IllegalArgumentException("illegal option name '$name' -- must start with '-' or '--'")
         }
@@ -337,11 +340,12 @@ class OptionParser(val args: Array<out String>) {
 
     private var parseStarted = false
 
-    private fun assertNotParsed(verb: String) {
-        if (parseStarted) throw IllegalStateException("Cannot ${verb} after parsing arguments")
+    private fun assertNotParsed() {
+        if (parseStarted) throw IllegalStateException("arguments have already been parsed")
     }
 
     private val parseOptions by lazy {
+        val positionalArguments = mutableListOf<String>()
         parseStarted = true
         var i = 0
         while (i < args.size) {
@@ -351,14 +355,36 @@ class OptionParser(val args: Array<out String>) {
                     parseLongOpt(i, args)
                 arg.startsWith("-") ->
                     parseShortOpts(i, args)
-                else ->
-                    parsePositionalArg(i, args)
+                else -> {
+                    positionalArguments.add(arg)
+                    1
+                }
             }
         }
+
+        parsePositionalArguments(positionalArguments)
     }
 
-    private fun parsePositionalArg(index: Int, args: Array<out String>): Int {
-        TODO("parsePositionalArg ${args.slice(index..args.size)}")
+    private fun parsePositionalArguments(args: List<String>) {
+        var lastValueName: String? = null
+        var index = 0
+        var remaining = args.size
+        var extra = (remaining - positionalDelegates.map { it.sizeRange.first }.sum()).coerceAtLeast(0)
+        for (delegate in positionalDelegates) {
+            val sizeRange = delegate.sizeRange
+            val chunkSize = (sizeRange.first + extra).coerceIn(sizeRange)
+            if (chunkSize > remaining) {
+                throw MissingRequiredPositionalArgumentException(delegate.valueName.removeSuffix(ELLIPSIS))
+            }
+            delegate.parseArguments(args.subList(index, index + chunkSize))
+            lastValueName = delegate.valueName
+            index += chunkSize
+            remaining -= chunkSize
+            extra -= chunkSize - sizeRange.first
+        }
+        if (remaining > 0) {
+            throw UnexpectedPositionalArgumentException(lastValueName)
+        }
     }
 
     /**
@@ -377,7 +403,7 @@ class OptionParser(val args: Array<out String>) {
             name = m.groups[1]!!.value
             firstArg = m.groups[2]!!.value
         }
-        val delegate = longOptions.get(name)
+        val delegate = longOptionDelegates.get(name)
         if (delegate == null) {
             throw UnrecognizedOptionException(name)
         } else {
@@ -403,7 +429,7 @@ class OptionParser(val args: Array<out String>) {
             val optName = "-$optKey"
             optIndex++ // optIndex now points just after optKey
 
-            val delegate = shortOptions.get(optKey)
+            val delegate = shortOptionDelegates.get(optKey)
             if (delegate == null) {
                 throw UnrecognizedOptionException(optName)
             } else {

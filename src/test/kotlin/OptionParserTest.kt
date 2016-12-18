@@ -621,12 +621,104 @@ class OptionParserTest {
     }
 
     @Test
-    fun testPositional() {
+    fun testPositional_basic() {
         class Opts(parser: OptionParser) {
-            val y by parser.flagging("-y", "--why")
-            val x by parser.flagging("-x", "--ecks")
-            val sources by parser.argumentList("SOURCE")
+            val flag by parser.flagging("-f", "--flag")
+            val store by parser.storing("-s", "--store").default("DEFAULT")
+            val sources by parser.argumentList("SOURCE...")
             val destination by parser.argument("DEST")
+        }
+
+        Opts(parserOf("foo", "bar", "baz", "quux")).run {
+            assertFalse(flag)
+            assertEquals("DEFAULT", store)
+            assertEquals(listOf("foo", "bar", "baz"), sources)
+            assertEquals("quux", destination)
+        }
+
+        Opts(parserOf("-f", "foo", "bar", "baz", "quux")).run {
+            assertTrue(flag)
+            assertEquals("DEFAULT", store)
+            assertEquals(listOf("foo", "bar", "baz"), sources)
+            assertEquals("quux", destination)
+        }
+
+        Opts(parserOf("-s", "foo", "bar", "baz", "quux")).run {
+            assertFalse(flag)
+            assertEquals("foo", store)
+            assertEquals(listOf("bar", "baz"), sources)
+            assertEquals("quux", destination)
+        }
+
+        Opts(parserOf("-s", "foo", "bar", "-f", "baz", "quux")).run {
+            assertTrue(flag)
+            assertEquals("foo", store)
+            assertEquals(listOf("bar", "baz"), sources)
+            assertEquals("quux", destination)
+        }
+    }
+
+    @Test
+    fun testPositional_withParser() {
+        class Opts(parser: OptionParser) {
+            val flag by parser.flagging("-f", "--flag")
+            val store by parser.storing("-s", "--store").default("DEFAULT")
+            val start by parser.argumentList("START...", 3..4){toInt()}
+            val end by parser.argumentList("END...", 3..5){toInt()}
+        }
+
+        shouldThrow(MissingRequiredPositionalArgumentException::class.java) {
+            Opts(parserOf("1", "2")).flag
+        }.run {
+            assertEquals("missing START operand", message)
+        }
+
+        shouldThrow(MissingRequiredPositionalArgumentException::class.java) {
+            Opts(parserOf("1", "2", "3", "4", "5")).flag
+        }.run {
+            assertEquals("missing END operand", message)
+        }
+
+        Opts(parserOf("1", "2", "3", "4", "5", "6")).run {
+            assertFalse(flag)
+            assertEquals("DEFAULT", store)
+
+            // end needs at least 3 args, so start only consumes 3
+            assertEquals(listOf(1, 2, 3), start)
+            assertEquals(listOf(4, 5, 6), end)
+        }
+
+        Opts(parserOf("1", "2", "3", "4", "5", "6", "7")).run {
+            assertFalse(flag)
+            assertEquals("DEFAULT", store)
+
+            // end only needs at 3 args, so start can consume 4
+            assertEquals(listOf(1, 2, 3, 4), start)
+            assertEquals(listOf(5, 6, 7), end)
+        }
+
+        Opts(parserOf("1", "2", "3", "4", "5", "6", "7", "8")).run {
+            assertFalse(flag)
+            assertEquals("DEFAULT", store)
+
+            // start can't consume more than 4, so end gets the rest.
+            assertEquals(listOf(1, 2, 3, 4), start)
+            assertEquals(listOf(5, 6, 7, 8), end)
+        }
+
+        Opts(parserOf("1", "2", "3", "4", "5", "6", "7", "8", "9")).run {
+            assertFalse(flag)
+            assertEquals("DEFAULT", store)
+
+            // once again, start can't consume more than 4, so end gets the rest.
+            assertEquals(listOf(1, 2, 3, 4), start)
+            assertEquals(listOf(5, 6, 7, 8, 9), end)
+        }
+
+        shouldThrow(UnexpectedPositionalArgumentException::class.java) {
+            Opts(parserOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")).flag
+        }.run {
+            assertEquals("unexpected argument after END...", message)
         }
     }
 }

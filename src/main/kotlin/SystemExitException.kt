@@ -51,10 +51,16 @@ open class MissingValueException(val valueName: String) :
 open class InvalidArgumentException(message: String) : SystemExitException(message, 2)
 
 /**
- * Indicates that a required argument was not supplied.
+ * Indicates that a required option argument was not supplied.
  */
 open class OptionMissingRequiredArgumentException(val optName: String) :
         SystemExitException("option '$optName' is missing a required argument", 2)
+
+/**
+ * Indicates that a required positional argument was not supplied.
+ */
+open class MissingRequiredPositionalArgumentException(val valueName: String) :
+        SystemExitException("missing $valueName operand", 2)
 
 /**
  * Indicates that an argument was forced upon an option that does not take one.
@@ -63,6 +69,12 @@ open class OptionMissingRequiredArgumentException(val optName: String) :
  */
 open class UnexpectedOptionArgumentException(val optName: String) :
         SystemExitException("option '$optName' doesn't allow an argument", 2)
+
+/**
+ * Indicates that there is an unhandled positional argument.
+ */
+open class UnexpectedPositionalArgumentException(val valueName: String?) :
+        SystemExitException("unexpected argument${if (valueName == null) "" else " after $valueName"}", 2)
 
 /**
  * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any `SystemExitException` that is caught.
