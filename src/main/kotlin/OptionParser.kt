@@ -129,7 +129,19 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
     fun <T> argumentList(name: String,
                          sizeRange: IntRange = 1..Int.MAX_VALUE,
                          transform: String.() -> T): Delegate<List<T>> {
-        // TODO: param checking
+        sizeRange.run {
+            if (step != 1)
+                throw IllegalArgumentException("step must be 1, not $step")
+            if (first > last)
+                throw IllegalArgumentException("backwards ranges are not allowed: $first > $last")
+            if (first < 0)
+                throw IllegalArgumentException("sizeRange cannot start at $first, must be non-negative")
+            // technically last == 0 is ok, but not especially useful so we
+            // disallow it as it's probably unintentional
+            if (last < 1)
+                throw IllegalArgumentException("sizeRange only allows $last arguments, must allow at least 1")
+        }
+
         return PositionalDelegate<T>(this, name, sizeRange, transform).apply {
             positionalDelegates.add(this)
         }
