@@ -32,32 +32,33 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
     enum class Mode { GNU, POSIX }
 
     /**
-     * Returns a Delegate that returns true if and only if an option with one of specified names is present.
+     * Creates a Delegate for a zero-argument option that returns true if and only the option is present in args.
      */
     fun flagging(vararg names: String): Delegate<Boolean> =
             option<Boolean>(*names, valueName = bestOptionName(names)) { true }.default(false)
 
     /**
-     * Returns an option Delegate that counts the the number of times the option appears.
+     * Creates a Delegate for a zero-argument option that returns the count of how many times the option appears in args.
      */
     fun counting(vararg names: String): Delegate<Int> =
             option<Int>(*names, valueName = bestOptionName(names)) { value.orElse { 0 } + 1 }.default(0)
 
     /**
-     * Returns an option Delegate that returns the option's parsed argument.
+     * Creates a Delegate for a single-argument option that stores and returns the option's (transformed) argument.
      */
     inline fun <T> storing(vararg names: String,
                            crossinline transform: String.() -> T): Delegate<T> =
             option(*names, valueName = optionNamesToBestArgName(names)) { transform(this.next()) }
 
     /**
-     * Returns an option Delegate that returns the option's unparsed argument.
+     * Creates a Delegate for a single-argument option that stores and returns the option's argument.
      */
     fun storing(vararg names: String): Delegate<String> =
             storing(*names) { this }
 
     /**
-     * Returns an option Delegate that adds the option's parsed argument to a MutableCollection.
+     * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
+     * MutableCollection each time the option appears in args, and returns said MutableCollection.
      */
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
                                                     initialValue: T,
@@ -68,26 +69,30 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
             }.default(initialValue)
 
     /**
-     * Returns an option Delegate that adds the option's parsed argument to a MutableList.
+     * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
+     * MutableList each time the option appears in args, and returns said MutableCollection.
      */
     inline fun <T> adding(vararg names: String,
                           crossinline transform: String.() -> T) =
             adding(*names, initialValue = mutableListOf(), transform = transform)
 
     /**
-     * Returns an option Delegate that adds the option's unparsed argument to a MutableList.
+     * Creates a Delegate for a single-argument option that adds the option's argument to a MutableList each time the
+     * option appears in args, and returns said MutableCollection.
      */
     fun adding(vararg names: String): Delegate<MutableList<String>> =
             adding(*names) { this }
 
     /**
-     * Returns an option Delegate that maps from th option name to a value.
+     * Creates a Delegate for a zero-argument option that maps from the option's name as it appears in args to one of a
+     * fixed set of values.
      */
     fun <T> mapping(vararg pairs: Pair<String, T>): Delegate<T> =
             mapping(mapOf(*pairs))
 
     /**
-     * Returns an option Delegate that maps from th option name to a value.
+     * Creates a Delegate for a zero-argument option that maps from the option's name as it appears in args to one of a
+     * fixed set of values.
      */
     fun <T> mapping(map: Map<String, T>): Delegate<T> {
         val names = map.keys.toTypedArray()
@@ -98,7 +103,7 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
     }
 
     /**
-     * Returns an option Delegate that handles options with the specified names.
+     * Creates a Delegate for an option with the specified names.
      * @param names names of options, with leading "-" or "--"
      * @param valueName name to use when talking about value of this option in error messages or help text
      * @param handler A function that assists in parsing arguments by computing the value of this option
@@ -116,9 +121,14 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
         return delegate
     }
 
-    fun argument(name: String) =
-            argument(name) { this }
+    /**
+     * Creates a Delegate for a single positional argument which returns the argument's value.
+     */
+    fun argument(name: String) = argument(name) { this }
 
+    /**
+     * Creates a Delegate for a single positional argument which returns the argument's transformed value.
+     */
     fun <T> argument(name: String,
                      transform: String.() -> T): Delegate<T> {
         return object : WrappingDelegate<List<T>, T>(argumentList(name, 1..1, transform)) {
@@ -128,10 +138,17 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
         }
     }
 
+    /**
+     * Creates a Delegate for a sequence of positional arguments which returns a List containing the arguments.
+     */
     fun argumentList(name: String,
                      sizeRange: IntRange = 1..Int.MAX_VALUE) =
             argumentList(name, sizeRange) { this }
 
+    /**
+     * Creates a Delegate for a sequence of positional arguments which returns a List containing the transformed
+     * arguments.
+     */
     fun <T> argumentList(name: String,
                          sizeRange: IntRange = 1..Int.MAX_VALUE,
                          transform: String.() -> T): Delegate<List<T>> {
