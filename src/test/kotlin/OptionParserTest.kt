@@ -747,4 +747,23 @@ class OptionParserTest {
             assertEquals("unexpected argument after END...", message)
         }
     }
+
+    @Test
+    fun testCounting() {
+        class Opts(parser: OptionParser) {
+            val verbosity by parser.counting("-v", "--verbose")
+        }
+
+        Opts(parserOf()).run {
+            assertEquals(0, verbosity)
+        }
+
+        Opts(parserOf("-v")).run {
+            assertEquals(1, verbosity)
+        }
+
+        Opts(parserOf("-v", "-v")).run {
+            assertEquals(2, verbosity)
+        }
+    }
 }

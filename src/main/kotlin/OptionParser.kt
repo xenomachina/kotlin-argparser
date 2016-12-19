@@ -38,6 +38,12 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
             option<Boolean>(*names, valueName = bestOptionName(names)) { true }.default(false)
 
     /**
+     * Returns an option Delegate that counts the the number of times the option appears.
+     */
+    fun counting(vararg names: String): Delegate<Int> =
+            option<Int>(*names, valueName = bestOptionName(names)) { value.orElse { 0 } + 1 }.default(0)
+
+    /**
      * Returns an option Delegate that returns the option's parsed argument.
      */
     inline fun <T> storing(vararg names: String,
