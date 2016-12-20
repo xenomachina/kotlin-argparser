@@ -766,4 +766,9 @@ class OptionParserTest {
             assertEquals(2, verbosity)
         }
     }
+
+    // TODO: test default on argument
+    // TODO: test default on argumentList
+    // TODO: test addValidator on argument
+    // TODO: test addValidator on argumentList
 }
