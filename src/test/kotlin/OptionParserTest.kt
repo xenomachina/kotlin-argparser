@@ -23,21 +23,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import org.junit.rules.TestName
+import kotlin.reflect.KClass
+
 
 class OptionParserTest {
     @JvmField @Rule
     val testName: TestName = TestName()
 
-    fun <X> shouldThrow(exceptionClass: Class<X>, f: () -> Unit): X {
+    fun <X : Throwable> shouldThrow(exceptionClass: KClass<X>, f: () -> Unit): X {
+        val javaClass = exceptionClass.java
         try {
             f()
-        } catch (exception: Exception) {
-            if (exceptionClass.isInstance(exception)) return exceptionClass.cast(exception)
+        } catch (exception: Throwable) {
+            if (javaClass.isInstance(exception)) return javaClass.cast(exception)
             throw exception
         }
-        throw AssertionError("Expected ${exceptionClass.canonicalName} to be thrown")
+        throw AssertionError("Expected ${javaClass.canonicalName} to be thrown")
     }
 
     fun parserOf(vararg args: String, mode: OptionParser.Mode = OptionParser.Mode.GNU) =
@@ -202,7 +204,7 @@ class OptionParserTest {
                 listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
                 Opts(parserOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
 
-        shouldThrow(UnrecognizedOptionException::class.java) {
+        shouldThrow(UnrecognizedOptionException::class) {
             Opts(parserOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz
         }.run {
             assertEquals("unrecognized option '--xray0'", message)
@@ -285,7 +287,7 @@ class OptionParserTest {
                 Opts(parserOf("-x", "short", "--ecks", "long")).x)
 
         val opts = Opts(parserOf())
-        shouldThrow(MissingValueException::class.java) {
+        shouldThrow(MissingValueException::class) {
             opts.x
         }.run {
             assertEquals("missing ECKS", message)
@@ -299,7 +301,7 @@ class OptionParserTest {
         }
 
         val opts = Opts(parserOf())
-        shouldThrow(MissingValueException::class.java) {
+        shouldThrow(MissingValueException::class) {
             opts.x
         }.run {
             assertEquals("missing ECKS", message)
@@ -313,7 +315,7 @@ class OptionParserTest {
         }
 
         val opts = Opts(parserOf())
-        shouldThrow(MissingValueException::class.java) {
+        shouldThrow(MissingValueException::class) {
             opts.x
         }.run {
             assertEquals("missing X", message)
@@ -339,7 +341,7 @@ class OptionParserTest {
         assertEquals(6, opts4.x)
 
         val opts6 = Opts(parserOf())
-        shouldThrow(MissingValueException::class.java) {
+        shouldThrow(MissingValueException::class) {
             opts6.x
         }.run {
             assertEquals("missing ECKS", message)
@@ -407,7 +409,7 @@ class OptionParserTest {
         assertEquals(Color.BLUE, ColorOpts(parserOf("--red", "--blue")).color)
 
         val opts = ColorOpts(parserOf())
-        shouldThrow(MissingValueException::class.java) {
+        shouldThrow(MissingValueException::class) {
             opts.color
         }.run {
             assertEquals("missing --red|--green|--blue", message)
@@ -432,7 +434,7 @@ class OptionParserTest {
 
     @Test
     fun testUnrecognizedShortOpt() {
-        shouldThrow(UnrecognizedOptionException::class.java) {
+        shouldThrow(UnrecognizedOptionException::class) {
             OptionalColorOpts(parserOf("-x")).color
         }.run {
             assertEquals("unrecognized option '-x'", message)
@@ -441,7 +443,7 @@ class OptionParserTest {
 
     @Test
     fun testUnrecognizedLongOpt() {
-        shouldThrow(UnrecognizedOptionException::class.java) {
+        shouldThrow(UnrecognizedOptionException::class) {
             OptionalColorOpts(parserOf("--ecks")).color
         }.run {
             assertEquals("unrecognized option '--ecks'", message)
@@ -455,14 +457,14 @@ class OptionParserTest {
         }
 
         // Note that name actually used for option is used in message
-        shouldThrow(OptionMissingRequiredArgumentException::class.java) {
+        shouldThrow(OptionMissingRequiredArgumentException::class) {
             Opts(parserOf("-x")).x
         }.run {
             assertEquals("option '-x' is missing a required argument", message)
         }
 
         // Note that name actually used for option is used in message
-        shouldThrow(OptionMissingRequiredArgumentException::class.java) {
+        shouldThrow(OptionMissingRequiredArgumentException::class) {
             Opts(parserOf("--ecks")).x
         }.run {
             assertEquals("option '--ecks' is missing a required argument", message)
@@ -477,7 +479,7 @@ class OptionParserTest {
         }
 
         // Note that despite chaining, hyphen appears in message
-        shouldThrow(OptionMissingRequiredArgumentException::class.java) {
+        shouldThrow(OptionMissingRequiredArgumentException::class) {
             Opts(parserOf("-yx")).x
         }.run {
             assertEquals("option '-x' is missing a required argument", message)
@@ -509,19 +511,19 @@ class OptionParserTest {
         assertEquals(1, opts0.y)
         assertEquals(10, opts0.x)
 
-        shouldThrow(InvalidArgumentException::class.java) {
+        shouldThrow(InvalidArgumentException::class) {
             Opts(parserOf("-y20", "-x10")).x
         }.run {
             assertEquals("Y must be less than X", message)
         }
 
-        shouldThrow(InvalidArgumentException::class.java) {
+        shouldThrow(InvalidArgumentException::class) {
             Opts(parserOf("-y10", "-x15")).x
         }.run {
             assertEquals("X must be even, 15 is odd", message)
         }
 
-        shouldThrow(InvalidArgumentException::class.java) {
+        shouldThrow(InvalidArgumentException::class) {
             Opts(parserOf("-y10", "-x15")).x
         }.run {
             assertEquals("X must be even, 15 is odd", message)
@@ -554,19 +556,19 @@ class OptionParserTest {
         assertEquals(1, opts0.y)
         assertEquals(10, opts0.x)
 
-        shouldThrow(InvalidArgumentException::class.java) {
+        shouldThrow(InvalidArgumentException::class) {
             Opts(parserOf("-y20", "-x10")).x
         }.run {
             assertEquals("Y must be less than X", message)
         }
 
-        shouldThrow(InvalidArgumentException::class.java) {
+        shouldThrow(InvalidArgumentException::class) {
             Opts(parserOf("-y10", "-x15")).x
         }.run {
             assertEquals("X must be even, 15 is odd", message)
         }
 
-        shouldThrow(InvalidArgumentException::class.java) {
+        shouldThrow(InvalidArgumentException::class) {
             Opts(parserOf("-y10", "-x15")).x
         }.run {
             assertEquals("X must be even, 15 is odd", message)
@@ -587,14 +589,14 @@ class OptionParserTest {
         }
 
         // Attempting to give -y a parameter, "z", is treated as unrecognized option.
-        shouldThrow(UnrecognizedOptionException::class.java) {
+        shouldThrow(UnrecognizedOptionException::class) {
             Opts(parserOf("-yz")).y
         }.run {
             assertEquals("unrecognized option '-z'", message)
         }
 
         // Unconsumed "z" again, but note that it triggers even if we don't look at y.
-        shouldThrow(UnrecognizedOptionException::class.java) {
+        shouldThrow(UnrecognizedOptionException::class) {
             Opts(parserOf("-yz")).x
         }.run {
             assertEquals("unrecognized option '-z'", message)
@@ -607,14 +609,14 @@ class OptionParserTest {
         }
 
         // Attempting to give --why a parameter, "z" causes an error.
-        shouldThrow(UnexpectedOptionArgumentException::class.java) {
+        shouldThrow(UnexpectedOptionArgumentException::class) {
             Opts(parserOf("--why=z")).y
         }.run {
             assertEquals("option '--why' doesn't allow an argument", message)
         }
 
         // Unconsumed "z" again, but note that it triggers even if we don't look at y.
-        shouldThrow(UnexpectedOptionArgumentException::class.java) {
+        shouldThrow(UnexpectedOptionArgumentException::class) {
             Opts(parserOf("--why=z")).x
         }.run {
             assertEquals("option '--why' doesn't allow an argument", message)
@@ -693,13 +695,13 @@ class OptionParserTest {
             val end by parser.argumentList("END...", 3..5) { toInt() }
         }
 
-        shouldThrow(MissingRequiredPositionalArgumentException::class.java) {
+        shouldThrow(MissingRequiredPositionalArgumentException::class) {
             Opts(parserOf("1", "2")).flag
         }.run {
             assertEquals("missing START operand", message)
         }
 
-        shouldThrow(MissingRequiredPositionalArgumentException::class.java) {
+        shouldThrow(MissingRequiredPositionalArgumentException::class) {
             Opts(parserOf("1", "2", "3", "4", "5")).flag
         }.run {
             assertEquals("missing END operand", message)
@@ -741,7 +743,7 @@ class OptionParserTest {
             assertEquals(listOf(5, 6, 7, 8, 9), end)
         }
 
-        shouldThrow(UnexpectedPositionalArgumentException::class.java) {
+        shouldThrow(UnexpectedPositionalArgumentException::class) {
             Opts(parserOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")).flag
         }.run {
             assertEquals("unexpected argument after END...", message)
