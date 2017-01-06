@@ -19,15 +19,16 @@
 package com.xenomachina.optionparser
 
 import kotlin.reflect.KProperty
+import kotlin.system.exitProcess
 
 /**
  * A command-line option/argument parser.
  */
-class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
-    // TODO: add --help support
+class OptionParser(args: Array<out String>,
+                   mode: Mode = Mode.GNU,
+                   helpFormatter: HelpFormatter? = DefaultHelpFormatter()) {
     // TODO: add support for inlining (eg: -@filename)
     // TODO: add sub-command support
-    // TODO: add ELLIPSIS and [] in usage automatically
 
     enum class Mode { GNU, POSIX }
 
@@ -35,20 +36,34 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
      * Creates a Delegate for a zero-argument option that returns true if and only the option is present in args.
      */
     fun flagging(vararg names: String): Delegate<Boolean> =
-            option<Boolean>(*names, valueName = bestOptionName(names)) { true }.default(false)
+            option<Boolean>(
+                    *names,
+                    valueName = bestOptionName(names),
+                    usageArgument = null,
+                    isRepeating = false) { true }.default(false)
 
     /**
      * Creates a Delegate for a zero-argument option that returns the count of how many times the option appears in args.
      */
     fun counting(vararg names: String): Delegate<Int> =
-            option<Int>(*names, valueName = bestOptionName(names)) { value.orElse { 0 } + 1 }.default(0)
+            option<Int>(
+                    *names,
+                    valueName = bestOptionName(names),
+                    usageArgument = null,
+                    isRepeating = true) { value.orElse { 0 } + 1 }.default(0)
 
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's (transformed) argument.
      */
     inline fun <T> storing(vararg names: String,
-                           crossinline transform: String.() -> T): Delegate<T> =
-            option(*names, valueName = optionNamesToBestArgName(names)) { transform(this.next()) }
+                           crossinline transform: String.() -> T): Delegate<T> {
+        val valueName = optionNamesToBestArgName(names);
+        return option(
+                *names,
+                valueName = valueName,
+                usageArgument = valueName,
+                isRepeating = false) { transform(this.next()) }
+    }
 
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's argument.
@@ -62,11 +77,17 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
      */
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
                                                     initialValue: T,
-                                                    crossinline transform: String.() -> E): Delegate<T> =
-            option<T>(*names, valueName = optionNamesToBestArgName(names) + ELLIPSIS) {
-                value!!.value.add(transform(next()))
-                value.value
-            }.default(initialValue)
+                                                    crossinline transform: String.() -> E): Delegate<T> {
+        val valueName = optionNamesToBestArgName(names)
+        return option<T>(
+                *names,
+                valueName = valueName,
+                usageArgument = valueName,
+                isRepeating = true) {
+            value!!.value.add(transform(next()))
+            value.value
+        }.default(initialValue)
+    }
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
@@ -97,7 +118,9 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
     fun <T> mapping(map: Map<String, T>): Delegate<T> {
         val names = map.keys.toTypedArray()
         return option(*names,
-                valueName = map.keys.joinToString("|")) {
+                valueName = map.keys.joinToString("|"),
+                usageArgument = null,
+                isRepeating = false) {
             map[optionName]!!
         }
     }
@@ -105,15 +128,21 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
     /**
      * Creates a Delegate for an option with the specified names.
      * @param names names of options, with leading "-" or "--"
-     * @param valueName name to use when talking about value of this option in error messages or help text
+     * @param valueName name to use when talking about value of this option in error messages
+     * @param usageArgument how to represent argument(s) in help text, or null if consumes no arguments
      * @param handler A function that assists in parsing arguments by computing the value of this option
      */
     fun <T> option(vararg names: String,
                    valueName: String,
+                   usageArgument: String?,
+                   isRepeating: Boolean = true,
                    handler: OptionArgumentIterator<T>.() -> T): Delegate<T> {
         val delegate = OptionDelegate<T>(
                 parser = this,
                 valueName = valueName,
+                optionNames = listOf(*names),
+                usageArgument = usageArgument,
+                isRepeating = isRepeating,
                 handler = handler)
         for (name in names) {
             registerOption(name, delegate)
@@ -218,6 +247,7 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
             override val valueName: String) : Delegate<T> {
 
         protected var holder: Holder<T>? = null
+        protected var helpText: String? = null
 
         init {
             parser.assertNotParsed()
@@ -235,6 +265,7 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
 
         override fun help(help: String): Delegate<T> {
             parser.assertNotParsed()
+            this.helpText = help
             return this
         }
 
@@ -257,18 +288,34 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
             for (validator in validators) validator()
         }
 
+        abstract fun toValueHelp(): ValueHelp
+
         private val validators = mutableListOf<Delegate<T>.() -> Unit>()
     }
 
     private class OptionDelegate<T>(
             parser: OptionParser,
             valueName: String,
+            val optionNames: List<String>,
+            val usageArgument: String?,
+            val isRepeating: Boolean,
             val handler: OptionArgumentIterator<T>.() -> T) : ParsingDelegate<T>(parser, valueName) {
 
         fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
             val input = OptionArgumentIterator(holder, name, firstArg, index, args)
             holder = Holder(handler(input))
             return input.consumed
+        }
+
+        override fun toValueHelp(): ValueHelp {
+            return ValueHelp(
+                    isRequired = (holder == null),
+                    isRepeating = isRepeating,
+                    usages = if (usageArgument != null)
+                                 optionNames.map { "$it $usageArgument" }
+                             else optionNames,
+                    isPositional = false,
+                    help = helpText)
         }
     }
 
@@ -280,6 +327,15 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
 
         fun parseArguments(args: List<String>) {
             holder = Holder(args.map(f))
+        }
+
+        override fun toValueHelp(): ValueHelp {
+            return ValueHelp(
+                    isRequired = sizeRange.first > 0,
+                    isRepeating = sizeRange.last > 1,
+                    usages = listOf(valueName),
+                    isPositional = true,
+                    help = helpText)
         }
     }
 
@@ -422,7 +478,7 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
             val sizeRange = delegate.sizeRange
             val chunkSize = (sizeRange.first + extra).coerceIn(sizeRange)
             if (chunkSize > remaining) {
-                throw MissingRequiredPositionalArgumentException(delegate.valueName.removeSuffix(ELLIPSIS))
+                throw MissingRequiredPositionalArgumentException(delegate.valueName)
             }
             delegate.parseArguments(args.subList(index, index + chunkSize))
             lastValueName = delegate.valueName
@@ -495,8 +551,6 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
         private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
         private val LEADING_HYPHENS = Regex("^-{1,2}")
 
-        val ELLIPSIS = "..."
-
         fun bestOptionName(names: Array<out String>): String {
             if (names.size < 1)
                 throw IllegalArgumentException("need at least one option name")
@@ -517,6 +571,20 @@ class OptionParser(val args: Array<out String>, mode: Mode = Mode.GNU) {
         private fun optionNameToArgName(name: String) =
                 LEADING_HYPHENS.replace(name, "").toUpperCase().replace('-', '_')
     }
+
+    init {
+        if (helpFormatter != null) {
+            option<Unit>("-h", "--help",
+                    valueName = "SHOW_HELP",
+                    usageArgument = null,
+                    isRepeating = false) {
+                throw ShowHelpException {
+                    progName ->
+                    helpFormatter.format(progName, delegates.map { it.toValueHelp() })
+                }
+            }.default(Unit).help("show this help message and exit")
+        }
+    }
 }
 
 /**
@@ -530,5 +598,97 @@ fun <T> Holder<T>?.orElse(f: () -> T): T {
         return f()
     } else {
         return value
+    }
+}
+
+interface HelpFormatter {
+    fun format(progName: String?,
+               values: List<ValueHelp>): String
+}
+
+data class ValueHelp(
+        val usages: List<String>,
+        val isRequired: Boolean,
+        val isRepeating: Boolean,
+        val isPositional: Boolean,
+        val help: String?)
+
+class DefaultHelpFormatter(val prologue: String? = null,
+                           val epilogue: String? = null) : HelpFormatter {
+    override fun format(progName: String?,
+                        values: List<ValueHelp>): String {
+        val sb = StringBuilder()
+        appendUsage(sb, progName, values)
+
+        if (!prologue.isNullOrEmpty()) {
+            sb.append("\n")
+            sb.append(prologue)
+            sb.append("\n")
+        }
+
+        val required = mutableListOf<ValueHelp>()
+        val optional = mutableListOf<ValueHelp>()
+        val positional = mutableListOf<ValueHelp>()
+
+        for (value in values) {
+            when {
+                value.isPositional -> positional
+                value.isRequired -> required
+                else -> optional
+            }.add(value)
+        }
+        appendSection(sb, "required", required)
+        appendSection(sb, "optional", optional)
+        appendSection(sb, "positional", positional)
+
+        if (!epilogue.isNullOrEmpty()) {
+            sb.append("\n")
+            sb.append(epilogue)
+            sb.append("\n")
+        }
+
+        return sb.toString()
+    }
+
+    private fun appendSection(sb: StringBuilder, name: String, values: List<ValueHelp>) {
+        if (!values.isEmpty()) {
+            sb.append("\n")
+            sb.append("$name arguments:\n")
+            for (value in values) {
+                sb.append("  ")
+                sb.append(value.usages.joinToString(", "))
+                value.help?.let {
+                    sb.append("\t")
+                    sb.append(it)
+                }
+                sb.append("\n")
+            }
+        }
+    }
+
+    private fun appendUsage(sb: StringBuilder, progName: String?, values: List<ValueHelp>) {
+        sb.append("usage:")
+        if (progName != null) sb.append(" $progName")
+        for (value in values) value.run {
+            if (!usages.isEmpty()) {
+                val usage = usages[0]
+                if (isRequired) {
+                    sb.append(" $usage")
+                } else {
+                    sb.append(" [$usage]")
+                }
+                if (isRepeating) {
+                    sb.append("...")
+                }
+            }
+        }
+        sb.append("\n")
+    }
+}
+
+class ShowHelpException(val formatHelp: (String?) -> String) : SystemExitException("Help was requested", 0) {
+    override fun printAndExit(progName: String?): Nothing {
+        System.out.print(formatHelp(progName))
+        exitProcess(returnCode)
     }
 }

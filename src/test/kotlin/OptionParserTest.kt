@@ -18,13 +18,10 @@
 
 package com.xenomachina.optionparser
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
+import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
-import kotlin.reflect.KClass
 
 
 class OptionParserTest {
@@ -48,7 +45,9 @@ class OptionParserTest {
     @Test
     fun testArglessShortOptions() {
         class Opts(parser: OptionParser) {
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME") {
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
+                    valueName = "VALUE_NAME",
+                    usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
@@ -70,7 +69,9 @@ class OptionParserTest {
             val a by parser.flagging("-a")
             val b by parser.flagging("-b")
             val c by parser.flagging("-c")
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME") {
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
+                    valueName = "VALUE_NAME",
+                    usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName:${next()}")
                 }
@@ -109,12 +110,16 @@ class OptionParserTest {
     @Test
     fun testMixedShortOptions() {
         class Opts(parser: OptionParser) {
-            val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME") {
+            val def by parser.option<MutableList<String>>("-d", "-e", "-f",
+                    valueName = "VALUE_NAME",
+                    usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
-            val abc by parser.option<MutableList<String>>("-a", "-b", "-c", valueName = "ARG_NAME") {
+            val abc by parser.option<MutableList<String>>("-a", "-b", "-c",
+                    valueName = "VALUE_NAME",
+                    usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
@@ -134,17 +139,23 @@ class OptionParserTest {
     @Test
     fun testMixedShortOptionsWithArgs() {
         class Opts(parser: OptionParser) {
-            val def by parser.option<MutableList<String>>("-d", "-e", "-f", valueName = "ARG_NAME") {
+            val def by parser.option<MutableList<String>>("-d", "-e", "-f",
+                    valueName = "VALUE_NAME",
+                    usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
-            val abc by parser.option<MutableList<String>>("-a", "-b", "-c", valueName = "ARG_NAME") {
+            val abc by parser.option<MutableList<String>>("-a", "-b", "-c",
+                    valueName = "VALUE_NAME",
+                    usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
             }
-            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z", valueName = "ARG_NAME") {
+            val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
+                    valueName = "VALUE_NAME",
+                    usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName:${next()}")
                 }
@@ -167,7 +178,9 @@ class OptionParserTest {
     @Test
     fun testArglessLongOptions() {
         class Opts(parser: OptionParser) {
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra", valueName = "ARG_NAME") {
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra",
+                    valueName = "ARG_NAME",
+                    usageArgument = null) {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName")
                 }
@@ -186,7 +199,8 @@ class OptionParserTest {
     @Test
     fun testLongOptionsWithArgs() {
         class Opts(parser: OptionParser) {
-            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod", valueName = "ARG_NAME") {
+            val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod",
+                    valueName = "ARG_NAME", usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName:${next()}")
                 }
@@ -214,9 +228,7 @@ class OptionParserTest {
     @Test
     fun testDefault() {
         class Opts(parser: OptionParser) {
-            val x by parser.option<Int>("-x", valueName = "ARG_NAME") {
-                next().toInt()
-            }.default(5)
+            val x by parser.storing("-x") { toInt() }.default(5)
         }
 
         // Test with no value
@@ -628,7 +640,7 @@ class OptionParserTest {
         class Opts(parser: OptionParser) {
             val flag by parser.flagging("-f", "--flag")
             val store by parser.storing("-s", "--store").default("DEFAULT")
-            val sources by parser.argumentList("SOURCE...")
+            val sources by parser.argumentList("SOURCE")
             val destination by parser.argument("DEST")
         }
 
@@ -691,8 +703,8 @@ class OptionParserTest {
         class Opts(parser: OptionParser) {
             val flag by parser.flagging("-f", "--flag")
             val store by parser.storing("-s", "--store").default("DEFAULT")
-            val start by parser.argumentList("START...", 3..4) { toInt() }
-            val end by parser.argumentList("END...", 3..5) { toInt() }
+            val start by parser.argumentList("START", 3..4) { toInt() }
+            val end by parser.argumentList("END", 3..5) { toInt() }
         }
 
         shouldThrow<MissingRequiredPositionalArgumentException> {
@@ -746,7 +758,7 @@ class OptionParserTest {
         shouldThrow<UnexpectedPositionalArgumentException> {
             Opts(parserOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")).flag
         }.run {
-            assertEquals("unexpected argument after END...", message)
+            assertEquals("unexpected argument after END", message)
         }
     }
 
@@ -766,6 +778,41 @@ class OptionParserTest {
 
         Opts(parserOf("-v", "-v")).run {
             assertEquals(2, verbosity)
+        }
+    }
+
+    @Test
+    fun testHelp() {
+        class Opts(parser: OptionParser) {
+            val dryRun by parser.flagging("-n", "--dry-run").help("don't do anything")
+            val includes by parser.adding("-I", "--include").help("search this directory for headers")
+            val outDir by parser.storing("-o", "--output").help("generate output here")
+            val verbosity by parser.counting("-v", "--verbose").help("increase verbosity")
+            val sources by parser.argumentList("SOURCE").help("source file")
+            val destination by parser.argument("DEST").help("destination file")
+        }
+
+        shouldThrow<ShowHelpException> {
+            Opts(parserOf("--help")).dryRun
+        }.run {
+            val help = formatHelp("program_name")
+            assertEquals(
+"""usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT [-v]... SOURCE... DEST
+
+required arguments:
+  -o OUTPUT, --output OUTPUT	generate output here
+
+optional arguments:
+  -h, --help	show this help message and exit
+  -n, --dry-run	don't do anything
+  -I INCLUDE, --include INCLUDE	search this directory for headers
+  -v, --verbose	increase verbosity
+
+positional arguments:
+  SOURCE	source file
+  DEST	destination file
+""",
+                    help)
         }
     }
 
