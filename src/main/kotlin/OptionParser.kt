@@ -243,7 +243,7 @@ class OptionParser(args: Array<out String>,
     }
 
     private abstract class ParsingDelegate<T>(
-            val parser: OptionParser, // TODO: replace with ParsingState
+            val parser: OptionParser,
             override val valueName: String) : Delegate<T> {
 
         protected var holder: Holder<T>? = null
@@ -339,7 +339,6 @@ class OptionParser(args: Array<out String>,
         }
     }
 
-    // TODO: pass valueName down to OptionArgumentIterator?
     /**
      * Iterator over arguments that follow the option being processed.
      * @property value a Holder containing the current value associated with this option, or null if unset
@@ -621,6 +620,7 @@ interface HelpFormatter {
             val help: String?)
 }
 
+// TODO: implement word wrapping and fix indentation
 class DefaultHelpFormatter(val prologue: String? = null,
                            val epilogue: String? = null) : HelpFormatter {
     override fun format(progName: String?,
