@@ -288,7 +288,7 @@ class OptionParser(args: Array<out String>,
             for (validator in validators) validator()
         }
 
-        abstract fun toValueHelp(): ValueHelp
+        abstract fun toValueHelp(): HelpFormatter.Value
 
         private val validators = mutableListOf<Delegate<T>.() -> Unit>()
     }
@@ -307,8 +307,8 @@ class OptionParser(args: Array<out String>,
             return input.consumed
         }
 
-        override fun toValueHelp(): ValueHelp {
-            return ValueHelp(
+        override fun toValueHelp(): HelpFormatter.Value {
+            return HelpFormatter.Value(
                     isRequired = (holder == null),
                     isRepeating = isRepeating,
                     usages = if (usageArgument != null)
@@ -329,8 +329,8 @@ class OptionParser(args: Array<out String>,
             holder = Holder(args.map(f))
         }
 
-        override fun toValueHelp(): ValueHelp {
-            return ValueHelp(
+        override fun toValueHelp(): HelpFormatter.Value {
+            return HelpFormatter.Value(
                     isRequired = sizeRange.first > 0,
                     isRepeating = sizeRange.last > 1,
                     usages = listOf(valueName),
@@ -602,21 +602,29 @@ fun <T> Holder<T>?.orElse(f: () -> T): T {
 }
 
 interface HelpFormatter {
-    fun format(progName: String?,
-               values: List<ValueHelp>): String
-}
+    fun format(progName: String?, values: List<Value>): String
 
-data class ValueHelp(
-        val usages: List<String>,
-        val isRequired: Boolean,
-        val isRepeating: Boolean,
-        val isPositional: Boolean,
-        val help: String?)
+    /**
+     * An option or positional argument type which should be formatted for help
+     *
+     * @param usages possible usage strings for this argument type
+     * @param isRequired indicates whether this is required
+     * @param isRepeating indicates whether it makes sense to repeat this argument
+     * @param isPositional indicates whether this is a positional argument
+     * @param help help text provided at Delegate construction time
+     */
+    data class Value(
+            val usages: List<String>,
+            val isRequired: Boolean,
+            val isRepeating: Boolean,
+            val isPositional: Boolean,
+            val help: String?)
+}
 
 class DefaultHelpFormatter(val prologue: String? = null,
                            val epilogue: String? = null) : HelpFormatter {
     override fun format(progName: String?,
-                        values: List<ValueHelp>): String {
+                        values: List<HelpFormatter.Value>): String {
         val sb = StringBuilder()
         appendUsage(sb, progName, values)
 
@@ -626,9 +634,9 @@ class DefaultHelpFormatter(val prologue: String? = null,
             sb.append("\n")
         }
 
-        val required = mutableListOf<ValueHelp>()
-        val optional = mutableListOf<ValueHelp>()
-        val positional = mutableListOf<ValueHelp>()
+        val required = mutableListOf<HelpFormatter.Value>()
+        val optional = mutableListOf<HelpFormatter.Value>()
+        val positional = mutableListOf<HelpFormatter.Value>()
 
         for (value in values) {
             when {
@@ -650,7 +658,7 @@ class DefaultHelpFormatter(val prologue: String? = null,
         return sb.toString()
     }
 
-    private fun appendSection(sb: StringBuilder, name: String, values: List<ValueHelp>) {
+    private fun appendSection(sb: StringBuilder, name: String, values: List<HelpFormatter.Value>) {
         if (!values.isEmpty()) {
             sb.append("\n")
             sb.append("$name arguments:\n")
@@ -666,7 +674,7 @@ class DefaultHelpFormatter(val prologue: String? = null,
         }
     }
 
-    private fun appendUsage(sb: StringBuilder, progName: String?, values: List<ValueHelp>) {
+    private fun appendUsage(sb: StringBuilder, progName: String?, values: List<HelpFormatter.Value>) {
         sb.append("usage:")
         if (progName != null) sb.append(" $progName")
         for (value in values) value.run {
