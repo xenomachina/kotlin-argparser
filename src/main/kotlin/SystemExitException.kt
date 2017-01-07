@@ -1,6 +1,6 @@
 // Copyright © 2016 Laurence Gonsalves
 //
-// This file is part of kotlin-optionparser, a library which can be found at
+// This file is part of kotlin-argparser, a library which can be found at
 // http://github.com/xenomachina/kotlin-optionparser
 //
 // This library is free software; you can redistribute it and/or modify it
@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this library; if not, see http://www.gnu.org/licenses/
 
-package com.xenomachina.optionparser
+package com.xenomachina.argparser
 
 import kotlin.system.exitProcess
 

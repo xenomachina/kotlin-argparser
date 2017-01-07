@@ -1,6 +1,6 @@
 // Copyright © 2016 Laurence Gonsalves
 //
-// This file is part of kotlin-optionparser, a library which can be found at
+// This file is part of kotlin-argparser, a library which can be found at
 // http://github.com/xenomachina/kotlin-optionparser
 //
 // This library is free software; you can redistribute it and/or modify it
@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this library; if not, see http://www.gnu.org/licenses/
 
-package com.xenomachina.optionparser
+package com.xenomachina.argparser
 
 import kotlin.reflect.KProperty
 import kotlin.system.exitProcess
@@ -24,9 +24,9 @@ import kotlin.system.exitProcess
 /**
  * A command-line option/argument parser.
  */
-class OptionParser(args: Array<out String>,
-                   mode: Mode = Mode.GNU,
-                   helpFormatter: HelpFormatter? = DefaultHelpFormatter()) {
+class ArgParser(args: Array<out String>,
+                mode: Mode = Mode.GNU,
+                helpFormatter: HelpFormatter? = DefaultHelpFormatter()) {
     // TODO: add support for inlining (eg: -@filename)
     // TODO: add sub-command support
 
@@ -153,14 +153,14 @@ class OptionParser(args: Array<out String>,
     /**
      * Creates a Delegate for a single positional argument which returns the argument's value.
      */
-    fun argument(name: String) = argument(name) { this }
+    fun positional(name: String) = positional(name) { this }
 
     /**
      * Creates a Delegate for a single positional argument which returns the argument's transformed value.
      */
-    fun <T> argument(name: String,
-                     transform: String.() -> T): Delegate<T> {
-        return object : WrappingDelegate<List<T>, T>(argumentList(name, 1..1, transform)) {
+    fun <T> positional(name: String,
+                       transform: String.() -> T): Delegate<T> {
+        return object : WrappingDelegate<List<T>, T>(positionalList(name, 1..1, transform)) {
             override fun wrap(u: List<T>): T = u[0]
 
             override fun unwrap(w: T): List<T> = listOf(w)
@@ -170,17 +170,17 @@ class OptionParser(args: Array<out String>,
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the arguments.
      */
-    fun argumentList(name: String,
-                     sizeRange: IntRange = 1..Int.MAX_VALUE) =
-            argumentList(name, sizeRange) { this }
+    fun positionalList(name: String,
+                       sizeRange: IntRange = 1..Int.MAX_VALUE) =
+            positionalList(name, sizeRange) { this }
 
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the transformed
      * arguments.
      */
-    fun <T> argumentList(name: String,
-                         sizeRange: IntRange = 1..Int.MAX_VALUE,
-                         transform: String.() -> T): Delegate<List<T>> {
+    fun <T> positionalList(name: String,
+                           sizeRange: IntRange = 1..Int.MAX_VALUE,
+                           transform: String.() -> T): Delegate<List<T>> {
         sizeRange.run {
             if (step != 1)
                 throw IllegalArgumentException("step must be 1, not $step")
@@ -243,7 +243,7 @@ class OptionParser(args: Array<out String>,
     }
 
     private abstract class ParsingDelegate<T>(
-            val parser: OptionParser,
+            val parser: ArgParser,
             override val valueName: String) : Delegate<T> {
 
         protected var holder: Holder<T>? = null
@@ -294,7 +294,7 @@ class OptionParser(args: Array<out String>,
     }
 
     private class OptionDelegate<T>(
-            parser: OptionParser,
+            parser: ArgParser,
             valueName: String,
             val optionNames: List<String>,
             val usageArgument: String?,
@@ -320,7 +320,7 @@ class OptionParser(args: Array<out String>,
     }
 
     private class PositionalDelegate<T>(
-            parser: OptionParser,
+            parser: ArgParser,
             valueName: String,
             val sizeRange: IntRange,
             val f: String.() -> T) : ParsingDelegate<List<T>>(parser, valueName) {
@@ -416,16 +416,16 @@ class OptionParser(args: Array<out String>,
 
     private var inValidation = false
     private fun force() {
-        parseOptions
-        if (!inValidation) {
-            inValidation = true
-            try {
-                for (delegate in delegates) delegate.preValidate()
-                for (delegate in delegates) delegate.validate()
-            } finally {
-                inValidation = false
+            parseOptions
+            if (!inValidation) {
+                inValidation = true
+                try {
+                    for (delegate in delegates) delegate.preValidate()
+                    for (delegate in delegates) delegate.validate()
+                } finally {
+                    inValidation = false
+                }
             }
-        }
     }
 
     private var parseStarted = false
