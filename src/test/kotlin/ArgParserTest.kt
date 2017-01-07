@@ -1,7 +1,7 @@
 // Copyright © 2016 Laurence Gonsalves
 //
 // This file is part of kotlin-argparser, a library which can be found at
-// http://github.com/xenomachina/kotlin-optionparser
+// http://github.com/xenomachina/kotlin-argparser
 //
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by the
