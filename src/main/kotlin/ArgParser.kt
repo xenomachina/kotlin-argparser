@@ -415,7 +415,10 @@ class ArgParser(args: Array<out String>,
     }
 
     private var inValidation = false
-    private fun force() {
+    private var finished = false
+
+    fun force() {
+        if (!finished) {
             parseOptions
             if (!inValidation) {
                 inValidation = true
@@ -426,6 +429,8 @@ class ArgParser(args: Array<out String>,
                     inValidation = false
                 }
             }
+        }
+        finished = true
     }
 
     private var parseStarted = false
