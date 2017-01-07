@@ -1,22 +1,21 @@
-# Kotlin-OptionParser
+# Kotlin-ArgParser
 
-This is a library for parsing command-line options/arguments. It aims to be
-easy to use and concise yet powerful and robust.
+This is a library for parsing command-line arguments.  It can parse both
+options and positional arguments.  It aims to be easy to use and concise yet
+powerful and robust.
 
-In addition to parsing arguments, it can also help with parsing non-option
-arguments (that is, positional arguments).
 
 ## Overview
 
-The main class in this library is `OptionParser`. It handles the parsing of
+The main class in this library is `ArgParser`. It handles the parsing of
 command-line arguments, and also acts as a factory for creating property
 delegates. These delegates help to keep client code clear and concise.
 
 Typical usage is to create a class to represent the set of parsed arguments,
 which are in turn each represented by properties that delgate to an
-`OptionParser`:
+`ArgParser`:
 
-    class MyOptions(parser: OptionParser) {
+    class MyArgs(parser: ArgParser) {
         val verbose by parser.flagging("-v", "--verbose")
 
         val name by parser.storing("-N", "--name")
@@ -24,7 +23,10 @@ which are in turn each represented by properties that delgate to an
         val size by parser.storing("-s", "--size") { toInt() }
     }
 
-## Delegate Types
+## Option Types
+
+There are various types of options that can be parsed from the command line
+arguments.
 
 Boolean flags are created by asking the parser for a `flagging` delegate.  One
 or more option names, either short or long style, must be provided:
@@ -43,21 +45,22 @@ Options that expect a single argument are created by asking the parser for a
 Here either `-N` or `--name` with an argument will cause `name` to have that
 argument as its value.
 
-A parsing function can also be supplied. Here the `size` property will be an
-`Int` rather than a `String`:
+A function can also be supplied to transform the argument into the desired
+type. Here the `size` property will be an `Int` rather than a `String`:
 
     val size by parser.storing("-s", "--size") { toInt() }
 
 It's also possible to create options that add to a `Collection` each time they
 appear in the arguments using the `adding` delegate. Just like `storing`
-delegates, a parsing function may optionally be supplied:
+delegates, a transform function may optionally be supplied:
 
     val includeDirs by parser.adding("-I") { File(this) }
 
-Now each time the `-I` option appears, its argument is appended to `includeDirs`.
+Now each time the `-I` option appears, its argument is appended to
+`includeDirs`.
 
-For choosing between a fixed set of values (typically, but not necessarily, from an
-enum), a `mapping` delegate can be used:
+For choosing between a fixed set of values (typically, but not necessarily,
+from an enum), a `mapping` delegate can be used:
 
     val mode by parser.mapping(
             "--fast" to Mode.FAST,
@@ -85,11 +88,12 @@ in these common cases.
     }
             .help("collects fibonnaci sequence, remembers length")
 
-Delegates also have a few methods for setting optional attributes.
+The Delegates returned by these methods also have a few methods for setting
+optional attributes.
 
 For example, some types of options (notably `storing` and `mapping`) have no
-default value, and hence will be required options. To make them optional, a default
-value can be provided with the `default` method:
+default value, and hence will be required options unless a default
+value is provided with the `default` method:
 
     val name by parser.storing("-N", "--name")
             .default("John Doe")
@@ -99,18 +103,60 @@ Help text can also be provided through use of the `help` method:
     val verbose by parser.flagging("-v", "--verbose")
             .help("produce verbose output")
 
-TODO: positional parameters
+## Positional Arguments
 
-Exceptions caused by user error will all derive from `UserErrorException`, and
-include a status code appropriate for passing to `exitProcess`. As a
-convenience you can handle these exceptions by using the `runMain` extension
-function:
+Positional arguments can be collected by using the `positional` and
+`positionalList` methods. For a single positional argument:
+
+    val destination by parser.positional("DEST")
+
+The name ("DEST", here) is used in error handling and help text.
+
+For a list of positional arguments:
+
+    val sources by parser.positionalList("SOURCE", 1..Int.MAX_VALUE)
+
+The range indicates how many arguments should be collected, and actually
+defaults to the value shown in this example. As the name suggests, the
+resulting property will be a `List`.
+
+Both of these methods accept an optionl transform function for converting
+arguments from `String` to whatever type is actually desired:
+
+    val destination by parser.positional("DEST") { File(this) }
+    val sources by parser.positionalList("SOURCE", 1..Int.MAX_VALUE) { File(this) }
+
+## Error Handling
+
+Exceptions caused by user error will all derive from `SystemExitException`, and
+include a status code appropriate for passing to `exitProcess`.  It is
+recommended that transform functions (given to `storing`, `positionalList`, etc.)
+throw a `SystemExitException` when parsing fails.
+
+Additional post-parsing validation can be performed on a delegate using
+`addValidtator`:
+
+    val sources by parser.positionalList("SOURCE", 1..Int.MAX_VALUE) { File(this) }
+        .addValidtator {
+            for (source in value) {
+                if (!source.exists()) {
+                    throw SystemExitException("Cannot find file $source", 1)
+                }
+            }
+        }
+
+As a convenience you can handle these exceptions by using the `runMain`
+extension function:
 
     fun main(args: Array<String>) =
-            MyOptions(OptionParser(args)).runMain {
+            MyArgs(ArgParser(args)).runMain {
                 println("Hello, {name}!")
             }
 
+Note that parsing does not take place until at least one delegate is read, or
+`force` is called manually. It may be desirable to call `force` on the parser
+in the `init` of your args object after declaring all of your parsed
+properties.
 
 ## Parsing
 
@@ -127,18 +173,17 @@ TODO: write an explanation of help formatting once implemented
   until it is mature.
 
 - Upon reading the value any of the delegated properties created by an
-  `OptionParser`, the arguments used to construct that `OptionParser` will be
+  `ArgParser`, the arguments used to construct that `ArgParser` will be
   parsed. This means it's important that you don't attempt to create delegates
-  on an `OptionParser` after any of its existing delegated properties have been
+  on an `ArgParser` after any of its existing delegated properties have been
   read. Attempting to do so will cause an `IllegalStateException`. It would be
-  nice if Kotlin has facilities for doing some of the work of `OptionParser` at
+  nice if Kotlin has facilities for doing some of the work of `ArgParser` at
   compile time rather than run time, but so far the run time errors seem to be
   reasonalbly easy to avoid.
 
 ## Credits
 
-This library was created by [Laurence Gonsalves](http://laurence.gonsalv.es),
-aka [xenomachina](http://xenomachina.com/).
+This library was created by [Laurence Gonsalves](http://laurence.gonsalv.es).
 
 I'd also like to thank the creators of Python's
 [`argparse`](https://docs.python.org/3/library/argparse.html) module, which
