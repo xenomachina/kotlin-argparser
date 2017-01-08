@@ -16,25 +16,40 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this library; if not, see http://www.gnu.org/licenses/
 
-version '1.0-SNAPSHOT'
-
-apply plugin: 'kotlin'
-apply plugin: 'java'
-
-repositories {
-    mavenCentral()
-}
-
 buildscript {
-    ext.kotlin_version = '1.0.5-2'
-
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version"
     }
+}
+
+plugins {
+    id "com.jfrog.bintray" version "1.7.3"
+    id 'net.researchgate.release' version "2.5.0"
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'java'
+apply plugin: 'org.jetbrains.dokka'
+apply plugin: 'maven-publish'
+
+assert name == 'kotlin-argparser'
+def prettyName = 'Kotlin ArgParser'
+def tagline = 'Concise and easy yet powerful and robust command line argument parsing for Kotlin'
+
+group 'com.xenomachina'
+def githubRepo = "xenomachina/$name"
+def vcsUrl = "https://github.com/$githubRepo"
+
+sourceCompatibility = 1.6
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
@@ -46,3 +61,119 @@ dependencies {
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
 }
+
+//////////////////////////////////////////////////////////////////////////////
+// Dokka config
+//////////////////////////////////////////////////////////////////////////////
+
+// Based on https://github.com/Kotlin/dokka
+dokka {
+    moduleName = project.name
+    outputFormat = 'javadoc'
+    outputDirectory = "$buildDir/javadoc"
+    processConfigurations = ['compile']
+    //includes = ['packages.md', 'extra.md']
+    //samples = ['samples/basic.kt', 'samples/advanced.kt']
+    linkMapping {
+        dir = "src/main/kotlin"
+        url = "$vcsUrl/blob/master/src/main/kotlin"
+        suffix = "#L"
+    }
+    sourceDirs = files('src/main/kotlin')
+}
+
+// From @dimsuz at https://github.com/Kotlin/dokka/issues/42
+task dokkaJavadoc(type: org.jetbrains.dokka.gradle.DokkaTask) {
+    outputFormat = 'javadoc'
+    outputDirectory = javadoc.destinationDir
+    inputs.dir 'src/main/kotlin'
+}
+task javadocJar(type: Jar, dependsOn: dokkaJavadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// bintrayUpload config
+//////////////////////////////////////////////////////////////////////////////
+
+// Based on https://github.com/bintray/gradle-bintray-plugin
+bintray {
+  user = System.getenv('BINTRAY_USER')
+  key = System.getenv('BINTRAY_KEY')
+
+  pkg {
+    repo = 'maven'
+    name = project.name
+
+    licenses = ['LGPL-2.1']
+    vcsUrl = vcsUrl
+    websiteUrl = vcsUrl
+    issueTrackerUrl = "$vcsUrl/issues"
+    githubRepo = githubRepo
+    // TODO githubReleaseNotesFile = ???
+
+    version {
+      name = project.version
+      desc = "$prettyName version $project.version"
+      released = new Date()
+      vcsTag = "$project.version"
+    }
+  }
+
+  publications = ['MyPublication']
+}
+
+// Create the pom configuration:
+def pomConfig = {
+    licenses {
+        license {
+            name "GNU Lesser General Public License, Version 2.1"
+            url "https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt"
+            distribution "repo"
+        }
+    }
+    developers {
+        developer {
+            id "xenomachina"
+            name "Laurence Gonsalves"
+
+            // State-of-the art anti-scraper encryption. ;-)
+            email "moc.anihcamonex@ecnerual".reverse()
+        }
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+// Create the publication with the pom configuration:
+publishing {
+    publications {
+        MyPublication(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            // We use default groupId, artifactId, and version
+
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('description', tagline)
+                root.appendNode('name', prettyName)
+                root.appendNode('url', vcsUrl)
+                root.children().last() + pomConfig
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// gradle-release plugin config
+//////////////////////////////////////////////////////////////////////////////
+
+// Based on https://github.com/researchgate/gradle-release
+
+// This causes './gradlew release' to also upload release package to bintray.
+afterReleaseBuild.dependsOn bintrayUpload
