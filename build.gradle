@@ -49,7 +49,6 @@ project.ext {
     githubRepo = "xenomachina/$name"
     vcsUrl = "https://github.com/$githubRepo"
 }
-println project.ext.vcsUrl
 
 sourceCompatibility = 1.6
 
