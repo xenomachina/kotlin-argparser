@@ -39,12 +39,17 @@ apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'maven-publish'
 
 assert name == 'kotlin-argparser'
-def prettyName = 'Kotlin ArgParser'
-def tagline = 'Concise and easy yet powerful and robust command line argument parsing for Kotlin'
+description = 'Concise, easy, powerful and robust command line argument parsing for Kotlin'
+project.ext {
+    prettyName = 'Kotlin ArgParser'
+}
 
 group 'com.xenomachina'
-def githubRepo = "xenomachina/$name"
-def vcsUrl = "https://github.com/$githubRepo"
+project.ext {
+    githubRepo = "xenomachina/$name"
+    vcsUrl = "https://github.com/$githubRepo"
+}
+println project.ext.vcsUrl
 
 sourceCompatibility = 1.6
 
@@ -76,13 +81,13 @@ dokka {
     //samples = ['samples/basic.kt', 'samples/advanced.kt']
     linkMapping {
         dir = "src/main/kotlin"
-        url = "$vcsUrl/blob/master/src/main/kotlin"
+        url = "$project.ext.vcsUrl/blob/master/src/main/kotlin"
         suffix = "#L"
     }
     sourceDirs = files('src/main/kotlin')
 }
 
-// From @dimsuz at https://github.com/Kotlin/dokka/issues/42
+// From @jnizet at https://github.com/Kotlin/dokka/issues/42
 task dokkaJavadoc(type: org.jetbrains.dokka.gradle.DokkaTask) {
     outputFormat = 'javadoc'
     outputDirectory = javadoc.destinationDir
@@ -105,17 +110,18 @@ bintray {
   pkg {
     repo = 'maven'
     name = project.name
+    desc = project.description
 
     licenses = ['LGPL-2.1']
-    vcsUrl = vcsUrl
-    websiteUrl = vcsUrl
-    issueTrackerUrl = "$vcsUrl/issues"
-    githubRepo = githubRepo
+    vcsUrl = "$project.ext.vcsUrl"
+    websiteUrl = "$project.ext.vcsUrl"
+    issueTrackerUrl = "$project.ext.vcsUrl/issues"
+    githubRepo = project.ext.githubRepo
     // TODO githubReleaseNotesFile = ???
 
     version {
       name = project.version
-      desc = "$prettyName version $project.version"
+      desc = "$project.ext.prettyName version $project.version"
       released = new Date()
       vcsTag = "$project.version"
     }
@@ -160,9 +166,9 @@ publishing {
 
             pom.withXml {
                 def root = asNode()
-                root.appendNode('description', tagline)
-                root.appendNode('name', prettyName)
-                root.appendNode('url', vcsUrl)
+                root.appendNode('description', project.description)
+                root.appendNode('name', project.ext.prettyName)
+                root.appendNode('url', project.ext.vcsUrl)
                 root.children().last() + pomConfig
             }
         }
