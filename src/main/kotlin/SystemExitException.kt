@@ -18,6 +18,7 @@
 
 package com.xenomachina.argparser
 
+import java.io.PrintStream
 import kotlin.system.exitProcess
 
 /**
@@ -29,13 +30,24 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
      * Prints a message for the user to either `System.err` or `System.out`, and then exits with the appropriate
      * return code.
      *
-     * @param progName the name of this program as entered by the user, or null if not known
+     * @param progName the name of this program as invoked, or null if not known
      * @param columns the number of columns to wrap at, or 0 if not to wrap at all
      */
-    open fun printAndExit(progName: String? = null, columns: Int = 0): Nothing {
-        val leader = if (progName == null) "" else "$progName: "
-        System.err.println("$leader$message")
+    fun printAndExit(progName: String? = null, columns: Int = 0): Nothing {
+        val stream = if (returnCode == 0) System.out else System.err
+        printUserMessage(stream, progName, columns)
         exitProcess(returnCode)
+    }
+
+    /**
+     * Prints a message for the user to the specified `PrintStream`.
+     *
+     * @param progName the name of this program as invoked, or null if not known
+     * @param columns the number of columns to wrap at, or 0 if not to wrap at all
+     */
+    open fun printUserMessage(stream: PrintStream, progName: String?, columns: Int) {
+        val leader = if (progName == null) "" else "$progName: "
+        stream.println("$leader$message")
     }
 }
 

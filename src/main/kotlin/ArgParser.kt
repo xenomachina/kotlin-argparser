@@ -18,6 +18,7 @@
 
 package com.xenomachina.argparser
 
+import java.io.PrintStream
 import kotlin.reflect.KProperty
 import kotlin.system.exitProcess
 
@@ -699,8 +700,7 @@ class DefaultHelpFormatter(val prologue: String? = null,
 
 class ShowHelpException(val formatHelp: (String?, Int) -> String) :
         SystemExitException("Help was requested", 0) {
-    override fun printAndExit(progName: String?, columns: Int): Nothing {
-        System.out.print(formatHelp(progName, columns))
-        exitProcess(returnCode)
+    override fun printUserMessage(stream: PrintStream, progName: String?, columns: Int) {
+        stream.print(formatHelp(progName, columns))
     }
 }
