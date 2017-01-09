@@ -27,8 +27,6 @@ import kotlin.system.exitProcess
 class ArgParser(args: Array<out String>,
                 mode: Mode = Mode.GNU,
                 helpFormatter: HelpFormatter? = DefaultHelpFormatter()) {
-    // TODO: add support for inlining (eg: -@filename)
-    // TODO: add sub-command support
 
     enum class Mode { GNU, POSIX }
 
@@ -625,7 +623,6 @@ interface HelpFormatter {
             val help: String?)
 }
 
-// TODO: implement word wrapping and fix indentation
 class DefaultHelpFormatter(val prologue: String? = null,
                            val epilogue: String? = null) : HelpFormatter {
     override fun format(progName: String?,
