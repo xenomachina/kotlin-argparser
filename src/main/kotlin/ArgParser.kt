@@ -286,7 +286,7 @@ class ArgParser(args: Array<out String>,
             for (validator in validators) validator()
         }
 
-        abstract fun toValueHelp(): HelpFormatter.Value
+        abstract fun toHelpFormatterValue(): HelpFormatter.Value
 
         private val validators = mutableListOf<Delegate<T>.() -> Unit>()
     }
@@ -305,7 +305,7 @@ class ArgParser(args: Array<out String>,
             return input.consumed
         }
 
-        override fun toValueHelp(): HelpFormatter.Value {
+        override fun toHelpFormatterValue(): HelpFormatter.Value {
             return HelpFormatter.Value(
                     isRequired = (holder == null),
                     isRepeating = isRepeating,
@@ -327,7 +327,7 @@ class ArgParser(args: Array<out String>,
             holder = Holder(args.map(f))
         }
 
-        override fun toValueHelp(): HelpFormatter.Value {
+        override fun toHelpFormatterValue(): HelpFormatter.Value {
             return HelpFormatter.Value(
                     isRequired = sizeRange.first > 0,
                     isRepeating = sizeRange.last > 1,
@@ -582,7 +582,7 @@ class ArgParser(args: Array<out String>,
                     isRepeating = false) {
                 throw ShowHelpException {
                     progName, columns ->
-                        helpFormatter.format(progName, columns, delegates.map { it.toValueHelp() })
+                        helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() })
                 }
             }.default(Unit).help("show this help message and exit")
         }
