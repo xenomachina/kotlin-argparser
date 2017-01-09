@@ -18,9 +18,8 @@
 
 package com.xenomachina.argparser
 
-import java.io.PrintStream
+import java.io.Writer
 import kotlin.reflect.KProperty
-import kotlin.system.exitProcess
 
 /**
  * A command-line option/argument parser.
@@ -241,7 +240,7 @@ class ArgParser(args: Array<out String>,
         fun addValidtator(validator: Delegate<T>.() -> Unit): Delegate<T>
     }
 
-    private abstract class ParsingDelegate<T>(
+    internal abstract class ParsingDelegate<T>(
             val parser: ArgParser,
             override val valueName: String) : Delegate<T> {
 
@@ -311,8 +310,8 @@ class ArgParser(args: Array<out String>,
                     isRequired = (holder == null),
                     isRepeating = isRepeating,
                     usages = if (usageArgument != null)
-                                 optionNames.map { "$it $usageArgument" }
-                             else optionNames,
+                        optionNames.map { "$it $usageArgument" }
+                    else optionNames,
                     isPositional = false,
                     help = helpText)
         }
@@ -581,11 +580,16 @@ class ArgParser(args: Array<out String>,
                     valueName = "SHOW_HELP",
                     usageArgument = null,
                     isRepeating = false) {
-                throw ShowHelpException {
-                    progName, columns ->
-                        helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() })
-                }
+                throw ShowHelpException(helpFormatter, delegates)
             }.default(Unit).help("show this help message and exit")
+        }
+    }
+
+    class ShowHelpException internal constructor(val helpFormatter: HelpFormatter,
+                                                 private val delegates: List<ParsingDelegate<*>>) :
+            SystemExitException("Help was requested", 0) {
+        override fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
+            writer.write(helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() }))
         }
     }
 }
@@ -695,12 +699,5 @@ class DefaultHelpFormatter(val prologue: String? = null,
             }
         }
         sb.append("\n")
-    }
-}
-
-class ShowHelpException(val formatHelp: (String?, Int) -> String) :
-        SystemExitException("Help was requested", 0) {
-    override fun printUserMessage(stream: PrintStream, progName: String?, columns: Int) {
-        stream.print(formatHelp(progName, columns))
     }
 }

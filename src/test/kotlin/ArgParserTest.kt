@@ -22,6 +22,7 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
+import java.io.StringWriter
 
 
 class ArgParserTest {
@@ -796,12 +797,14 @@ class ArgParserTest {
             val destination by parser.positional("DEST").help("destination file")
         }
 
-        shouldThrow<ShowHelpException> {
+        shouldThrow<ArgParser.ShowHelpException> {
             Args(parserOf("--help")).dryRun
         }.run {
-            val help = formatHelp("program_name", 0)
+            val writer = StringWriter()
+            printUserMessage(writer, "program_name", 0)
+            val help = writer.toString()
             assertEquals(
-"""usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT [-v]... SOURCE... DEST
+                    """usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT [-v]... SOURCE... DEST
 
 required arguments:
   -o OUTPUT, --output OUTPUT	generate output here

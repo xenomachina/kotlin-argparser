@@ -18,7 +18,8 @@
 
 package com.xenomachina.argparser
 
-import java.io.PrintStream
+import java.io.OutputStreamWriter
+import java.io.Writer
 import kotlin.system.exitProcess
 
 /**
@@ -34,20 +35,22 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
      * @param columns the number of columns to wrap at, or 0 if not to wrap at all
      */
     fun printAndExit(progName: String? = null, columns: Int = 0): Nothing {
-        val stream = if (returnCode == 0) System.out else System.err
-        printUserMessage(stream, progName, columns)
+        val writer = OutputStreamWriter(if (returnCode == 0) System.out else System.err)
+        printUserMessage(writer, progName, columns)
+        writer.flush()
         exitProcess(returnCode)
     }
 
     /**
-     * Prints a message for the user to the specified `PrintStream`.
+     * Prints a message for the user to the specified `Writer`.
      *
+     * @param writer where to write user message
      * @param progName the name of this program as invoked, or null if not known
      * @param columns the number of columns to wrap at, or 0 if not to wrap at all
      */
-    open fun printUserMessage(stream: PrintStream, progName: String?, columns: Int) {
+    open fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
         val leader = if (progName == null) "" else "$progName: "
-        stream.println("$leader$message")
+        writer.write("$leader$message\n")
     }
 }
 
