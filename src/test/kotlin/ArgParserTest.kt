@@ -517,7 +517,7 @@ class ArgParserTest {
 
                 // A better way to accomplish validation that only depends on one Delegate is to use
                 // Delegate.addValidator. See testAddValidator for an example of this.
-                if (x % 2 != 0)
+                if (x.mod(2) != 0)
                     throw InvalidArgumentException("${xDelegate.valueName} must be even, $x is odd")
             }
         }
@@ -554,7 +554,7 @@ class ArgParserTest {
 
             val xDelegate = parser.storing("-x") { toInt() }
                     .addValidtator {
-                        if (value % 2 != 0)
+                        if (value.mod(2) != 0)
                             throw InvalidArgumentException("$valueName must be even, $value is odd")
                     }
             val x by xDelegate
