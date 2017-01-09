@@ -25,7 +25,14 @@ import kotlin.system.exitProcess
  * a message to [System.out] or [System.err].
  */
 open class SystemExitException(message: String, val returnCode: Int) : Exception(message) {
-    open fun printAndExit(progName: String? = null): Nothing {
+    /**
+     * Prints a message for the user to either `System.err` or `System.out`, and then exits with the appropriate
+     * return code.
+     *
+     * @param progName the name of this program as entered by the user, or null if not known
+     * @param columns the number of columns to wrap at, or 0 if not to wrap at all
+     */
+    open fun printAndExit(progName: String? = null, columns: Int = 0): Nothing {
         val leader = if (progName == null) "" else "$progName: "
         System.err.println("$leader$message")
         exitProcess(returnCode)
@@ -76,12 +83,20 @@ open class UnexpectedPositionalArgumentException(val valueName: String?) :
         SystemExitException("unexpected argument${if (valueName == null) "" else " after $valueName"}", 2)
 
 /**
- * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any `SystemExitException` that is caught.
+ * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any
+ * `SystemExitException` that is caught.
+ *
+ * @param progName the name of the program, or null if not known
+ * @param columns the number of columns to wrap any caught
+ * `SystemExitException` to.  Specify null for reasonable defaults, or 0 to not
+ * wrap at all.
+ * @param f the main body. If a `SystemExitException` is caught its
+ * `printAndExit` method will be invoked.
  */
-fun <T, R> T.runMain(progName: String? = null, f: T.() -> R): R {
+fun <T, R> T.runMain(progName: String? = null, columns: Int?, f: T.() -> R): R {
     try {
         return f()
     } catch (e: SystemExitException) {
-        e.printAndExit(progName)
+        e.printAndExit(progName, columns ?: System.getenv("COLUMNS")?.toInt() ?: 80)
     }
 }

@@ -581,8 +581,8 @@ class ArgParser(args: Array<out String>,
                     usageArgument = null,
                     isRepeating = false) {
                 throw ShowHelpException {
-                    progName ->
-                    helpFormatter.format(progName, delegates.map { it.toValueHelp() })
+                    progName, columns ->
+                        helpFormatter.format(progName, columns, delegates.map { it.toValueHelp() })
                 }
             }.default(Unit).help("show this help message and exit")
         }
@@ -604,7 +604,7 @@ fun <T> Holder<T>?.orElse(f: () -> T): T {
 }
 
 interface HelpFormatter {
-    fun format(progName: String?, values: List<Value>): String
+    fun format(progName: String?, columns: Int, values: List<Value>): String
 
     /**
      * An option or positional argument type which should be formatted for help
@@ -626,6 +626,7 @@ interface HelpFormatter {
 class DefaultHelpFormatter(val prologue: String? = null,
                            val epilogue: String? = null) : HelpFormatter {
     override fun format(progName: String?,
+                        columns: Int,
                         values: List<HelpFormatter.Value>): String {
         val sb = StringBuilder()
         appendUsage(sb, progName, values)
@@ -696,9 +697,10 @@ class DefaultHelpFormatter(val prologue: String? = null,
     }
 }
 
-class ShowHelpException(val formatHelp: (String?) -> String) : SystemExitException("Help was requested", 0) {
-    override fun printAndExit(progName: String?): Nothing {
-        System.out.print(formatHelp(progName))
+class ShowHelpException(val formatHelp: (String?, Int) -> String) :
+        SystemExitException("Help was requested", 0) {
+    override fun printAndExit(progName: String?, columns: Int): Nothing {
+        System.out.print(formatHelp(progName, columns))
         exitProcess(returnCode)
     }
 }

@@ -799,7 +799,7 @@ class ArgParserTest {
         shouldThrow<ShowHelpException> {
             Args(parserOf("--help")).dryRun
         }.run {
-            val help = formatHelp("program_name")
+            val help = formatHelp("program_name", 0)
             assertEquals(
 """usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT [-v]... SOURCE... DEST
 
