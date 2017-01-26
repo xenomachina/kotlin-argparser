@@ -790,8 +790,8 @@ class ArgParserTest {
     fun testHelp() {
         class Args(parser: ArgParser) {
             val dryRun by parser.flagging("-n", "--dry-run").help("don't do anything")
-            val includes by parser.adding("-I", "--include").help("search this directory for headers")
-            val outDir by parser.storing("-o", "--output").help("generate output here")
+            val includes by parser.adding("-I", "--include").help("search in this directory for header files")
+            val outDir by parser.storing("-o", "--output").help("directory in which all output should be generated")
             val verbosity by parser.counting("-v", "--verbose").help("increase verbosity")
             val sources by parser.positionalList("SOURCE").help("source file")
             val destination by parser.positional("DEST").help("destination file")
@@ -801,25 +801,36 @@ class ArgParserTest {
             Args(parserOf("--help")).dryRun
         }.run {
             val writer = StringWriter()
-            printUserMessage(writer, "program_name", 0)
+            printUserMessage(writer, "program_name", 60)
             val help = writer.toString()
             assertEquals(
-                    """usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT [-v]... SOURCE... DEST
+                    """
+usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT
+                    [-v]... SOURCE... DEST
 
 required arguments:
-  -o OUTPUT, --output OUTPUT	generate output here
+  -o OUTPUT,        directory in which all output should
+  --output OUTPUT   be generated
+
 
 optional arguments:
-  -h, --help	show this help message and exit
-  -n, --dry-run	don't do anything
-  -I INCLUDE, --include INCLUDE	search this directory for headers
-  -v, --verbose	increase verbosity
+  -h, --help        show this help message and exit
+
+  -n, --dry-run     don't do anything
+
+  -I INCLUDE,       search in this directory for header
+  --include INCLU   files
+  DE
+
+  -v, --verbose     increase verbosity
+
 
 positional arguments:
-  SOURCE	source file
-  DEST	destination file
-""",
-                    help)
+  SOURCE            source file
+
+  DEST              destination file
+
+""".trimStart(), help)
         }
     }
 

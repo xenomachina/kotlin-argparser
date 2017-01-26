@@ -634,11 +634,11 @@ class DefaultHelpFormatter(val prologue: String? = null,
                         columns: Int,
                         values: List<HelpFormatter.Value>): String {
         val sb = StringBuilder()
-        appendUsage(sb, progName, values)
+        appendUsage(sb, columns, progName, values)
 
         if (!prologue.isNullOrEmpty()) {
             sb.append("\n")
-            sb.append(prologue)
+            sb.append(prologue!!.wrapText(columns))
             sb.append("\n")
         }
 
@@ -653,51 +653,255 @@ class DefaultHelpFormatter(val prologue: String? = null,
                 else -> optional
             }.add(value)
         }
-        appendSection(sb, "required", required)
-        appendSection(sb, "optional", optional)
-        appendSection(sb, "positional", positional)
+        appendSection(sb, columns, "required", required)
+        appendSection(sb, columns, "optional", optional)
+        appendSection(sb, columns, "positional", positional)
 
         if (!epilogue.isNullOrEmpty()) {
             sb.append("\n")
-            sb.append(epilogue)
+            sb.append(epilogue!!.wrapText(columns))
             sb.append("\n")
         }
 
         return sb.toString()
     }
 
-    private fun appendSection(sb: StringBuilder, name: String, values: List<HelpFormatter.Value>) {
+    private fun appendSection(sb: StringBuilder, columns:Int, name: String, values: List<HelpFormatter.Value>) {
+        // TODO: make these configurable or smarter?
+        val helpPos = columns * 3 / 10
+        val indent = "  "
+        val indentWidth = indent.codePointWidth()
+
         if (!values.isEmpty()) {
             sb.append("\n")
             sb.append("$name arguments:\n")
             for (value in values) {
-                sb.append("  ")
-                sb.append(value.usages.joinToString(", "))
-                value.help?.let {
-                    sb.append("\t")
-                    sb.append(it)
-                }
+                val left = value.usages.map { it.replace(' ', '\u00a0') }.joinToString(", ").wrapText(helpPos - indentWidth).prependIndent(indent)
+                // TODO: make help required
+                val right = value.help!!.wrapText(columns - helpPos - 2*indentWidth).prependIndent(indent)
+                sb.append(columnize(left, right, minWidths = intArrayOf(helpPos)))
                 sb.append("\n")
             }
         }
     }
 
-    private fun appendUsage(sb: StringBuilder, progName: String?, values: List<HelpFormatter.Value>) {
-        sb.append("usage:")
-        if (progName != null) sb.append(" $progName")
+    private fun appendUsage(sb: StringBuilder, columns: Int, progName: String?, values: List<HelpFormatter.Value>) {
+        val usageStart = "usage:${if (progName != null) " $progName" else ""} "
+
+        val valueSB = StringBuilder()
         for (value in values) value.run {
             if (!usages.isEmpty()) {
-                val usage = usages[0]
+                val usage = usages[0].replace(' ', NBSP_CODEPOINT.toChar())
                 if (isRequired) {
-                    sb.append(" $usage")
+                    valueSB.append(" $usage")
                 } else {
-                    sb.append(" [$usage]")
+                    valueSB.append(" [$usage]")
                 }
                 if (isRepeating) {
-                    sb.append("...")
+                    valueSB.append("...")
                 }
             }
         }
+
+        if (usageStart.length > columns / 2) {
+            sb.append(usageStart)
+            sb.append("\n")
+            val valueIndent = 8 // TODO don't hardcode this
+            val valueColumns = columns - valueIndent
+            sb.append(valueSB.toString().wrapText(valueColumns).prependIndent(" ".repeat(valueIndent)))
+        } else {
+            val valueColumns = columns - usageStart.length
+            sb.append(columnize(usageStart, valueSB.toString().wrapText(valueColumns)))
+        }
+    }
+}
+
+
+// TODO: move all declarations below this point to com.xenomachina.text
+
+/**
+ * Performs the given [operation] on each line in this [String].
+ */
+internal inline fun String.forEachLine(operation: (String) -> Unit) {
+    var index = 0
+    while (true) {
+        val nextNewline = indexOf("\n", index)
+        if (nextNewline < 0) break
+        operation(substring(index, nextNewline + 1))
+        index = nextNewline + 1
+    }
+    operation(substring(index))
+}
+
+/**
+ * Performs the given [operation] on each Unicode codepoint in this [String].
+ */
+internal inline fun String.forEachCodePoint(operation: (Int) -> Unit) {
+    val length = this.length
+    var offset = 0
+    while (offset < length) {
+        val codePoint = this.codePointAt(offset)
+        operation(codePoint)
+        offset += Character.charCount(codePoint)
+    }
+}
+
+internal fun StringBuilder.clear() {
+    this.setLength(0)
+}
+
+internal val SPACE_WIDTH = 1
+
+internal fun String.padTo(width: Int) : String {
+    val sb = StringBuilder()
+    var lineWidth = 0
+    forEachCodePoint {
+        if (it == '\n'.toInt()) {
+            while (lineWidth < width) {
+                sb.append(" ")
+                lineWidth += SPACE_WIDTH
+            }
+            sb.append("\n")
+            lineWidth = 0
+        } else {
+            sb.appendCodePoint(it)
+            lineWidth += codePointWidth(it)
+        }
+    }
+    return sb.toString()
+}
+
+internal val NBSP_CODEPOINT = 0xa0
+
+internal fun String.wrapText(maxWidth: Int) : String {
+    val sb = StringBuilder()
+    val word = StringBuilder()
+    var lineWidth = 0
+    var wordWidth = 0
+    fun handleSpace() {
+        if (wordWidth > 0) {
+            if (lineWidth > 0) {
+                sb.append(" ")
+                lineWidth += SPACE_WIDTH
+            }
+            sb.append(word)
+            lineWidth += wordWidth
+            word.clear()
+            wordWidth = 0
+        }
+    }
+    forEachCodePoint {
+        if (Character.isSpaceChar(it) && it != NBSP_CODEPOINT) {
+            // space
+            handleSpace()
+        } else {
+            // non-space
+            val codepoint = if (it == NBSP_CODEPOINT) ' '.toInt() else it
+            val charWidth = codePointWidth(codepoint).toInt()
+            if (lineWidth > 0 && lineWidth + SPACE_WIDTH + wordWidth + charWidth > maxWidth) {
+                sb.append("\n")
+                lineWidth = 0
+            }
+            if (lineWidth == 0 && lineWidth + SPACE_WIDTH + wordWidth + charWidth > maxWidth) {
+                // Eep! Word would be longer than line. Need to break it.
+                sb.append(word)
+                word.clear()
+                wordWidth = 0
+                sb.append("\n")
+                lineWidth = 0
+            }
+            word.appendCodePoint(codepoint)
+            wordWidth += charWidth
+        }
+    }
+    handleSpace()
+
+    return sb.toString()
+}
+
+/**
+ * Returns an estimated cell width of a Unicode code point when displayed on a monospace terminal.
+ * Possible return values are -1, 0, 1 or 2. Control characters (other than null) and Del return -1.
+ *
+ * This function is based on the public domain [wcwidth.c](https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c)
+ * written by Markus Kuhn.
+ */
+internal fun codePointWidth(ucs: Int): Byte {
+    // 8-bit control characters
+    if (ucs == 0) return 0
+    if (ucs < 32 || (ucs >= 0x7f && ucs < 0xa0)) return -1
+
+    // Non-spacing characters. This is simulating the binary search of
+    // `uniset +cat=Me +cat=Mn +cat=Cf -00AD +1160-11FF +200B`.
+    if (ucs != 0x00AD) { // soft hyphen
+        val category = Character.getType(ucs).toByte()
+        if (category == Character.ENCLOSING_MARK || // "Me"
+                category == Character.NON_SPACING_MARK || // "Mn"
+                category == Character.FORMAT || // "Cf"
+                (0x1160 <= ucs && ucs <= 0x11FF) || // Hangul Jungseong & Jongseong
+                ucs == 0x200B) // zero width space
+            return 0;
+    }
+
+    // If we arrive here, ucs is not a combining or C0/C1 control character.
+    return if (ucs >= 0x1100 && (ucs <= 0x115f ||                           // Hangul Jamo init. consonants
+                    ucs == 0x2329 || ucs == 0x232a ||
+                    (ucs >= 0x2e80 && ucs <= 0xa4cf && ucs != 0x303f) ||  // CJK ... Yi
+                    (ucs >= 0xac00 && ucs <= 0xd7a3) || // Hangul Syllables
+                    (ucs >= 0xf900 && ucs <= 0xfaff) || // CJK Compatibility Ideographs
+                    (ucs >= 0xfe10 && ucs <= 0xfe19) || // Vertical forms
+                    (ucs >= 0xfe30 && ucs <= 0xfe6f) || // CJK Compatibility Forms
+                    (ucs >= 0xff00 && ucs <= 0xff60) || // Fullwidth Forms
+                    (ucs >= 0xffe0 && ucs <= 0xffe6) ||
+                    (ucs >= 0x20000 && ucs <= 0x2fffd) ||
+                    (ucs >= 0x30000 && ucs <= 0x3fffd)))
+        2 else 1
+}
+
+internal fun String.codePointWidth(): Int {
+    var result = 0
+    forEachCodePoint {
+        result += codePointWidth(it)
+    }
+    return result
+}
+
+internal fun String.trimNewline() : String {
+    if (endsWith('\n')) {
+        return substring(0, length - 1)
+    } else {
+        return this
+    }
+}
+
+internal fun columnize(vararg s: String, minWidths: IntArray? = null) : String {
+    val columns = Array(s.size) { mutableListOf<String>() }
+    val widths = Array(s.size) { 0 }
+    for (i in 0..s.size - 1) {
+        if (minWidths != null && i < minWidths.size) {
+            widths[i] = minWidths[i]
+        }
+        s[i].forEachLine {
+            val cell = it.trimNewline()
+            columns[i].add(cell)
+            widths[i] = widths[i].coerceAtLeast(cell.codePointWidth())
+        }
+    }
+    val height = columns.maxBy { it.size }?.size ?: 0
+    val sb = StringBuilder()
+    for (j in 0..height - 1) {
+        var lineWidth = 0
+        var columnStart = 0
+        for (i in 0..columns.size - 1) {
+            columns[i].getOrNull(j)?.let { cell ->
+                for(k in 1..columnStart - lineWidth) sb.append(" ")
+                lineWidth = columnStart
+                sb.append(cell)
+                lineWidth += cell.codePointWidth()
+            }
+            columnStart += widths[i]
+        }
         sb.append("\n")
     }
+    return sb.toString()
 }
