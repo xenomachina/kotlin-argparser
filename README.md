@@ -16,11 +16,14 @@ which are in turn each represented by properties that delgate to an
 `ArgParser`:
 
     class MyArgs(parser: ArgParser) {
-        val verbose by parser.flagging("-v", "--verbose")
+        val verbose by parser.flagging("-v", "--verbose",
+                                       help="enable verbose mode")
 
-        val name by parser.storing("-N", "--name")
+        val name by parser.storing("-N", "--name",
+                                   help = "name of the widget")
 
-        val size by parser.storing("-s", "--size") { toInt() }
+        val size by parser.storing("-s", "--size",
+                                   help = "size of the plumbus") { toInt() }
     }
 
 ## Option Types
@@ -31,7 +34,8 @@ arguments.
 Boolean flags are created by asking the parser for a `flagging` delegate.  One
 or more option names, either short or long style, must be provided:
 
-    val verbose by parser.flagging("-v", "--verbose")
+    val verbose by parser.flagging("-v", "--verbose",
+                                   help = "enable verbose mode")
 
 Here the presence of either `-v` or `--verbose` options in the
 arguments will cause the `Boolean` property `verbose` to be `true`, otherwise
@@ -40,7 +44,8 @@ it will be `false`.
 Options that expect a single argument are created by asking the parser for a
 `storing` delegate.
 
-    val name by parser.storing("-N", "--name")
+    val name by parser.storing("-N", "--name",
+                               help = "name of the widget")
 
 Here either `-N` or `--name` with an argument will cause `name` to have that
 argument as its value.
@@ -48,13 +53,15 @@ argument as its value.
 A function can also be supplied to transform the argument into the desired
 type. Here the `size` property will be an `Int` rather than a `String`:
 
-    val size by parser.storing("-s", "--size") { toInt() }
+    val size by parser.storing("-s", "--size",
+                               help = "size of the plumbus") { toInt() }
 
 It's also possible to create options that add to a `Collection` each time they
 appear in the arguments using the `adding` delegate. Just like `storing`
 delegates, a transform function may optionally be supplied:
 
-    val includeDirs by parser.adding("-I") { File(this) }
+    val includeDirs by parser.adding(
+            "-I", help = "directory to search for header files") { File(this) }
 
 Now each time the `-I` option appears, its argument is appended to
 `includeDirs`.
@@ -65,7 +72,8 @@ from an enum), a `mapping` delegate can be used:
     val mode by parser.mapping(
             "--fast" to Mode.FAST,
             "--small" to Mode.SMALL,
-            "--quiet" to Mode.QUIET)
+            "--quiet" to Mode.QUIET,
+            help = "mode of operation")
 
 Here the `mode` property will be set to the corresponding `Mode` value depending
 on which of `--fast`, `--small`, and `--quiet` appears (last) in the arguments.
@@ -75,7 +83,9 @@ The methods described above are convenience methods built on top of the
 more powerful `option` method can be used directly, though it is harder to use
 in these common cases.
 
-    val zaphod by parser.option("--fibonacci") {
+    val zaphod by parser.option(
+            "--fibonacci",
+            help = "collects fibonnaci sequence, remembers length") {
         var prev = 0
         var current = 1
         var result = 0
@@ -86,7 +96,6 @@ in these common cases.
         }
         return result
     }
-            .help("collects fibonnaci sequence, remembers length")
 
 The Delegates returned by these methods also have a few methods for setting
 optional attributes.
@@ -97,11 +106,6 @@ value is provided with the `default` method:
 
     val name by parser.storing("-N", "--name")
             .default("John Doe")
-
-Help text can also be provided through use of the `help` method:
-
-    val verbose by parser.flagging("-v", "--verbose")
-            .help("produce verbose output")
 
 ## Positional Arguments
 
@@ -158,6 +162,7 @@ Note that parsing does not take place until at least one delegate is read, or
 in the `init` of your args object after declaring all of your parsed
 properties.
 
+<!--
 ## Parsing
 
 TODO: write a brief explanation of how parsing works
@@ -165,6 +170,7 @@ TODO: write a brief explanation of how parsing works
 ## Help Formatting
 
 TODO: write an explanation of help formatting once implemented
+-->
 
 ## Caveats
 
