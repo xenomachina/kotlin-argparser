@@ -54,48 +54,6 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
     }
 }
 
-/**
- * Indicates that an unrecognized option was supplied.
- */
-open class UnrecognizedOptionException(val optionName: String) :
-        SystemExitException("unrecognized option '$optionName'", 2)
-
-/**
- * Indicates that a value is missing after parsing has completed.
- */
-open class MissingValueException(val valueName: String) :
-        SystemExitException("missing $valueName", 2)
-
-/**
- * Indicates that the value of a supplied argument is invalid.
- */
-open class InvalidArgumentException(message: String) : SystemExitException(message, 2)
-
-/**
- * Indicates that a required option argument was not supplied.
- */
-open class OptionMissingRequiredArgumentException(val optName: String) :
-        SystemExitException("option '$optName' is missing a required argument", 2)
-
-/**
- * Indicates that a required positional argument was not supplied.
- */
-open class MissingRequiredPositionalArgumentException(val valueName: String) :
-        SystemExitException("missing $valueName operand", 2)
-
-/**
- * Indicates that an argument was forced upon an option that does not take one.
- *
- * That is, "--foo=bar" where "--foo" takes no arguments.
- */
-open class UnexpectedOptionArgumentException(val optName: String) :
-        SystemExitException("option '$optName' doesn't allow an argument", 2)
-
-/**
- * Indicates that there is an unhandled positional argument.
- */
-open class UnexpectedPositionalArgumentException(val valueName: String?) :
-        SystemExitException("unexpected argument${if (valueName == null) "" else " after $valueName"}", 2)
 
 /**
  * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any
