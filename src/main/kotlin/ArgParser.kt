@@ -146,8 +146,7 @@ class ArgParser(args: Array<out String>,
                    help: String,
                    usageArgument: String?,
                    isRepeating: Boolean = true,
-                   handler: OptionArgumentIterator<T>.() -> T): Delegate<T>
-    {
+                   handler: OptionArgumentIterator<T>.() -> T): Delegate<T> {
         val delegate = OptionDelegate<T>(
                 parser = this,
                 valueName = valueName,
