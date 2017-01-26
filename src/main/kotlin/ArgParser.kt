@@ -88,6 +88,7 @@ class ArgParser(args: Array<out String>,
                 help = help,
                 usageArgument = valueName,
                 isRepeating = true) {
+            // preValidate ensures that this is non-null
             value!!.value.add(transform(next()))
             value.value
         }.default(initialValue)
@@ -127,6 +128,8 @@ class ArgParser(args: Array<out String>,
                 help = help,
                 usageArgument = null,
                 isRepeating = false) {
+            // This cannot be null, because the optionName was added to the map
+            // at the same time it was registered with the ArgParser.
             map[optionName]!!
         }
     }
@@ -282,6 +285,7 @@ class ArgParser(args: Array<out String>,
         override val value: T
             get() {
                 parser.force()
+                // preValidate ensures that this is non-null
                 return holder!!.value
             }
 
@@ -516,6 +520,7 @@ class ArgParser(args: Array<out String>,
             name = args[index]
             firstArg = null
         } else {
+            // if NAME_EQUALS_VALUE_REGEX then there must be groups 1 and 2
             name = m.groups[1]!!.value
             firstArg = m.groups[2]!!.value
         }
@@ -649,6 +654,7 @@ class DefaultHelpFormatter(val prologue: String? = null,
 
         if (!prologue.isNullOrEmpty()) {
             sb.append("\n")
+            // we just checked that prologue is non-null
             sb.append(prologue!!.wrapText(columns))
             sb.append("\n")
         }
@@ -670,6 +676,7 @@ class DefaultHelpFormatter(val prologue: String? = null,
 
         if (!epilogue.isNullOrEmpty()) {
             sb.append("\n")
+            // we just checked that epilogue is non-null
             sb.append(epilogue!!.wrapText(columns))
             sb.append("\n")
         }
