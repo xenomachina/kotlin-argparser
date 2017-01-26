@@ -36,7 +36,7 @@ class ArgParser(args: Array<out String>,
     fun flagging(vararg names: String, help: String): Delegate<Boolean> =
             option<Boolean>(
                     *names,
-                    valueName = bestOptionName(names),
+                    errorName = errorNameForOptionNames(names),
                     usageArgument = null,
                     isRepeating = false,
                     help = help) { true }.default(false)
@@ -47,7 +47,7 @@ class ArgParser(args: Array<out String>,
     fun counting(vararg names: String, help: String): Delegate<Int> =
             option<Int>(
                     *names,
-                    valueName = bestOptionName(names),
+                    errorName = errorNameForOptionNames(names),
                     usageArgument = null,
                     isRepeating = true,
                     help = help) { value.orElse { 0 } + 1 }.default(0)
@@ -55,14 +55,14 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's (transformed) argument.
      */
-    inline fun <T> storing(vararg names: String,
-                           help: String,
-                           crossinline transform: String.() -> T): Delegate<T> {
-        val valueName = optionNamesToBestArgName(names);
+    fun <T> storing(vararg names: String,
+                    help: String,
+                    transform: String.() -> T): Delegate<T> {
+        val errorName = errorNameForOptionNames(names);
         return option(
                 *names,
-                valueName = valueName,
-                usageArgument = valueName,
+                errorName = errorName,
+                usageArgument = errorName,
                 isRepeating = false,
                 help = help) { transform(this.next()) }
     }
@@ -77,16 +77,16 @@ class ArgParser(args: Array<out String>,
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
      * MutableCollection each time the option appears in args, and returns said MutableCollection.
      */
-    inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
-                                                    initialValue: T,
-                                                    help: String,
-                                                    crossinline transform: String.() -> E): Delegate<T> {
-        val valueName = optionNamesToBestArgName(names)
+    fun <E, T : MutableCollection<E>> adding(vararg names: String,
+                                             initialValue: T,
+                                             help: String,
+                                             transform: String.() -> E): Delegate<T> {
+        val errorName = errorNameForOptionNames(names)
         return option<T>(
                 *names,
-                valueName = valueName,
+                errorName = errorName,
                 help = help,
-                usageArgument = valueName,
+                usageArgument = errorName,
                 isRepeating = true) {
             // preValidate ensures that this is non-null
             value!!.value.add(transform(next()))
@@ -98,9 +98,9 @@ class ArgParser(args: Array<out String>,
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
      * MutableList each time the option appears in args, and returns said MutableCollection.
      */
-    inline fun <T> adding(vararg names: String,
-                          help: String,
-                          crossinline transform: String.() -> T) =
+    fun <T> adding(vararg names: String,
+                   help: String,
+                   transform: String.() -> T) =
             adding(*names, initialValue = mutableListOf(), help = help, transform = transform)
 
     /**
@@ -124,7 +124,7 @@ class ArgParser(args: Array<out String>,
     fun <T> mapping(map: Map<String, T>, help: String): Delegate<T> {
         val names = map.keys.toTypedArray()
         return option(*names,
-                valueName = map.keys.joinToString("|"),
+                errorName = map.keys.joinToString("|"),
                 help = help,
                 usageArgument = null,
                 isRepeating = false) {
@@ -137,19 +137,19 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for an option with the specified names.
      * @param names names of options, with leading "-" or "--"
-     * @param valueName name to use when talking about value of this option in error messages
+     * @param errorName name to use when talking about this option in error messages
      * @param usageArgument how to represent argument(s) in help text, or null if consumes no arguments
      * @param handler A function that assists in parsing arguments by computing the value of this option
      */
-    fun <T> option(vararg names: String,
-                   valueName: String,
-                   help: String,
-                   usageArgument: String?,
-                   isRepeating: Boolean = true,
-                   handler: OptionArgumentIterator<T>.() -> T): Delegate<T> {
+    internal fun <T> option(vararg names: String,
+                            errorName: String,
+                            help: String,
+                            usageArgument: String?,
+                            isRepeating: Boolean = true,
+                            handler: OptionArgumentIterator<T>.() -> T): Delegate<T> {
         val delegate = OptionDelegate<T>(
                 parser = this,
-                valueName = valueName,
+                errorName = errorName,
                 help = help,
                 optionNames = listOf(*names),
                 usageArgument = usageArgument,
@@ -213,7 +213,7 @@ class ArgParser(args: Array<out String>,
         }
     }
 
-    abstract class WrappingDelegate<U, W>(private val inner: Delegate<U>) : Delegate<W> {
+    internal abstract class WrappingDelegate<U, W>(private val inner: Delegate<U>) : Delegate<W> {
 
         abstract fun wrap(u: U): W
         abstract fun unwrap(w: W): U
@@ -221,8 +221,8 @@ class ArgParser(args: Array<out String>,
         override val value: W
             get() = wrap(inner.value)
 
-        override val valueName: String
-            get() = inner.valueName
+        override val errorName: String
+            get() = inner.errorName
 
         override val help: String
             get() = inner.help
@@ -238,8 +238,8 @@ class ArgParser(args: Array<out String>,
         /** The value associated with this delegate */
         val value: T
 
-        /** The name of the value associated with this delegate */
-        val valueName: String
+        /** The name used to refer to this delegate's value in error messages */
+        val errorName: String
 
         /** The user-visible help text for this delegate */
         val help: String
@@ -258,7 +258,7 @@ class ArgParser(args: Array<out String>,
 
     internal abstract class ParsingDelegate<T>(
             val parser: ArgParser,
-            override val valueName: String,
+            override val errorName: String,
             override val help: String) : Delegate<T> {
 
         protected var holder: Holder<T>? = null
@@ -290,7 +290,7 @@ class ArgParser(args: Array<out String>,
 
         fun preValidate() {
             if (holder == null)
-                throw MissingValueException(valueName)
+                throw MissingValueException(errorName)
         }
 
         fun validate() {
@@ -304,12 +304,12 @@ class ArgParser(args: Array<out String>,
 
     private class OptionDelegate<T>(
             parser: ArgParser,
-            valueName: String,
+            errorName: String,
             help: String,
             val optionNames: List<String>,
             val usageArgument: String?,
             val isRepeating: Boolean,
-            val handler: OptionArgumentIterator<T>.() -> T) : ParsingDelegate<T>(parser, valueName, help) {
+            val handler: OptionArgumentIterator<T>.() -> T) : ParsingDelegate<T>(parser, errorName, help) {
 
         fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
             val input = OptionArgumentIterator(holder, name, firstArg, index, args)
@@ -331,10 +331,10 @@ class ArgParser(args: Array<out String>,
 
     private class PositionalDelegate<T>(
             parser: ArgParser,
-            valueName: String,
+            errorName: String,
             val sizeRange: IntRange,
             help: String,
-            val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, valueName, help) {
+            val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, errorName, help) {
 
         fun parseArguments(args: List<String>) {
             holder = Holder(args.map(transform))
@@ -344,7 +344,7 @@ class ArgParser(args: Array<out String>,
             return HelpFormatter.Value(
                     isRequired = sizeRange.first > 0,
                     isRepeating = sizeRange.last > 1,
-                    usages = listOf(valueName),
+                    usages = listOf(errorName),
                     isPositional = true,
                     help = help)
         }
@@ -493,10 +493,10 @@ class ArgParser(args: Array<out String>,
             val sizeRange = delegate.sizeRange
             val chunkSize = (sizeRange.first + extra).coerceIn(sizeRange)
             if (chunkSize > remaining) {
-                throw MissingRequiredPositionalArgumentException(delegate.valueName)
+                throw MissingRequiredPositionalArgumentException(delegate.errorName)
             }
             delegate.parseArguments(args.subList(index, index + chunkSize))
-            lastValueName = delegate.valueName
+            lastValueName = delegate.errorName
             index += chunkSize
             remaining -= chunkSize
             extra -= chunkSize - sizeRange.first
@@ -567,7 +567,7 @@ class ArgParser(args: Array<out String>,
         private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
         private val LEADING_HYPHENS = Regex("^-{1,2}")
 
-        fun bestOptionName(names: Array<out String>): String {
+        internal fun selectRepresentativeOptionName(names: Array<out String>): String {
             if (names.size < 1)
                 throw IllegalArgumentException("need at least one option name")
             // Return first long option...
@@ -580,8 +580,8 @@ class ArgParser(args: Array<out String>,
             return names[0]
         }
 
-        fun optionNamesToBestArgName(names: Array<out String>): String {
-            return optionNameToArgName(bestOptionName(names))
+        internal fun errorNameForOptionNames(names: Array<out String>): String {
+            return optionNameToArgName(selectRepresentativeOptionName(names))
         }
 
         private fun optionNameToArgName(name: String) =
@@ -591,7 +591,7 @@ class ArgParser(args: Array<out String>,
     init {
         if (helpFormatter != null) {
             option<Unit>("-h", "--help",
-                    valueName = "SHOW_HELP",
+                    errorName = "HELP", // This should never be used, but we need to say something
                     help = "show this help message and exit",
                     usageArgument = null,
                     isRepeating = false) {

@@ -48,7 +48,7 @@ class ArgParserTest {
     fun testArglessShortOptions() {
         class Args(parser: ArgParser) {
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                    valueName = "VALUE_NAME",
+                    errorName = "VALUE_NAME",
                     help = TEST_HELP,
                     usageArgument = "ARG_NAME") {
                 value.orElse { mutableListOf<String>() }.apply {
@@ -73,7 +73,7 @@ class ArgParserTest {
             val b by parser.flagging("-b", help = TEST_HELP)
             val c by parser.flagging("-c", help = TEST_HELP)
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                    valueName = "VALUE_NAME",
+                    errorName = "VALUE_NAME",
                     usageArgument = "ARG_NAME", help = TEST_HELP) {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName:${next()}")
@@ -114,7 +114,7 @@ class ArgParserTest {
     fun testMixedShortOptions() {
         class Args(parser: ArgParser) {
             val def by parser.option<MutableList<String>>("-d", "-e", "-f",
-                    valueName = "VALUE_NAME",
+                    errorName = "VALUE_NAME",
                     usageArgument = "ARG_NAME",
                     help = TEST_HELP) {
                 value.orElse { mutableListOf<String>() }.apply {
@@ -122,7 +122,7 @@ class ArgParserTest {
                 }
             }
             val abc by parser.option<MutableList<String>>("-a", "-b", "-c",
-                    valueName = "VALUE_NAME",
+                    errorName = "VALUE_NAME",
                     usageArgument = "ARG_NAME",
                     help = TEST_HELP) {
                 value.orElse { mutableListOf<String>() }.apply {
@@ -145,7 +145,7 @@ class ArgParserTest {
     fun testMixedShortOptionsWithArgs() {
         class Args(parser: ArgParser) {
             val def by parser.option<MutableList<String>>("-d", "-e", "-f",
-                    valueName = "VALUE_NAME",
+                    errorName = "VALUE_NAME",
                     usageArgument = "ARG_NAME",
                     help = TEST_HELP) {
                 value.orElse { mutableListOf<String>() }.apply {
@@ -153,7 +153,7 @@ class ArgParserTest {
                 }
             }
             val abc by parser.option<MutableList<String>>("-a", "-b", "-c",
-                    valueName = "VALUE_NAME",
+                    errorName = "VALUE_NAME",
                     usageArgument = "ARG_NAME",
                     help = TEST_HELP) {
                 value.orElse { mutableListOf<String>() }.apply {
@@ -161,7 +161,7 @@ class ArgParserTest {
                 }
             }
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                    valueName = "VALUE_NAME",
+                    errorName = "VALUE_NAME",
                     usageArgument = "ARG_NAME",
                     help = TEST_HELP) {
                 value.orElse { mutableListOf<String>() }.apply {
@@ -187,7 +187,7 @@ class ArgParserTest {
     fun testArglessLongOptions() {
         class Args(parser: ArgParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra",
-                    valueName = "ARG_NAME",
+                    errorName = "ARG_NAME",
                     usageArgument = null,
                     help = TEST_HELP) {
                 value.orElse { mutableListOf<String>() }.apply {
@@ -209,7 +209,7 @@ class ArgParserTest {
     fun testLongOptionsWithArgs() {
         class Args(parser: ArgParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod",
-                    valueName = "ARG_NAME", usageArgument = "ARG_NAME",
+                    errorName = "ARG_NAME", usageArgument = "ARG_NAME",
                     help = TEST_HELP) {
                 value.orElse { mutableListOf<String>() }.apply {
                     add("$optionName:${next()}")
@@ -540,12 +540,12 @@ class ArgParserTest {
 
             init {
                 if (y >= x)
-                    throw InvalidArgumentException("${yDelegate.valueName} must be less than ${xDelegate.valueName}")
+                    throw InvalidArgumentException("${yDelegate.errorName} must be less than ${xDelegate.errorName}")
 
                 // A better way to accomplish validation that only depends on one Delegate is to use
                 // Delegate.addValidator. See testAddValidator for an example of this.
                 if (x.mod(2) != 0)
-                    throw InvalidArgumentException("${xDelegate.valueName} must be even, $x is odd")
+                    throw InvalidArgumentException("${xDelegate.errorName} must be even, $x is odd")
             }
         }
 
@@ -584,15 +584,13 @@ class ArgParserTest {
                     help = TEST_HELP) { toInt() }
                     .addValidtator {
                         if (value.mod(2) != 0)
-                            throw InvalidArgumentException("$valueName must be even, $value is odd")
+                            throw InvalidArgumentException("$errorName must be even, $value is odd")
                     }
             val x by xDelegate
 
             init {
                 if (y >= x)
-                    throw InvalidArgumentException("${yDelegate.valueName} must be less than ${xDelegate.valueName}")
-
-                // A better way to accomplish validation that only depends on one Delegate is to use Delegate.addValidator
+                    throw InvalidArgumentException("${yDelegate.errorName} must be less than ${xDelegate.errorName}")
             }
         }
 
