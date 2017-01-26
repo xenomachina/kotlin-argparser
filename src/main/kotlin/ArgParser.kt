@@ -33,41 +33,45 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for a zero-argument option that returns true if and only the option is present in args.
      */
-    fun flagging(vararg names: String): Delegate<Boolean> =
+    fun flagging(vararg names: String, help: String): Delegate<Boolean> =
             option<Boolean>(
                     *names,
                     valueName = bestOptionName(names),
                     usageArgument = null,
-                    isRepeating = false) { true }.default(false)
+                    isRepeating = false,
+                    help = help) { true }.default(false)
 
     /**
      * Creates a Delegate for a zero-argument option that returns the count of how many times the option appears in args.
      */
-    fun counting(vararg names: String): Delegate<Int> =
+    fun counting(vararg names: String, help: String): Delegate<Int> =
             option<Int>(
                     *names,
                     valueName = bestOptionName(names),
                     usageArgument = null,
-                    isRepeating = true) { value.orElse { 0 } + 1 }.default(0)
+                    isRepeating = true,
+                    help = help) { value.orElse { 0 } + 1 }.default(0)
 
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's (transformed) argument.
      */
     inline fun <T> storing(vararg names: String,
+                           help: String,
                            crossinline transform: String.() -> T): Delegate<T> {
         val valueName = optionNamesToBestArgName(names);
         return option(
                 *names,
                 valueName = valueName,
                 usageArgument = valueName,
-                isRepeating = false) { transform(this.next()) }
+                isRepeating = false,
+                help = help) { transform(this.next()) }
     }
 
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's argument.
      */
-    fun storing(vararg names: String): Delegate<String> =
-            storing(*names) { this }
+    fun storing(vararg names: String, help: String): Delegate<String> =
+            storing(*names, help = help) { this }
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
@@ -75,11 +79,13 @@ class ArgParser(args: Array<out String>,
      */
     inline fun <E, T : MutableCollection<E>> adding(vararg names: String,
                                                     initialValue: T,
+                                                    help: String,
                                                     crossinline transform: String.() -> E): Delegate<T> {
         val valueName = optionNamesToBestArgName(names)
         return option<T>(
                 *names,
                 valueName = valueName,
+                help = help,
                 usageArgument = valueName,
                 isRepeating = true) {
             value!!.value.add(transform(next()))
@@ -92,31 +98,33 @@ class ArgParser(args: Array<out String>,
      * MutableList each time the option appears in args, and returns said MutableCollection.
      */
     inline fun <T> adding(vararg names: String,
+                          help: String,
                           crossinline transform: String.() -> T) =
-            adding(*names, initialValue = mutableListOf(), transform = transform)
+            adding(*names, initialValue = mutableListOf(), help = help, transform = transform)
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's argument to a MutableList each time the
      * option appears in args, and returns said MutableCollection.
      */
-    fun adding(vararg names: String): Delegate<MutableList<String>> =
-            adding(*names) { this }
+    fun adding(vararg names: String, help: String): Delegate<MutableList<String>> =
+            adding(*names, help = help) { this }
 
     /**
      * Creates a Delegate for a zero-argument option that maps from the option's name as it appears in args to one of a
      * fixed set of values.
      */
-    fun <T> mapping(vararg pairs: Pair<String, T>): Delegate<T> =
-            mapping(mapOf(*pairs))
+    fun <T> mapping(vararg pairs: Pair<String, T>, help: String): Delegate<T> =
+            mapping(mapOf(*pairs), help = help)
 
     /**
      * Creates a Delegate for a zero-argument option that maps from the option's name as it appears in args to one of a
      * fixed set of values.
      */
-    fun <T> mapping(map: Map<String, T>): Delegate<T> {
+    fun <T> mapping(map: Map<String, T>, help: String): Delegate<T> {
         val names = map.keys.toTypedArray()
         return option(*names,
                 valueName = map.keys.joinToString("|"),
+                help = help,
                 usageArgument = null,
                 isRepeating = false) {
             map[optionName]!!
@@ -132,12 +140,15 @@ class ArgParser(args: Array<out String>,
      */
     fun <T> option(vararg names: String,
                    valueName: String,
+                   help: String,
                    usageArgument: String?,
                    isRepeating: Boolean = true,
-                   handler: OptionArgumentIterator<T>.() -> T): Delegate<T> {
+                   handler: OptionArgumentIterator<T>.() -> T): Delegate<T>
+    {
         val delegate = OptionDelegate<T>(
                 parser = this,
                 valueName = valueName,
+                help = help,
                 optionNames = listOf(*names),
                 usageArgument = usageArgument,
                 isRepeating = isRepeating,
@@ -151,14 +162,15 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for a single positional argument which returns the argument's value.
      */
-    fun positional(name: String) = positional(name) { this }
+    fun positional(name: String, help: String) = positional(name, help = help) { this }
 
     /**
      * Creates a Delegate for a single positional argument which returns the argument's transformed value.
      */
     fun <T> positional(name: String,
+                       help: String,
                        transform: String.() -> T): Delegate<T> {
-        return object : WrappingDelegate<List<T>, T>(positionalList(name, 1..1, transform)) {
+        return object : WrappingDelegate<List<T>, T>(positionalList(name, 1..1, help = help, transform = transform)) {
             override fun wrap(u: List<T>): T = u[0]
 
             override fun unwrap(w: T): List<T> = listOf(w)
@@ -169,8 +181,9 @@ class ArgParser(args: Array<out String>,
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the arguments.
      */
     fun positionalList(name: String,
-                       sizeRange: IntRange = 1..Int.MAX_VALUE) =
-            positionalList(name, sizeRange) { this }
+                       sizeRange: IntRange = 1..Int.MAX_VALUE,
+                       help: String) =
+            positionalList(name, sizeRange, help = help) { this }
 
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the transformed
@@ -178,6 +191,7 @@ class ArgParser(args: Array<out String>,
      */
     fun <T> positionalList(name: String,
                            sizeRange: IntRange = 1..Int.MAX_VALUE,
+                           help: String,
                            transform: String.() -> T): Delegate<List<T>> {
         sizeRange.run {
             if (step != 1)
@@ -192,7 +206,7 @@ class ArgParser(args: Array<out String>,
                 throw IllegalArgumentException("sizeRange only allows $last arguments, must allow at least 1")
         }
 
-        return PositionalDelegate<T>(this, name, sizeRange, transform).apply {
+        return PositionalDelegate<T>(this, name, sizeRange, help = help, transform = transform).apply {
             positionalDelegates.add(this)
         }
     }
@@ -208,11 +222,11 @@ class ArgParser(args: Array<out String>,
         override val valueName: String
             get() = inner.valueName
 
+        override val help: String
+            get() = inner.help
+
         override fun default(value: W): Delegate<W> =
                 apply { inner.default(unwrap(value)) }
-
-        override fun help(help: String): Delegate<W> =
-                apply { inner.help(help) }
 
         override fun addValidtator(validator: Delegate<W>.() -> Unit): Delegate<W> =
                 apply { validator(this) }
@@ -225,6 +239,9 @@ class ArgParser(args: Array<out String>,
         /** The name of the value associated with this delegate */
         val valueName: String
 
+        /** The user-visible help text for this delegate */
+        val help: String
+
         /** Allows this object to act as a property delegate */
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T = value
 
@@ -233,19 +250,16 @@ class ArgParser(args: Array<out String>,
         /** Set default value */
         fun default(value: T): Delegate<T>
 
-        /** Set help text */
-        fun help(help: String): Delegate<T>
-
         /** Add validation logic. Validator should throw a [SystemExitException] on failure. */
         fun addValidtator(validator: Delegate<T>.() -> Unit): Delegate<T>
     }
 
     internal abstract class ParsingDelegate<T>(
             val parser: ArgParser,
-            override val valueName: String) : Delegate<T> {
+            override val valueName: String,
+            override val help: String) : Delegate<T> {
 
         protected var holder: Holder<T>? = null
-        protected var helpText: String? = null
 
         init {
             parser.assertNotParsed()
@@ -258,12 +272,6 @@ class ArgParser(args: Array<out String>,
         override fun default(value: T): Delegate<T> {
             parser.assertNotParsed()
             holder = Holder(value)
-            return this
-        }
-
-        override fun help(help: String): Delegate<T> {
-            parser.assertNotParsed()
-            this.helpText = help
             return this
         }
 
@@ -294,10 +302,11 @@ class ArgParser(args: Array<out String>,
     private class OptionDelegate<T>(
             parser: ArgParser,
             valueName: String,
+            help: String,
             val optionNames: List<String>,
             val usageArgument: String?,
             val isRepeating: Boolean,
-            val handler: OptionArgumentIterator<T>.() -> T) : ParsingDelegate<T>(parser, valueName) {
+            val handler: OptionArgumentIterator<T>.() -> T) : ParsingDelegate<T>(parser, valueName, help) {
 
         fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
             val input = OptionArgumentIterator(holder, name, firstArg, index, args)
@@ -313,7 +322,7 @@ class ArgParser(args: Array<out String>,
                         optionNames.map { "$it $usageArgument" }
                     else optionNames,
                     isPositional = false,
-                    help = helpText)
+                    help = help)
         }
     }
 
@@ -321,10 +330,11 @@ class ArgParser(args: Array<out String>,
             parser: ArgParser,
             valueName: String,
             val sizeRange: IntRange,
-            val f: String.() -> T) : ParsingDelegate<List<T>>(parser, valueName) {
+            help: String,
+            val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, valueName, help) {
 
         fun parseArguments(args: List<String>) {
-            holder = Holder(args.map(f))
+            holder = Holder(args.map(transform))
         }
 
         override fun toHelpFormatterValue(): HelpFormatter.Value {
@@ -333,7 +343,7 @@ class ArgParser(args: Array<out String>,
                     isRepeating = sizeRange.last > 1,
                     usages = listOf(valueName),
                     isPositional = true,
-                    help = helpText)
+                    help = help)
         }
     }
 
@@ -578,10 +588,11 @@ class ArgParser(args: Array<out String>,
         if (helpFormatter != null) {
             option<Unit>("-h", "--help",
                     valueName = "SHOW_HELP",
+                    help = "show this help message and exit",
                     usageArgument = null,
                     isRepeating = false) {
                 throw ShowHelpException(helpFormatter, delegates)
-            }.default(Unit).help("show this help message and exit")
+            }.default(Unit)
         }
     }
 
@@ -625,7 +636,7 @@ interface HelpFormatter {
             val isRequired: Boolean,
             val isRepeating: Boolean,
             val isPositional: Boolean,
-            val help: String?)
+            val help: String)
 }
 
 class DefaultHelpFormatter(val prologue: String? = null,
@@ -666,7 +677,7 @@ class DefaultHelpFormatter(val prologue: String? = null,
         return sb.toString()
     }
 
-    private fun appendSection(sb: StringBuilder, columns:Int, name: String, values: List<HelpFormatter.Value>) {
+    private fun appendSection(sb: StringBuilder, columns: Int, name: String, values: List<HelpFormatter.Value>) {
         // TODO: make these configurable or smarter?
         val helpPos = columns * 3 / 10
         val indent = "  "
@@ -677,8 +688,7 @@ class DefaultHelpFormatter(val prologue: String? = null,
             sb.append("$name arguments:\n")
             for (value in values) {
                 val left = value.usages.map { it.replace(' ', '\u00a0') }.joinToString(", ").wrapText(helpPos - indentWidth).prependIndent(indent)
-                // TODO: make help required
-                val right = value.help!!.wrapText(columns - helpPos - 2*indentWidth).prependIndent(indent)
+                val right = value.help.wrapText(columns - helpPos - 2 * indentWidth).prependIndent(indent)
                 sb.append(columnize(left, right, minWidths = intArrayOf(helpPos)))
                 sb.append("\n")
             }
@@ -752,7 +762,7 @@ internal fun StringBuilder.clear() {
 
 internal val SPACE_WIDTH = 1
 
-internal fun String.padTo(width: Int) : String {
+internal fun String.padTo(width: Int): String {
     val sb = StringBuilder()
     var lineWidth = 0
     forEachCodePoint {
@@ -773,7 +783,7 @@ internal fun String.padTo(width: Int) : String {
 
 internal val NBSP_CODEPOINT = 0xa0
 
-internal fun String.wrapText(maxWidth: Int) : String {
+internal fun String.wrapText(maxWidth: Int): String {
     val sb = StringBuilder()
     val word = StringBuilder()
     var lineWidth = 0
@@ -844,17 +854,17 @@ internal fun codePointWidth(ucs: Int): Byte {
     }
 
     // If we arrive here, ucs is not a combining or C0/C1 control character.
-    return if (ucs >= 0x1100 && (ucs <= 0x115f ||                           // Hangul Jamo init. consonants
-                    ucs == 0x2329 || ucs == 0x232a ||
-                    (ucs >= 0x2e80 && ucs <= 0xa4cf && ucs != 0x303f) ||  // CJK ... Yi
-                    (ucs >= 0xac00 && ucs <= 0xd7a3) || // Hangul Syllables
-                    (ucs >= 0xf900 && ucs <= 0xfaff) || // CJK Compatibility Ideographs
-                    (ucs >= 0xfe10 && ucs <= 0xfe19) || // Vertical forms
-                    (ucs >= 0xfe30 && ucs <= 0xfe6f) || // CJK Compatibility Forms
-                    (ucs >= 0xff00 && ucs <= 0xff60) || // Fullwidth Forms
-                    (ucs >= 0xffe0 && ucs <= 0xffe6) ||
-                    (ucs >= 0x20000 && ucs <= 0x2fffd) ||
-                    (ucs >= 0x30000 && ucs <= 0x3fffd)))
+    return if (ucs >= 0x1100 && (ucs <= 0x115f || // Hangul Jamo init. consonants
+            ucs == 0x2329 || ucs == 0x232a ||
+            (ucs >= 0x2e80 && ucs <= 0xa4cf && ucs != 0x303f) || // CJK ... Yi
+            (ucs >= 0xac00 && ucs <= 0xd7a3) || // Hangul Syllables
+            (ucs >= 0xf900 && ucs <= 0xfaff) || // CJK Compatibility Ideographs
+            (ucs >= 0xfe10 && ucs <= 0xfe19) || // Vertical forms
+            (ucs >= 0xfe30 && ucs <= 0xfe6f) || // CJK Compatibility Forms
+            (ucs >= 0xff00 && ucs <= 0xff60) || // Fullwidth Forms
+            (ucs >= 0xffe0 && ucs <= 0xffe6) ||
+            (ucs >= 0x20000 && ucs <= 0x2fffd) ||
+            (ucs >= 0x30000 && ucs <= 0x3fffd)))
         2 else 1
 }
 
@@ -866,7 +876,7 @@ internal fun String.codePointWidth(): Int {
     return result
 }
 
-internal fun String.trimNewline() : String {
+internal fun String.trimNewline(): String {
     if (endsWith('\n')) {
         return substring(0, length - 1)
     } else {
@@ -874,7 +884,7 @@ internal fun String.trimNewline() : String {
     }
 }
 
-internal fun columnize(vararg s: String, minWidths: IntArray? = null) : String {
+internal fun columnize(vararg s: String, minWidths: IntArray? = null): String {
     val columns = Array(s.size) { mutableListOf<String>() }
     val widths = Array(s.size) { 0 }
     for (i in 0..s.size - 1) {
@@ -894,7 +904,7 @@ internal fun columnize(vararg s: String, minWidths: IntArray? = null) : String {
         var columnStart = 0
         for (i in 0..columns.size - 1) {
             columns[i].getOrNull(j)?.let { cell ->
-                for(k in 1..columnStart - lineWidth) sb.append(" ")
+                for (k in 1..columnStart - lineWidth) sb.append(" ")
                 lineWidth = columnStart
                 sb.append(cell)
                 lineWidth += cell.codePointWidth()
