@@ -71,8 +71,9 @@ sourceSets {
 
 dokka {
     moduleName = project.name
-    outputFormat = 'javadoc'
-    outputDirectory = javadoc.destinationDir
+
+    // TODO: includes = ['Module.md']
+
     linkMapping {
         dir = "src/main/kotlin"
         url = "$project.ext.vcsUrl/blob/master/src/main/kotlin"
@@ -81,8 +82,21 @@ dokka {
     sourceDirs = files('src/main/kotlin')
 }
 
+task dokkaJavadoc(type: org.jetbrains.dokka.gradle.DokkaTask) {
+    outputFormat = "javadoc"
+    outputDirectory = javadoc.destinationDir
+
+    linkMapping {
+        dir = "src/main/kotlin"
+        url = "$project.ext.vcsUrl/blob/master/src/main/kotlin"
+        suffix = "#L"
+    }
+    sourceDirs = files('src/main/kotlin')
+}
+
+
 //Based on comment by @jnizet at https://github.com/Kotlin/dokka/issues/42
-task javadocJar(type: Jar, dependsOn: dokka) {
+task javadocJar(type: Jar, dependsOn: dokkaJavadoc) {
     classifier = 'javadoc'
     from javadoc.destinationDir
 }
