@@ -56,7 +56,6 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
     }
 }
 
-
 /**
  * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any
  * `SystemExitException` that is caught.

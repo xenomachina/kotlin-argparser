@@ -69,7 +69,7 @@ class ArgParser(args: Array<out String>,
     fun <T> storing(vararg names: String,
                     help: String,
                     transform: String.() -> T): Delegate<T> {
-        val errorName = errorNameForOptionNames(names);
+        val errorName = errorNameForOptionNames(names)
         return option(
                 *names,
                 errorName = errorName,
@@ -985,7 +985,7 @@ internal fun codePointWidth(ucs: Int): Byte {
                 category == Character.FORMAT || // "Cf"
                 (0x1160 <= ucs && ucs <= 0x11FF) || // Hangul Jungseong & Jongseong
                 ucs == 0x200B) // zero width space
-            return 0;
+            return 0
     }
 
     // If we arrive here, ucs is not a combining or C0/C1 control character.
