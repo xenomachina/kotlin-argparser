@@ -66,6 +66,35 @@ sourceSets {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// ktlint config
+//////////////////////////////////////////////////////////////////////////////
+
+// Based on https://github.com/shyiko/ktlint
+
+configurations {
+    ktlint
+}
+
+dependencies {
+    ktlint 'com.github.shyiko:ktlint:0.3.1'
+}
+
+task ktlint(type: JavaExec) {
+    main = "com.github.shyiko.ktlint.Main"
+    classpath = configurations.ktlint
+    args "src/**/*.kt"
+}
+
+check.dependsOn ktlint
+
+task ktlintFormat(type: JavaExec) {
+    main = "com.github.shyiko.ktlint.Main"
+    classpath = configurations.ktlint
+    args "-F", "src/**/*.kt"
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
 // Dokka config
 //////////////////////////////////////////////////////////////////////////////
 

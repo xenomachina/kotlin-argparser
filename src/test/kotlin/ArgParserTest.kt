@@ -43,10 +43,11 @@ class ArgParserTest {
         throw AssertionError("Expected ${javaClass.canonicalName} to be thrown")
     }
 
-    fun parserOf(vararg args: String,
-                 mode: ArgParser.Mode = ArgParser.Mode.GNU,
-                 helpFormatter: HelpFormatter? = DefaultHelpFormatter()) =
-            ArgParser(args, mode, helpFormatter)
+    fun parserOf(
+            vararg args: String,
+            mode: ArgParser.Mode = ArgParser.Mode.GNU,
+            helpFormatter: HelpFormatter? = DefaultHelpFormatter()
+    ) = ArgParser(args, mode, helpFormatter)
 
     @Test
     fun testArglessShortOptions() {

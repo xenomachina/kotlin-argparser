@@ -66,9 +66,11 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's (transformed) argument.
      */
-    fun <T> storing(vararg names: String,
-                    help: String,
-                    transform: String.() -> T): Delegate<T> {
+    fun <T> storing(
+            vararg names: String,
+            help: String,
+            transform: String.() -> T
+    ): Delegate<T> {
         val errorName = errorNameForOptionNames(names)
         return option(
                 *names,
@@ -88,10 +90,12 @@ class ArgParser(args: Array<out String>,
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
      * MutableCollection each time the option appears in args, and returns said MutableCollection.
      */
-    fun <E, T : MutableCollection<E>> adding(vararg names: String,
-                                             initialValue: T,
-                                             help: String,
-                                             transform: String.() -> E): Delegate<T> {
+    fun <E, T : MutableCollection<E>> adding(
+            vararg names: String,
+            initialValue: T,
+            help: String,
+            transform: String.() -> E
+    ): Delegate<T> {
         val errorName = errorNameForOptionNames(names)
         return option<T>(
                 *names,
@@ -109,10 +113,11 @@ class ArgParser(args: Array<out String>,
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
      * MutableList each time the option appears in args, and returns said MutableCollection.
      */
-    fun <T> adding(vararg names: String,
-                   help: String,
-                   transform: String.() -> T) =
-            adding(*names, initialValue = mutableListOf(), help = help, transform = transform)
+    fun <T> adding(
+            vararg names: String,
+            help: String,
+            transform: String.() -> T
+    ) = adding(*names, initialValue = mutableListOf(), help = help, transform = transform)
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's argument to a MutableList each time the
@@ -152,12 +157,14 @@ class ArgParser(args: Array<out String>,
      * @param usageArgument how to represent argument(s) in help text, or null if consumes no arguments
      * @param handler A function that assists in parsing arguments by computing the value of this option
      */
-    internal fun <T> option(vararg names: String,
-                            errorName: String,
-                            help: String,
-                            usageArgument: String?,
-                            isRepeating: Boolean = true,
-                            handler: OptionArgumentIterator<T>.() -> T): Delegate<T> {
+    internal fun <T> option(
+            vararg names: String,
+            errorName: String,
+            help: String,
+            usageArgument: String?,
+            isRepeating: Boolean = true,
+            handler: OptionArgumentIterator<T>.() -> T
+    ): Delegate<T> {
         val delegate = OptionDelegate<T>(
                 parser = this,
                 errorName = errorName,
@@ -180,9 +187,11 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for a single positional argument which returns the argument's transformed value.
      */
-    fun <T> positional(name: String,
-                       help: String,
-                       transform: String.() -> T): Delegate<T> {
+    fun <T> positional(
+            name: String,
+            help: String,
+            transform: String.() -> T
+    ): Delegate<T> {
         return object : WrappingDelegate<List<T>, T>(positionalList(name, 1..1, help = help, transform = transform)) {
             override fun wrap(u: List<T>): T = u[0]
 
@@ -193,19 +202,22 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the arguments.
      */
-    fun positionalList(name: String,
-                       sizeRange: IntRange = 1..Int.MAX_VALUE,
-                       help: String) =
-            positionalList(name, sizeRange, help = help) { this }
+    fun positionalList(
+            name: String,
+            sizeRange: IntRange = 1..Int.MAX_VALUE,
+            help: String
+    ) = positionalList(name, sizeRange, help = help) { this }
 
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the transformed
      * arguments.
      */
-    fun <T> positionalList(name: String,
-                           sizeRange: IntRange = 1..Int.MAX_VALUE,
-                           help: String,
-                           transform: String.() -> T): Delegate<List<T>> {
+    fun <T> positionalList(
+            name: String,
+            sizeRange: IntRange = 1..Int.MAX_VALUE,
+            help: String,
+            transform: String.() -> T
+    ): Delegate<List<T>> {
         sizeRange.run {
             if (step != 1)
                 throw IllegalArgumentException("step must be 1, not $step")
@@ -685,11 +697,15 @@ interface HelpFormatter {
  * @property prologue Text that should appear near the beginning of the help, immediately after the usage summary.
  * @property epilogue Text that should appear at the end of the help.
  */
-class DefaultHelpFormatter(val prologue: String? = null,
-                           val epilogue: String? = null) : HelpFormatter {
-    override fun format(progName: String?,
-                        columns: Int,
-                        values: List<HelpFormatter.Value>): String {
+class DefaultHelpFormatter(
+        val prologue: String? = null,
+        val epilogue: String? = null
+) : HelpFormatter {
+    override fun format(
+            progName: String?,
+            columns: Int,
+            values: List<HelpFormatter.Value>
+    ): String {
         val sb = StringBuilder()
         appendUsage(sb, columns, progName, values)
 
@@ -778,9 +794,10 @@ class DefaultHelpFormatter(val prologue: String? = null,
  * Indicates that the user requested that help should be shown (with the
  * `--help` option, for example).
  */
-class ShowHelpException internal constructor(private val helpFormatter: HelpFormatter,
-                                             private val delegates: List<ArgParser.ParsingDelegate<*>>) :
-        SystemExitException("Help was requested", 0) {
+class ShowHelpException internal constructor(
+        private val helpFormatter: HelpFormatter,
+        private val delegates: List<ArgParser.ParsingDelegate<*>>
+) : SystemExitException("Help was requested", 0) {
     override fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
         writer.write(helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() }))
     }
