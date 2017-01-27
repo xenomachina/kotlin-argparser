@@ -23,12 +23,23 @@ import kotlin.reflect.KProperty
 
 /**
  * A command-line option/argument parser.
+ *
+ * @param args the command line arguments to parse
+ * @param mode parsing mode, defaults to GNU-style parsing
+ * @param helpFormatter if non-null, creates `--help` and `-h` options that trigger a [ShowHelpException] which will use
+ * the supplied [HelpFormatter] to generate a help message.
  */
 class ArgParser(args: Array<out String>,
                 mode: Mode = Mode.GNU,
                 helpFormatter: HelpFormatter? = DefaultHelpFormatter()) {
 
-    enum class Mode { GNU, POSIX }
+    enum class Mode {
+        /** For GNU-style option parsing, where options may appear after positional arguments. */
+        GNU,
+
+        /** For POSIX-style option parsing, where options must appear before positional arguments. */
+        POSIX
+    }
 
     /**
      * Creates a Delegate for a zero-argument option that returns true if and only the option is present in args.
@@ -391,6 +402,8 @@ class ArgParser(args: Array<out String>,
         fun hasNext(): Boolean = peek() != null
 
         /**
+         * Advances to the next argument available to this option and returns it.
+         *
          * @returns the next argument available to this option
          * @throws OptionMissingRequiredArgumentException if no more arguments are available
          */
@@ -428,6 +441,11 @@ class ArgParser(args: Array<out String>,
     private var inValidation = false
     private var finished = false
 
+    /**
+     * Ensures that arguments have been parsed and validated.
+     *
+     * @throws SystemExitException if parsing or validation failed.
+     */
     fun force() {
         if (!finished) {
             parseOptions
@@ -599,31 +617,20 @@ class ArgParser(args: Array<out String>,
             }.default(Unit)
         }
     }
-
-    class ShowHelpException internal constructor(val helpFormatter: HelpFormatter,
-                                                 private val delegates: List<ParsingDelegate<*>>) :
-            SystemExitException("Help was requested", 0) {
-        override fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
-            writer.write(helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() }))
-        }
-    }
 }
 
 /**
- * Compensates for the fact that nullable types don't compose in Kotlin. If you want to be able to distinguish between a
- * T (where T may or may not be a nullable type) and lack of a T, use a Holder<T>?.
+ * Formats help for an [ArgParser].
  */
-data class Holder<T>(val value: T)
-
-fun <T> Holder<T>?.orElse(f: () -> T): T {
-    if (this == null) {
-        return f()
-    } else {
-        return value
-    }
-}
-
 interface HelpFormatter {
+    /**
+     * Formats a help message.
+     *
+     * @param progName name of the program as it should appear in usage information, or null if
+     * program name is unknown.
+     * @param columns width of display help should be formatted for, measured in character cells.
+     * @param values [Value] objects describing the arguments types available.
+     */
     fun format(progName: String?, columns: Int, values: List<Value>): String
 
     /**
@@ -643,6 +650,41 @@ interface HelpFormatter {
             val help: String)
 }
 
+/**
+ * Default implementation of [HelpFormatter]. Output is modelled after that of common UNIX utilities and looks
+ * something like this:
+ *
+ * ```
+ * usage: program_name     [-h] [-n] [-I INCLUDE]... -o OUTPUT
+ *                         [-v]... SOURCE... DEST
+ *
+ * Does something really useful.
+ *
+ * required arguments:
+ *   -o OUTPUT,            directory in which all output should
+ *   --output OUTPUT       be generated
+ *
+ * optional arguments:
+ *   -h, --help            show this help message and exit
+ *
+ *   -n, --dry-run         don't do anything
+ *
+ *   -I INCLUDE,           search in this directory for header
+ *   --include INCLUDE     files
+ *
+ *  -v, --verbose         increase verbosity
+ *
+ * positional arguments:
+ *   SOURCE                source file
+ *
+ *   DEST                  destination file
+ *
+ * More info is available at http://program-name.example.com/
+ * ```
+ *
+ * @property prologue Text that should appear near the beginning of the help, immediately after the usage summary.
+ * @property epilogue Text that should appear at the end of the help.
+ */
 class DefaultHelpFormatter(val prologue: String? = null,
                            val epilogue: String? = null) : HelpFormatter {
     override fun format(progName: String?,
@@ -732,15 +774,30 @@ class DefaultHelpFormatter(val prologue: String? = null,
     }
 }
 
+/**
+ * Indicates that the user requested that help should be shown (with the
+ * `--help` option, for example).
+ */
+class ShowHelpException internal constructor(private val helpFormatter: HelpFormatter,
+                                             private val delegates: List<ArgParser.ParsingDelegate<*>>) :
+        SystemExitException("Help was requested", 0) {
+    override fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
+        writer.write(helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() }))
+    }
+}
 
 /**
  * Indicates that an unrecognized option was supplied.
+ *
+ * @property optName the name of the option
  */
-open class UnrecognizedOptionException(val optionName: String) :
-        SystemExitException("unrecognized option '$optionName'", 2)
+open class UnrecognizedOptionException(val optName: String) :
+        SystemExitException("unrecognized option '$optName'", 2)
 
 /**
  * Indicates that a value is missing after parsing has completed.
+ *
+ * @property valueName the name of the missing value
  */
 open class MissingValueException(val valueName: String) :
         SystemExitException("missing $valueName", 2)
@@ -752,29 +809,58 @@ open class InvalidArgumentException(message: String) : SystemExitException(messa
 
 /**
  * Indicates that a required option argument was not supplied.
+ *
+ * @property optName the name of the option
  */
 open class OptionMissingRequiredArgumentException(val optName: String) :
         SystemExitException("option '$optName' is missing a required argument", 2)
 
 /**
  * Indicates that a required positional argument was not supplied.
+ *
+ * @property argName the name of the positional argument
  */
-open class MissingRequiredPositionalArgumentException(val valueName: String) :
-        SystemExitException("missing $valueName operand", 2)
+open class MissingRequiredPositionalArgumentException(val argName: String) :
+        SystemExitException("missing $argName operand", 2)
 
 /**
  * Indicates that an argument was forced upon an option that does not take one.
  *
- * That is, "--foo=bar" where "--foo" takes no arguments.
+ * For example, if the arguments contained "--foo=bar" and the "--foo" option does not consume any arguments.
+ *
+ * @property optName the name of the option
  */
 open class UnexpectedOptionArgumentException(val optName: String) :
         SystemExitException("option '$optName' doesn't allow an argument", 2)
 
 /**
  * Indicates that there is an unhandled positional argument.
+ *
+ * @property valueName the name of the missing value
  */
 open class UnexpectedPositionalArgumentException(val valueName: String?) :
         SystemExitException("unexpected argument${if (valueName == null) "" else " after $valueName"}", 2)
+
+// TODO: move this to com.xenomachina.common
+
+/**
+ * a `Holder<T>?` can be used where one needs to be able to distinguish between having a T or not having a T, even
+ * when T is a nullable type.
+ *
+ * @property value the value being held
+ */
+data class Holder<T>(val value: T)
+
+/**
+ * Dereferences the [Holder] if non-null, otherwise returns the result of calling [fallback].
+ */
+fun <T> Holder<T>?.orElse(fallback: () -> T): T {
+    if (this == null) {
+        return fallback()
+    } else {
+        return value
+    }
+}
 
 // TODO: move all declarations below this point to com.xenomachina.text
 

@@ -25,6 +25,8 @@ import kotlin.system.exitProcess
 /**
  * An exception that wants the process to terminate with a specific status code, and also (optionally) wants to display
  * a message to [System.out] or [System.err].
+ *
+ * @property returnCode the return code that this process should exit with
  */
 open class SystemExitException(message: String, val returnCode: Int) : Exception(message) {
     /**
@@ -44,7 +46,7 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
     /**
      * Prints a message for the user to the specified `Writer`.
      *
-     * @param writer where to write user message
+     * @param writer where to write message for the user
      * @param progName the name of this program as invoked, or null if not known
      * @param columns the number of columns to wrap at, or 0 if not to wrap at all
      */
