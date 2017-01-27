@@ -41,8 +41,10 @@ class ArgParserTest {
         throw AssertionError("Expected ${javaClass.canonicalName} to be thrown")
     }
 
-    fun parserOf(vararg args: String, mode: ArgParser.Mode = ArgParser.Mode.GNU) =
-            ArgParser(args, mode)
+    fun parserOf(vararg args: String,
+                 mode: ArgParser.Mode = ArgParser.Mode.GNU,
+                 helpFormatter: HelpFormatter? = DefaultHelpFormatter()) =
+            ArgParser(args, mode, helpFormatter)
 
     @Test
     fun testArglessShortOptions() {
@@ -840,8 +842,15 @@ class ArgParserTest {
                     help = "destination file")
         }
 
-        shouldThrow<ArgParser.ShowHelpException> {
-            Args(parserOf("--help")).dryRun
+        shouldThrow<ShowHelpException> {
+            Args(parserOf("--help",
+                    helpFormatter = DefaultHelpFormatter(
+                            prologue = """
+                            This is the prologue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam malesuada maximus eros. Fusce luctus risus eget quam consectetur, eu auctor est ullamcorper. Maecenas eget suscipit dui, sed sodales erat. Phasellus.
+                            """,
+                            epilogue = """
+                            This is the epilogue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vel tortor nunc. Sed eu massa sed turpis auctor faucibus. Donec vel pellentesque tortor. Ut ultrices tempus lectus fermentum vestibulum. Phasellus.
+                            """))).dryRun
         }.run {
             val writer = StringWriter()
             printUserMessage(writer, "program_name", 60)
@@ -850,6 +859,14 @@ class ArgParserTest {
                     """
 usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT
                     [-v]... SOURCE... DEST
+
+
+This is the prologue. Lorem ipsum dolor sit amet, consectetur
+adipiscing elit. Aliquam malesuada maximus eros. Fusce
+luctus risus eget quam consectetur, eu auctor est
+ullamcorper. Maecenas eget suscipit dui, sed sodales erat.
+Phasellus.
+
 
 required arguments:
   -o OUTPUT,        directory in which all output should
@@ -872,6 +889,13 @@ positional arguments:
   SOURCE            source file
 
   DEST              destination file
+
+
+
+This is the epilogue. Lorem ipsum dolor sit amet, consectetur
+adipiscing elit. Donec vel tortor nunc. Sed eu massa sed
+turpis auctor faucibus. Donec vel pellentesque tortor. Ut
+ultrices tempus lectus fermentum vestibulum. Phasellus.
 
 """.trimStart(), help)
         }
