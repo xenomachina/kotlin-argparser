@@ -1,5 +1,7 @@
 # ![Kotlin --argparser](logo.png)
 
+[ ![Download](https://api.bintray.com/packages/xenomachina/maven/kotlin-argparser/images/download.svg) ](https://bintray.com/xenomachina/maven/kotlin-argparser/_latestVersion)
+[ ![LGPL 2.1](http://img.shields.io/badge/license-LGPL--2.1-blue.svg?style=flat) ](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
 
 This is a library for parsing command-line arguments.  It can parse both
 options and positional arguments.  It aims to be easy to use and concise yet
