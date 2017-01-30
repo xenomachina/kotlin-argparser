@@ -33,6 +33,7 @@ plugins {
     id 'net.researchgate.release' version "2.5.0"
 }
 
+apply plugin: 'maven'
 apply plugin: 'kotlin'
 apply plugin: 'java'
 apply plugin: 'org.jetbrains.dokka'
