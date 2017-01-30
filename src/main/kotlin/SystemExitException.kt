@@ -67,7 +67,7 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
  * @param f the main body. If a `SystemExitException` is caught its
  * `printAndExit` method will be invoked.
  */
-fun <T, R> T.runMain(progName: String? = null, columns: Int?, f: T.() -> R): R {
+fun <T, R> T.runMain(progName: String? = null, columns: Int? = null, f: T.() -> R): R {
     try {
         return f()
     } catch (e: SystemExitException) {
