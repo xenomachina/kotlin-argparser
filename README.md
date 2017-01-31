@@ -1,4 +1,4 @@
-# ![Kotlin --argparser](logo.svg?raw=yes)
+# ![Kotlin --argparser](https://cdn.rawgit.com/xenomachina/kotlin-argparser/master/logo.svg)
 
 [ ![bintray](https://img.shields.io/bintray/v/xenomachina/maven/kotlin-argparser.svg?style=plastic) ](https://bintray.com/xenomachina/maven/kotlin-argparser/_latestVersion)
 [ ![Travis](https://img.shields.io/travis/xenomachina/kotlin-argparser.svg?style=plastic) ](https://travis-ci.org/xenomachina/kotlin-argparser)
