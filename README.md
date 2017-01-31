@@ -1,7 +1,8 @@
-# ![Kotlin --argparser](logo.png)
+# ![Kotlin --argparser](logo.svg)
 
-[ ![Download](https://api.bintray.com/packages/xenomachina/maven/kotlin-argparser/images/download.svg) ](https://bintray.com/xenomachina/maven/kotlin-argparser/_latestVersion)
-[ ![LGPL 2.1](http://img.shields.io/badge/license-LGPL--2.1-blue.svg?style=flat) ](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
+[ ![bintray](https://img.shields.io/bintray/v/xenomachina/maven/kotlin-argparser.svg?style=plastic) ](https://bintray.com/xenomachina/maven/kotlin-argparser/_latestVersion)
+[ ![Travis](https://img.shields.io/travis/xenomachina/kotlin-argparser.svg?style=plastic) ](https://travis-ci.org/xenomachina/kotlin-argparser)
+[ ![LGPL 2.1](http://img.shields.io/badge/license-LGPL--2.1-blue.svg?style=plastic) ](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
 
 This is a library for parsing command-line arguments.  It can parse both
 options and positional arguments.  It aims to be easy to use and concise yet
