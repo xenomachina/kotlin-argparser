@@ -208,53 +208,57 @@ Parsing of command-line arguments is performed sequentially. So long as
 option-processing is enabled, each not-yet-processed command-line argument that
 starts with a hyphen (`-`) is treated as an option.
 
-### Option Syntaxes
+### Short Options
 
-- Short options start with a single hyphen. If the option takes an argument, the
-  argument can either be appended:
+Short options start with a single hyphen. If the option takes an argument, the
+argument can either be appended:
 
-  ```bash
-  # "-o" with argument "ARGUMENT"
-  my_program -oARGUMENT
-  ```
+```bash
+# "-o" with argument "ARGUMENT"
+my_program -oARGUMENT
+```
 
-  or can be the following command-line argument:
+or can be the following command-line argument:
 
-  ```bash
-  # "-o" with argument "ARGUMENT"
-  my_program -o ARGUMENT
-  ```
+```bash
+# "-o" with argument "ARGUMENT"
+my_program -o ARGUMENT
+```
 
-  Zero argument short options can also be appended to each other without
-  intermediate hyphens:
+Zero argument short options can also be appended to each other without
+intermediate hyphens:
 
-  ```bash
-  # "-x", "-y" and "-z" options
-  my_program -xyz
-  ```
+```bash
+# "-x", "-y" and "-z" options
+my_program -xyz
+```
 
-  An option that accepts arguments is also allowed at the end of such a chain:
+An option that accepts arguments is also allowed at the end of such a chain:
 
-  ```bash
-  # "-x", "-y" and "-z" options, with argument for "-z"
-  my_program -xyzARGUMENT
-  ```
+```bash
+# "-x", "-y" and "-z" options, with argument for "-z"
+my_program -xyzARGUMENT
+```
 
-- Long options start with a double hyphen (`--`). An argument to a long option
-  can
-  either be delimited with an equal sign:
+### Long Options
 
-  ```bash
-  # "--foo" with argument "ARGUMENT"
-  my_program --foo=ARGUMENT
-  ```
+Long options start with a double hyphen (`--`). An argument to a long option
+can
+either be delimited with an equal sign (`=`):
 
-  or can be the following command-line argument:
+```bash
+# "--foo" with argument "ARGUMENT"
+my_program --foo=ARGUMENT
+```
 
-  ```bash
-  # "--foo" with argument "ARGUMENT"
-  my_program --foo ARGUMENT
-  ```
+or can be the following command-line argument:
+
+```bash
+# "--foo" with argument "ARGUMENT"
+my_program --foo ARGUMENT
+```
+
+### Multi-argument Options
 
 Multi-argument options are supported, though not by any of the convenience
 methods. Option-arguments after the first must be separate command-line
