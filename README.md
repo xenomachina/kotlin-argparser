@@ -202,15 +202,112 @@ in the `init` of your args object after declaring all of your parsed
 properties.
 
 
-<!--
 ## Parsing
 
-TODO: write a brief explanation of how parsing works
+Parsing of command-line arguments is performed sequentially. So long as
+option-processing is enabled, each not-yet-processed command-line argument that
+starts with a hyphen (`-`) is treated as an option.
+
+### Option Syntaxes
+
+- Short options start with a single hyphen. If the option takes an argument, the
+  argument can either be appended:
+
+  ```bash
+  # "-o" with argument "ARGUMENT"
+  my_program -oARGUMENT
+  ```
+
+  or can be the following command-line argument:
+
+  ```bash
+  # "-o" with argument "ARGUMENT"
+  my_program -o ARGUMENT
+  ```
+
+  Zero argument short options can also be appended to each other without
+  intermediate hyphens:
+
+  ```bash
+  # "-x", "-y" and "-z" options
+  my_program -xyz
+  ```
+
+  An option that accepts arguments is also allowed at the end of such a chain:
+
+  ```bash
+  # "-x", "-y" and "-z" options, with argument for "-z"
+  my_program -xyzARGUMENT
+  ```
+
+- Long options start with a double hyphen (`--`). An argument to a long option
+  can
+  either be delimited with an equal sign:
+
+  ```bash
+  # "--foo" with argument "ARGUMENT"
+  my_program --foo=ARGUMENT
+  ```
+
+  or can be the following command-line argument:
+
+  ```bash
+  # "--foo" with argument "ARGUMENT"
+  my_program --foo ARGUMENT
+  ```
+
+Multi-argument options are supported, though not by any of the convenience
+methods. Option-arguments after the first must be separate command-line
+arguments, for both an long and short forms of an option.
+
+### Positional Arguments
+
+In GNU mode (the default), options can be interspersed with positional
+arguments, but in POSIX mode the first positional argument that is encountered
+disables option processing for the remaining arguments. In either mode, if the
+argument "--" is encountered while option processing is enabled, then option
+processing is for the rest of the command-line. Once the options and
+option-arguments have been eliminated, what remains are considered to be
+positional arguments.
+
+Each positional argument delegate can specify a minimum and maximum number of
+arguments it is willing to collect.
+
+The positional arguments are distributed to the delegates by allocating each
+positional delegate at least as many arguments as it requires. If more than the
+minimum number of positional arguments have been supplied then additional arguments
+will be allocated to the first delegate up to its maximum, then the second, and so
+on, until all arguments have been allocated to a delegate.
+
+This makes it easy to create a program that behaves like `grep`:
+
+  ```kotlin
+  class Args(parser: ArgParser) {
+      // accept 1 regex followed by n filenames
+      val regex by parser.positional("REGEX",
+              help = "regular expression to search for")
+      val files by parser.positionalList("FILE",
+              help = "file to search in")
+  }
+  ```
+
+And equally easy to create a program that behaves like `cp`:
+
+  ```kotlin
+  class Args(parser: ArgParser) {
+      // accept n source files followed by 1 destination
+      val sources by parser.positionalList("SOURCE",
+              help = "source file")
+      val destination by parser.positional("DEST",
+              help = "destination file")
+  }
+  ```
 
 
+<!--
 ## Help Formatting
 
-TODO: write an explanation of help formatting once implemented
+TODO: write an explanation of help formatting
 -->
 
 
