@@ -18,6 +18,7 @@
 
 package com.xenomachina.argparser
 
+import com.xenomachina.common.orElse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
@@ -548,7 +549,7 @@ class ArgParserTest {
 
                 // A better way to accomplish validation that only depends on one Delegate is to use
                 // Delegate.addValidator. See testAddValidator for an example of this.
-                if (x.mod(2) != 0)
+                if (x.rem(2) != 0)
                     throw InvalidArgumentException("${xDelegate.errorName} must be even, $x is odd")
             }
         }
@@ -587,7 +588,7 @@ class ArgParserTest {
             val xDelegate = parser.storing("-x",
                     help = TEST_HELP) { toInt() }
                     .addValidtator {
-                        if (value.mod(2) != 0)
+                        if (value.rem(2) != 0)
                             throw InvalidArgumentException("$errorName must be even, $value is odd")
                     }
             val x by xDelegate

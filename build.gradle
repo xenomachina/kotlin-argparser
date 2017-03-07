@@ -18,7 +18,6 @@
 
 buildscript {
     repositories {
-        mavenCentral()
         jcenter()
     }
 
@@ -41,9 +40,6 @@ apply plugin: 'maven-publish'
 
 assert name == 'kotlin-argparser'
 description = 'Concise, easy, powerful and robust command line argument parsing for Kotlin'
-project.ext {
-    prettyName = 'Kotlin ArgParser'
-}
 
 group 'com.xenomachina'
 project.ext {
@@ -54,12 +50,13 @@ project.ext {
 sourceCompatibility = 1.6
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {
     testCompile 'junit:junit:4.12'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "com.xenomachina:xenocom:$xenocom_version"
 }
 
 sourceSets {
@@ -77,7 +74,7 @@ configurations {
 }
 
 dependencies {
-    ktlint 'com.github.shyiko:ktlint:0.3.1'
+    ktlint 'com.github.shyiko:ktlint:0.6.0'
 }
 
 task ktlint(type: JavaExec) {
@@ -154,7 +151,7 @@ bintray {
 
     version {
       name = project.version
-      desc = "$project.ext.prettyName version $project.version"
+      desc = "$project.name version $project.version"
       released = new Date()
       vcsTag = "$project.version"
     }
@@ -200,7 +197,7 @@ publishing {
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', project.description)
-                root.appendNode('name', project.ext.prettyName)
+                root.appendNode('name', project.name)
                 root.appendNode('url', project.ext.vcsUrl)
                 root.children().last() + pomConfig
             }
