@@ -21,6 +21,21 @@ which are in turn each represented by properties that delegate to an
 
 ```kotlin
 class MyArgs(parser: ArgParser) {
+    val verbose by parser.flagging(help = "enable verbose mode")
+
+    val name by parser.storing(help = "name of the widget")
+
+    val size by parser.storing(help = "size of the plumbus") { toInt() }
+}
+```
+
+The names of an option is inferred from the name of the property it's bound to.
+Direct control over the option name is also possible, and for most types of
+options it's also possible to have multiple names (typically used for a short
+and long name):
+
+```kotlin
+class MyArgs(parser: ArgParser) {
     val verbose by parser.flagging("-v", "--verbose",
                                    help="enable verbose mode")
 
@@ -94,25 +109,10 @@ Various types of options can be parsed from the command line arguments:
   Here the `mode` property will be set to the corresponding `Mode` value depending
   on which of `--fast`, `--small`, and `--quiet` appears (last) in the arguments.
 
-- For the times when none of the above do what you need, the much more powerful
-  `option` method can be used.  (The methods described above are convenience
-  methods built on top of `option`.)
+  `mapping` is one of the few cases where it is not possible to infer the option
+  name from the property name.
 
-  ```kotlin
-  val zaphod by parser.option(
-          "--fibonacci",
-          help = "collects fibonnaci sequence, remembers length") {
-      var prev = 0
-      var current = 1
-      var result = 0
-      while (peek() == current) {
-          result++
-          prev, current = current, current+prev
-          next()
-      }
-      return result
-  }
-  ```
+## Modifying Delegates
 
 The delegates returned by any of these methods also have a few methods for setting
 optional attributes:
@@ -184,7 +184,7 @@ recommended that transform functions (given to `storing`, `positionalList`, etc.
 throw a `SystemExitException` when parsing fails.
 
 Additional post-parsing validation can be performed on a delegate using
-`addValidtator`.
+`addValidator`.
 
 As a convenience, these exceptions can be handled by using the `runMain`
 extension function:

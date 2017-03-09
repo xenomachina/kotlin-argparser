@@ -58,6 +58,12 @@ class ArgParser(args: Array<out String>,
                     help = help) { true }.default(false)
 
     /**
+     * Creates a DelegateProvider for a zero-argument option that returns true if and only the option is present in args.
+     */
+    fun flagging(help: String) =
+            DelegateProvider { name -> flagging(identifierToOptionName(name), help = help) }
+
+    /**
      * Creates a Delegate for a zero-argument option that returns the count of how many times the option appears in args.
      */
     fun counting(vararg names: String, help: String): Delegate<Int> =
@@ -67,6 +73,11 @@ class ArgParser(args: Array<out String>,
                     usageArgument = null,
                     isRepeating = true,
                     help = help) { value.orElse { 0 } + 1 }.default(0)
+
+    /**
+     * Creates a DelegateProvider for a zero-argument option that returns the count of how many times the option appears in args.
+     */
+    fun counting(help: String) = DelegateProvider { name -> counting(identifierToOptionName(name), help = help) }
 
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's (transformed) argument.
@@ -86,10 +97,23 @@ class ArgParser(args: Array<out String>,
     }
 
     /**
+     * Creates a DelegateProvider for a single-argument option that stores and returns the option's (transformed) argument.
+     */
+    fun <T> storing(
+            help: String,
+            transform: String.() -> T
+    ) = DelegateProvider { name -> storing(identifierToOptionName(name), help = help, transform = transform) }
+
+    /**
      * Creates a Delegate for a single-argument option that stores and returns the option's argument.
      */
     fun storing(vararg names: String, help: String): Delegate<String> =
             storing(*names, help = help) { this }
+
+    /**
+     * Creates a DelegateProvider for a single-argument option that stores and returns the option's argument.
+     */
+    fun storing(help: String) = DelegateProvider { name -> storing(identifierToOptionName(name), help = help) }
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
@@ -115,6 +139,17 @@ class ArgParser(args: Array<out String>,
     }
 
     /**
+     * Creates a DelegateProvider for a single-argument option that adds the option's (transformed) argument to a
+     * MutableCollection each time the option appears in args, and returns said MutableCollection.
+     */
+    fun <E, T : MutableCollection<E>> adding(
+            initialValue: T,
+            help: String,
+            transform: String.() -> E
+    ) = DelegateProvider { name ->
+                adding(identifierToOptionName(name), initialValue = initialValue, help = help, transform = transform) }
+
+    /**
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
      * MutableList each time the option appears in args, and returns said MutableCollection.
      */
@@ -125,11 +160,28 @@ class ArgParser(args: Array<out String>,
     ) = adding(*names, initialValue = mutableListOf(), help = help, transform = transform)
 
     /**
+     * Creates a DelegateProvider for a single-argument option that adds the option's (transformed) argument to a
+     * MutableList each time the option appears in args, and returns said MutableCollection.
+     */
+    fun <T> adding(
+            help: String,
+            transform: String.() -> T
+    ) = DelegateProvider { name ->
+        adding(identifierToOptionName(name), help = help, transform = transform) }
+
+    /**
      * Creates a Delegate for a single-argument option that adds the option's argument to a MutableList each time the
      * option appears in args, and returns said MutableCollection.
      */
     fun adding(vararg names: String, help: String): Delegate<MutableList<String>> =
             adding(*names, help = help) { this }
+
+    /**
+     * Creates a DelegateProvider for a single-argument option that adds the option's argument to a MutableList each time the
+     * option appears in args, and returns said MutableCollection.
+     */
+    fun adding(help: String) = DelegateProvider { name ->
+        adding(identifierToOptionName(name), help = help) }
 
     /**
      * Creates a Delegate for a zero-argument option that maps from the option's name as it appears in args to one of a
@@ -190,6 +242,12 @@ class ArgParser(args: Array<out String>,
     fun positional(name: String, help: String) = positional(name, help = help) { this }
 
     /**
+     * Creates a DelegateProvider for a single positional argument which returns the argument's value.
+     */
+    fun positional(help: String) =
+            DelegateProvider { ident -> positional(identifierToArgName(ident), help = help) }
+
+    /**
      * Creates a Delegate for a single positional argument which returns the argument's transformed value.
      */
     fun <T> positional(
@@ -205,6 +263,14 @@ class ArgParser(args: Array<out String>,
     }
 
     /**
+     * Creates a DelegateProvider for a single positional argument which returns the argument's transformed value.
+     */
+    fun <T> positional(
+            help: String,
+            transform: String.() -> T
+    ) = DelegateProvider { ident -> positional(identifierToArgName(ident), help = help, transform = transform) }
+
+    /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the arguments.
      */
     fun positionalList(
@@ -212,6 +278,14 @@ class ArgParser(args: Array<out String>,
             sizeRange: IntRange = 1..Int.MAX_VALUE,
             help: String
     ) = positionalList(name, sizeRange, help = help) { this }
+
+    /**
+     * Creates a DelegateProvider for a sequence of positional arguments which returns a List containing the arguments.
+     */
+    fun positionalList(
+            sizeRange: IntRange = 1..Int.MAX_VALUE,
+            help: String
+    ) = DelegateProvider { ident -> positionalList(identifierToArgName(ident), sizeRange, help = help) }
 
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the transformed
@@ -241,6 +315,16 @@ class ArgParser(args: Array<out String>,
         }
     }
 
+    /**
+     * Creates a DelegateProvider for a sequence of positional arguments which returns a List containing the transformed
+     * arguments.
+     */
+    fun <T> positionalList(
+            sizeRange: IntRange = 1..Int.MAX_VALUE,
+            help: String,
+            transform: String.() -> T
+    ) = DelegateProvider { ident -> positionalList(identifierToArgName(ident), sizeRange, help, transform) }
+
     internal abstract class WrappingDelegate<U, W>(private val inner: Delegate<U>) : Delegate<W> {
 
         abstract fun wrap(u: U): W
@@ -258,7 +342,7 @@ class ArgParser(args: Array<out String>,
         override fun default(value: W): Delegate<W> =
                 apply { inner.default(unwrap(value)) }
 
-        override fun addValidtator(validator: Delegate<W>.() -> Unit): Delegate<W> =
+        override fun addValidator(validator: Delegate<W>.() -> Unit): Delegate<W> =
                 apply { validator(this) }
     }
 
@@ -281,7 +365,31 @@ class ArgParser(args: Array<out String>,
         fun default(value: T): Delegate<T>
 
         /** Add validation logic. Validator should throw a [SystemExitException] on failure. */
-        fun addValidtator(validator: Delegate<T>.() -> Unit): Delegate<T>
+        fun addValidator(validator: Delegate<T>.() -> Unit): Delegate<T>
+
+        @Deprecated("Use addValidator instead")
+        fun addValidtator(validator: Delegate<T>.() -> Unit) = addValidator(validator)
+    }
+
+    /**
+     * Provides a [Delegate] when given a name. This makes it possible to infer
+     * a name for the `Delegate` based on the name it is bound to, rather than
+     * specifying a name explicitly.
+     */
+    class DelegateProvider<T>(private val ctor: (ident: String) -> Delegate<T>) {
+        operator fun provideDelegate(thisRef: Any?, prop: KProperty<*>): Delegate<T> {
+            return ctor(prop.name).apply {
+                defaultValue?.let {
+                    default(it.value)
+                }
+            }
+        }
+
+        fun default(t: T): DelegateProvider<T> = apply {
+            defaultValue = Holder(t)
+        }
+
+        private var defaultValue : Holder<T>? = null
     }
 
     internal abstract class ParsingDelegate<T>(
@@ -305,7 +413,7 @@ class ArgParser(args: Array<out String>,
             return this
         }
 
-        override fun addValidtator(validator: Delegate<T>.() -> Unit): Delegate<T> = apply {
+        override fun addValidator(validator: Delegate<T>.() -> Unit): Delegate<T> = apply {
             validators.add(validator)
         }
 
@@ -621,6 +729,14 @@ class ArgParser(args: Array<out String>,
 
         private fun optionNameToArgName(name: String) =
                 LEADING_HYPHENS.replace(name, "").toUpperCase().replace('-', '_')
+
+        internal fun identifierToOptionName(ident: String) : String {
+            return if (ident.length == 1) ("-" + ident) else ("--" + ident.replace('_', '-'))
+        }
+
+        internal fun identifierToArgName(ident: String) : String {
+            return ident.toUpperCase()
+        }
     }
 
     init {

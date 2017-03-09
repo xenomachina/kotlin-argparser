@@ -20,8 +20,8 @@ package com.xenomachina.argparser
 
 import com.xenomachina.common.orElse
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -245,6 +245,32 @@ class ArgParserTest {
         class Args(parser: ArgParser) {
             val x by parser.storing("-x",
                     help = TEST_HELP) { toInt() }.default(5)
+        }
+
+        // Test with no value
+        assertEquals(
+                5,
+                Args(parserOf()).x)
+
+        // Test with value
+        assertEquals(
+                6,
+                Args(parserOf("-x6")).x)
+
+        // Test with value as separate arg
+        assertEquals(
+                7,
+                Args(parserOf("-x", "7")).x)
+
+        // Test with multiple values
+        assertEquals(
+                8,
+                Args(parserOf("-x9", "-x8")).x)
+    }
+    @Test
+    fun testDefaultWithProvider() {
+        class Args(parser: ArgParser) {
+            val x by parser.storing(help = TEST_HELP) { toInt() }.default(5)
         }
 
         // Test with no value
@@ -587,7 +613,7 @@ class ArgParserTest {
 
             val xDelegate = parser.storing("-x",
                     help = TEST_HELP) { toInt() }
-                    .addValidtator {
+                    .addValidator {
                         if (value.rem(2) != 0)
                             throw InvalidArgumentException("$errorName must be even, $value is odd")
                     }
@@ -904,6 +930,56 @@ ultrices tempus lectus fermentum vestibulum. Phasellus.
         }
     }
 
+    @Test
+    fun testImplicitLongFlagName() {
+        class Args(parser: ArgParser) {
+            val flag1 by parser.flagging(help = TEST_HELP)
+            val flag2 by parser.flagging(help = TEST_HELP)
+            val count by parser.counting(help = TEST_HELP)
+            val store by parser.storing(help = TEST_HELP)
+            val store_int by parser.storing(help = TEST_HELP) { toInt() }
+            val adder by parser.adding(help = TEST_HELP)
+            val int_adder by parser.adding(help = TEST_HELP) { toInt() }
+            val int_set_adder by parser.adding(initialValue = mutableSetOf<Int>(), help = TEST_HELP) { toInt() }
+            val positional by parser.positional(help = TEST_HELP)
+            val positional_int by parser.positional(help = TEST_HELP) { toInt() }
+            val positionalList by parser.positionalList(sizeRange = 2..2, help = TEST_HELP)
+            val positionalList_int by parser.positionalList(sizeRange = 2..2, help = TEST_HELP) { toInt() }
+        }
+
+        Args(parserOf(
+                "--flag1", "--count", "--count", "--store=hello", "--store-int=42",
+                "--adder=foo", "--adder=bar",
+                "--int-adder=2", "--int-adder=4", "--int-adder=6",
+                "--int-set-adder=64", "--int-set-adder=128", "--int-set-adder=20",
+                "1", "1", "2", "3", "5", "8"
+                )).run {
+            assertTrue(flag1)
+            assertFalse(flag2)
+            assertEquals(2, count)
+            assertEquals("hello", store)
+            assertEquals(42, store_int)
+            assertEquals(listOf("foo", "bar"), adder)
+            assertEquals(listOf(2, 4, 6), int_adder)
+            assertEquals(setOf(20, 64, 128), int_set_adder)
+            assertEquals("1", positional)
+            assertEquals(1, positional_int)
+            assertEquals(listOf("2", "3"), positionalList)
+            assertEquals(listOf(5, 8), positionalList_int)
+        }
+
+        shouldThrow<MissingRequiredPositionalArgumentException> {
+            Args(parserOf(
+                    "13", "21", "34", "55", "89"
+            )).run {
+                assertFalse(flag1)
+            }
+        }.run {
+            assertEquals("missing POSITIONALLIST_INT operand", message)
+        }
+    }
+
+    // TODO: test auto-naming on positional args
     // TODO: test default on argument
     // TODO: test default on argumentList
     // TODO: test addValidator on argument
