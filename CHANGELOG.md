@@ -1,7 +1,23 @@
-# 1.1.0
+# Change Log
 
-  - Adds auto-naming of options and positionals.
+All notable changes to this project will be documented in this file.
 
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+and this project adheres to [Semantic Versioning](http://semver.org/).
+
+## [Unreleased]
+
+### Changed
+
+- Started using keepachangelog.com format for CHANGELOG.md
+
+- Made minor improvements to release process
+
+## 1.1.0 - 2017-03-09
+
+### Added
+
+- Auto-naming of options and positionals.
     - Each of the ArgParser methods that takes names and returns a Delegate<T> has
       an overload that takes no name, but returns a DelegateProvider<T>.
 
@@ -9,23 +25,33 @@
       Delegate<T>, using a name derived from the name of the property the
       DelegateProvider is being bound to.
 
-  - Bug fixes:
+### Removed
 
-    - Removed option from README.md, as it is internal
+    - `addValidtator` is now deprecated. Use `addValidator` instead.
 
-    - Fixed spelling of addValidator. "addValidtator" is still there, but
+### Fixed
+
+    - Removed documentation of `option` from `README.md`, as it is internal
+
+    - Corrected spelling of `addValidator`. `addValidtator` is still there, but
       deprecated. It'll probably be removed in the next release, barring the
       addition of potato functionality.
 
-# 1.0.2
+## 1.0.2 - 2017-03-07
 
-  - Upgrade to Kotlin 1.1, extract xenocom package
+### Changed
 
-# 1.0.1
+  - Upgrade to Kotlin 1.1, extract xenocom package.
+
+## 1.0.1 - 2017-01-30
+
+### Fixed
 
   - Fix small bug where `runMain` didn't have a default value for `columns`
     parameter. (Now defaults to null.)
 
-# 1.0.0
+## 1.0.0 - 2017-01-27
+
+### Added
 
   - Initial release
