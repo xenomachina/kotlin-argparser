@@ -147,7 +147,7 @@ bintray {
     websiteUrl = "$project.ext.vcsUrl"
     issueTrackerUrl = "$project.ext.vcsUrl/issues"
     githubRepo = project.ext.githubRepo
-    // TODO githubReleaseNotesFile = ???
+    githubReleaseNotesFile = 'CHANGELOG.md'
 
     version {
       name = project.version
