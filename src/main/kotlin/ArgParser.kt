@@ -20,10 +20,12 @@ package com.xenomachina.argparser
 
 import com.xenomachina.common.Holder
 import com.xenomachina.common.orElse
+import com.xenomachina.text.NBSP_CODEPOINT
 import com.xenomachina.text.term.codePointWidth
 import com.xenomachina.text.term.columnize
 import com.xenomachina.text.term.wrapText
 import java.io.Writer
+import java.util.LinkedHashSet
 import kotlin.reflect.KProperty
 
 /**
@@ -132,9 +134,9 @@ class ArgParser(args: Array<out String>,
                 help = help,
                 usageArgument = errorName,
                 isRepeating = true) {
-            // preValidate ensures that this is non-null
-            value!!.value.add(transform(next()))
-            value.value
+            val result = value.orElse { initialValue }
+            result.add(transform(next()))
+            result
         }.default(initialValue)
     }
 
@@ -230,9 +232,6 @@ class ArgParser(args: Array<out String>,
                 usageArgument = usageArgument,
                 isRepeating = isRepeating,
                 handler = handler)
-        for (name in names) {
-            registerOption(name, delegate)
-        }
         return delegate
     }
 
@@ -255,11 +254,9 @@ class ArgParser(args: Array<out String>,
             help: String,
             transform: String.() -> T
     ): Delegate<T> {
-        return object : WrappingDelegate<List<T>, T>(positionalList(name, 1..1, help = help, transform = transform)) {
-            override fun wrap(u: List<T>): T = u[0]
-
-            override fun unwrap(w: T): List<T> = listOf(w)
-        }
+        return WrappingDelegate(
+                positionalList(name, 1..1, help = help, transform = transform)
+        ) { it[0] }
     }
 
     /**
@@ -310,9 +307,7 @@ class ArgParser(args: Array<out String>,
                 throw IllegalArgumentException("sizeRange only allows $last arguments, must allow at least 1")
         }
 
-        return PositionalDelegate<T>(this, name, sizeRange, help = help, transform = transform).apply {
-            positionalDelegates.add(this)
-        }
+        return PositionalDelegate<T>(this, name, sizeRange, help = help, transform = transform)
     }
 
     /**
@@ -325,13 +320,19 @@ class ArgParser(args: Array<out String>,
             transform: String.() -> T
     ) = DelegateProvider { ident -> positionalList(identifierToArgName(ident), sizeRange, help, transform) }
 
-    internal abstract class WrappingDelegate<U, W>(private val inner: Delegate<U>) : Delegate<W> {
+    internal class WrappingDelegate<U, W>(
+            private val inner: Delegate<U>,
+            private val wrap: (U) -> W
+    ) : Delegate<W>() {
 
-        abstract fun wrap(u: U): W
-        abstract fun unwrap(w: W): U
+        override val parser: ArgParser
+            get() = inner.parser
 
         override val value: W
             get() = wrap(inner.value)
+
+        override val hasValue: Boolean
+            get() = inner.hasValue
 
         override val errorName: String
             get() = inner.errorName
@@ -339,36 +340,68 @@ class ArgParser(args: Array<out String>,
         override val help: String
             get() = inner.help
 
-        override fun default(value: W): Delegate<W> =
-                apply { inner.default(unwrap(value)) }
+        override fun validate() {
+            inner.validate()
+        }
+
+        override fun toHelpFormatterValue(): HelpFormatter.Value = inner.toHelpFormatterValue()
 
         override fun addValidator(validator: Delegate<W>.() -> Unit): Delegate<W> =
                 apply { validator(this) }
+
+        override fun registerLeaf() {
+            inner.registerLeaf()
+        }
     }
 
-    interface Delegate<T> {
+    abstract class Delegate<out T> internal constructor() {
         /** The value associated with this delegate */
-        val value: T
+        abstract val value: T
 
         /** The name used to refer to this delegate's value in error messages */
-        val errorName: String
+        abstract val errorName: String
 
         /** The user-visible help text for this delegate */
-        val help: String
+        abstract val help: String
+
+        /** Add validation logic. Validator should throw a [SystemExitException] on failure. */
+        abstract fun addValidator(validator: Delegate<T>.() -> Unit): Delegate<T>
 
         /** Allows this object to act as a property delegate */
         operator fun getValue(thisRef: Any?, property: KProperty<*>): T = value
 
-        // Fluent setters:
+        /**
+         * Allows this object to act as a property delegate provider.
+         *
+         * It provides itself, and also registers itself with the [ArgParser] at that time.
+         */
+        operator fun provideDelegate(thisRef: Any?, prop: KProperty<*>): ArgParser.Delegate<T> {
+            registerRoot()
+            return this
+        }
 
-        /** Set default value */
-        fun default(value: T): Delegate<T>
+        abstract internal val parser: ArgParser
 
-        /** Add validation logic. Validator should throw a [SystemExitException] on failure. */
-        fun addValidator(validator: Delegate<T>.() -> Unit): Delegate<T>
+        /**
+         * Indicates whether or not a value has been set for this delegate
+         */
+        internal abstract val hasValue: Boolean
 
-        @Deprecated("Use addValidator instead")
-        fun addValidtator(validator: Delegate<T>.() -> Unit) = addValidator(validator)
+        internal fun checkHasValue() {
+            if (!hasValue) throw MissingValueException(errorName)
+        }
+
+        internal abstract fun validate()
+
+        internal abstract fun toHelpFormatterValue(): HelpFormatter.Value
+
+        internal fun registerRoot() {
+            parser.checkNotParsed()
+            parser.delegates.add(this)
+            registerLeaf()
+        }
+
+        internal abstract fun registerLeaf()
     }
 
     /**
@@ -376,42 +409,25 @@ class ArgParser(args: Array<out String>,
      * a name for the `Delegate` based on the name it is bound to, rather than
      * specifying a name explicitly.
      */
-    class DelegateProvider<T>(private val ctor: (ident: String) -> Delegate<T>) {
+    class DelegateProvider<out T>(
+            private val defaultHolder: Holder<T>? = null,
+            internal val ctor: (ident: String) -> Delegate<T>
+    ) {
         operator fun provideDelegate(thisRef: Any?, prop: KProperty<*>): Delegate<T> {
-            return ctor(prop.name).apply {
-                defaultValue?.let {
-                    default(it.value)
-                }
-            }
+            val delegate = ctor(prop.name)
+            return (if (defaultHolder == null)
+                        delegate
+                    else
+                        delegate.default(defaultHolder.value)).provideDelegate(thisRef, prop)
         }
-
-        fun default(t: T): DelegateProvider<T> = apply {
-            defaultValue = Holder(t)
-        }
-
-        private var defaultValue : Holder<T>? = null
     }
 
     internal abstract class ParsingDelegate<T>(
-            val parser: ArgParser,
+            override val parser: ArgParser,
             override val errorName: String,
-            override val help: String) : Delegate<T> {
+            override val help: String) : Delegate<T>() {
 
         protected var holder: Holder<T>? = null
-
-        init {
-            parser.assertNotParsed()
-            parser.delegates.add(this)
-        }
-
-        /**
-         * Sets the value for this Delegate. Should be called prior to parsing.
-         */
-        override fun default(value: T): Delegate<T> {
-            parser.assertNotParsed()
-            holder = Holder(value)
-            return this
-        }
 
         override fun addValidator(validator: Delegate<T>.() -> Unit): Delegate<T> = apply {
             validators.add(validator)
@@ -420,20 +436,16 @@ class ArgParser(args: Array<out String>,
         override val value: T
             get() {
                 parser.force()
-                // preValidate ensures that this is non-null
+                // checkHasValue should have ensured that this is non-null
                 return holder!!.value
             }
 
-        fun preValidate() {
-            if (holder == null)
-                throw MissingValueException(errorName)
-        }
+        override val hasValue: Boolean
+            get() = holder != null
 
-        fun validate() {
+        override fun validate() {
             for (validator in validators) validator()
         }
-
-        abstract fun toHelpFormatterValue(): HelpFormatter.Value
 
         private val validators = mutableListOf<Delegate<T>.() -> Unit>()
     }
@@ -463,6 +475,12 @@ class ArgParser(args: Array<out String>,
                     isPositional = false,
                     help = help)
         }
+
+        override fun registerLeaf() {
+            for (name in optionNames) {
+                parser.registerOption(name, this)
+            }
+        }
     }
 
     private class PositionalDelegate<T>(
@@ -471,6 +489,10 @@ class ArgParser(args: Array<out String>,
             val sizeRange: IntRange,
             help: String,
             val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, errorName, help) {
+
+        override fun registerLeaf() {
+            parser.positionalDelegates.add(this)
+        }
 
         fun parseArguments(args: List<String>) {
             holder = Holder(args.map(transform))
@@ -541,7 +563,7 @@ class ArgParser(args: Array<out String>,
     private val shortOptionDelegates = mutableMapOf<Char, OptionDelegate<*>>()
     private val longOptionDelegates = mutableMapOf<String, OptionDelegate<*>>()
     private val positionalDelegates = mutableListOf<PositionalDelegate<*>>()
-    private val delegates = mutableListOf<ParsingDelegate<*>>()
+    internal val delegates = LinkedHashSet<Delegate<*>>()
 
     private fun <T> registerOption(name: String, delegate: OptionDelegate<T>) {
         if (name.startsWith("--")) {
@@ -577,7 +599,7 @@ class ArgParser(args: Array<out String>,
             if (!inValidation) {
                 inValidation = true
                 try {
-                    for (delegate in delegates) delegate.preValidate()
+                    for (delegate in delegates) delegate.checkHasValue()
                     for (delegate in delegates) delegate.validate()
                 } finally {
                     inValidation = false
@@ -589,7 +611,7 @@ class ArgParser(args: Array<out String>,
 
     private var parseStarted = false
 
-    private fun assertNotParsed() {
+    internal fun checkNotParsed() {
         if (parseStarted) throw IllegalStateException("arguments have already been parsed")
     }
 
@@ -746,8 +768,49 @@ class ArgParser(args: Array<out String>,
                     help = "show this help message and exit",
                     usageArgument = null,
                     isRepeating = false) {
-                throw ShowHelpException(helpFormatter, delegates)
-            }.default(Unit)
+                throw ShowHelpException(helpFormatter, delegates.toList())
+            }.default(Unit).registerRoot()
+        }
+    }
+}
+
+fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.DelegateProvider<T> {
+    return ArgParser.DelegateProvider(ctor = ctor, defaultHolder = Holder(newDefault))
+}
+
+fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
+    val inner = this
+
+    return object : ArgParser.Delegate<T>() {
+        override fun toHelpFormatterValue(): HelpFormatter.Value = inner.toHelpFormatterValue().copy(isRequired = false)
+
+        override fun validate() {
+            inner.validate()
+        }
+
+        override val parser: ArgParser
+            get() = inner.parser
+
+        override val value: T
+            get() {
+                inner.parser.force()
+                return if (inner.hasValue) inner.value else defaultValue
+            }
+
+        override val hasValue: Boolean
+            get() = true
+
+        override val errorName: String
+            get() = inner.errorName
+
+        override val help: String
+            get() = inner.help
+
+        override fun addValidator(validator: ArgParser.Delegate<T>.() -> Unit): ArgParser.Delegate<T> =
+                inner.addValidator() { validator(inner) }
+
+        override fun registerLeaf() {
+            inner.registerLeaf()
         }
     }
 }
@@ -782,9 +845,6 @@ interface HelpFormatter {
             val isPositional: Boolean,
             val help: String)
 }
-
-// TODO make verison in com.xenomachina.text public
-internal const val NBSP_CODEPOINT = 160
 
 /**
  * Default implementation of [HelpFormatter]. Output is modelled after that of common UNIX utilities and looks
@@ -921,7 +981,7 @@ class DefaultHelpFormatter(
  */
 class ShowHelpException internal constructor(
         private val helpFormatter: HelpFormatter,
-        private val delegates: List<ArgParser.ParsingDelegate<*>>
+        private val delegates: List<ArgParser.Delegate<*>>
 ) : SystemExitException("Help was requested", 0) {
     override fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
         writer.write(helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() }))

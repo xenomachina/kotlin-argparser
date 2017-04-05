@@ -25,6 +25,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
+import java.io.File
 import java.io.StringWriter
 
 val TEST_HELP = "test help message"
@@ -976,6 +977,72 @@ ultrices tempus lectus fermentum vestibulum. Phasellus.
             }
         }.run {
             assertEquals("missing POSITIONALLIST_INT operand", message)
+        }
+    }
+
+    fun nullableString() : String? = null
+
+    @Test
+    fun testNullableOptional() {
+        class Args(parser: ArgParser) {
+            val path by parser.storing("The path", ::File)
+                    .default(nullableString()?.let(::File))
+
+        }
+    }
+
+    @Test
+    fun testNullableOptional_withoutTransform() {
+        class Args(parser: ArgParser) {
+            val str by parser.storing(TEST_HELP)
+                    .default(nullableString())
+        }
+        Args(parserOf("--str=foo")).run {
+            assertEquals("foo", str)
+        }
+        Args(parserOf()).run {
+            assertEquals(null, str)
+        }
+    }
+
+    open class Shape
+
+    class Rectangle(val s: String) : Shape()
+    class Circle : Shape()
+
+    fun <T> assertStaticType(@Suppress("UNUSED_PARAMETER") x: T) {}
+
+    @Test
+    fun testDefaultGeneralization() {
+        class Args(parser: ArgParser) {
+            val shape by parser.storing("The path", ::Rectangle)
+                    .default(Circle())
+            val rect by parser.storing("The path", ::Rectangle)
+        }
+        val args = Args(parserOf("--rect=foo"))
+        assertStaticType<Shape>(args.shape)
+        assertTrue(args.shape is Circle)
+        assertStaticType<Rectangle>(args.rect)
+
+        val args2 = Args(parserOf())
+        shouldThrow<MissingValueException> {
+            args2.rect
+        }.run {
+            assertEquals("missing RECT", message)
+        }
+    }
+
+    @Test
+    fun testDefaultGeneralization_withoutTransform() {
+        class Args(parser: ArgParser) {
+            val str by parser.storing(TEST_HELP)
+                    .default(5)
+        }
+        Args(parserOf("--str=foo")).run {
+            assertEquals("foo", str)
+        }
+        Args(parserOf()).run {
+            assertEquals(5, str)
         }
     }
 
