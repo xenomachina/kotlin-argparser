@@ -19,40 +19,47 @@
 package com.xenomachina.argparser
 
 import com.xenomachina.common.orElse
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.TestName
+import io.kotlintest.matchers.Matcher
+import io.kotlintest.matchers.Result
+import io.kotlintest.matchers.should
+import io.kotlintest.matchers.shouldBe
+import io.kotlintest.matchers.shouldThrow
+import io.kotlintest.specs.FunSpec
 import java.io.File
 import java.io.StringWriter
 
 val TEST_HELP = "test help message"
 
-class ArgParserTest {
-    @JvmField @Rule
-    val testName: TestName = TestName()
+fun parserOf(
+        vararg args: String,
+        mode: ArgParser.Mode = ArgParser.Mode.GNU,
+        helpFormatter: HelpFormatter? = DefaultHelpFormatter()
+) = ArgParser(args, mode, helpFormatter)
 
-    inline fun <reified X : Throwable> shouldThrow(f: () -> Unit): X {
-        val javaClass = X::class.java
-        try {
-            f()
-        } catch (exception: Throwable) {
-            if (javaClass.isInstance(exception)) return javaClass.cast(exception)
-            throw exception
-        }
-        throw AssertionError("Expected ${javaClass.canonicalName} to be thrown")
-    }
+enum class Color { RED, GREEN, BLUE }
 
-    fun parserOf(
-            vararg args: String,
-            mode: ArgParser.Mode = ArgParser.Mode.GNU,
-            helpFormatter: HelpFormatter? = DefaultHelpFormatter()
-    ) = ArgParser(args, mode, helpFormatter)
+open class Shape
+class Rectangle(val s: String) : Shape()
+class Circle : Shape()
 
-    @Test
-    fun testArglessShortOptions() {
+// TODO: remove this once kotlintest releases fix
+inline fun <reified T : Any> beOfType() = object : Matcher<Any> {
+    val exceptionClassName = T::class.qualifiedName
+
+    override fun test(value: Any) =
+            Result(value.javaClass == T::class.java, "$value should be of type $exceptionClassName")
+}
+
+/**
+ * Helper function for getting the static (not runtime) type of an expression. This is useful for verifying that the
+ * inferred type of an expression is what you think it should be. For example:
+ *
+ *     staticType(actuallyACircle) shouldBe Shape::class
+ */
+inline fun <reified T : Any> staticType(@Suppress("UNUSED_PARAMETER") x: T) = T::class
+
+class ArgParserTest : FunSpec({
+    test("ArglessShortOptions") {
         class Args(parser: ArgParser) {
             val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
                     errorName = "VALUE_NAME",
@@ -64,17 +71,12 @@ class ArgParserTest {
             }
         }
 
-        assertEquals(
-                listOf("-x", "-y", "-z", "-z", "-y"),
-                Args(parserOf("-x", "-y", "-z", "-z", "-y")).xyz)
+        Args(parserOf("-x", "-y", "-z", "-z", "-y")).xyz shouldBe listOf("-x", "-y", "-z", "-z", "-y")
 
-        assertEquals(
-                listOf("-x", "-y", "-z"),
-                Args(parserOf("-xyz")).xyz)
+        Args(parserOf("-xyz")).xyz shouldBe listOf("-x", "-y", "-z")
     }
 
-    @Test
-    fun testShortOptionsWithArgs() {
+    test("ShortOptionsWithArgs") {
         class Args(parser: ArgParser) {
             val a by parser.flagging("-a", help = TEST_HELP)
             val b by parser.flagging("-b", help = TEST_HELP)
@@ -89,36 +91,29 @@ class ArgParserTest {
         }
 
         // Test with value as separate arg
-        assertEquals(
-                listOf("-x:0", "-y:1", "-z:2", "-z:3", "-y:4"),
-                Args(parserOf("-x", "0", "-y", "1", "-z", "2", "-z", "3", "-y", "4")).xyz)
+        Args(parserOf("-x", "0", "-y", "1", "-z", "2", "-z", "3", "-y", "4")).xyz shouldBe listOf("-x:0", "-y:1", "-z:2", "-z:3", "-y:4")
 
         // Test with value concatenated
-        assertEquals(
-                listOf("-x:0", "-y:1", "-z:2", "-z:3", "-y:4"),
-                Args(parserOf("-x0", "-y1", "-z2", "-z3", "-y4")).xyz)
+        Args(parserOf("-x0", "-y1", "-z2", "-z3", "-y4")).xyz shouldBe listOf("-x:0", "-y:1", "-z:2", "-z:3", "-y:4")
 
         // Test with = between option and value. Note that the "=" is treated as part of the option value for short options.
-        assertEquals(
-                listOf("-x:=0", "-y:=1", "-z:=2", "-z:=3", "-y:=4"),
-                Args(parserOf("-x=0", "-y=1", "-z=2", "-z=3", "-y=4")).xyz)
+        Args(parserOf("-x=0", "-y=1", "-z=2", "-z=3", "-y=4")).xyz shouldBe listOf("-x:=0", "-y:=1", "-z:=2", "-z:=3", "-y:=4")
 
         // Test chained options. Note that an option with arguments must be last in the chain
         val chain1 = Args(parserOf("-abxc"))
-        assertTrue(chain1.a)
-        assertTrue(chain1.b)
-        assertFalse(chain1.c)
-        assertEquals(listOf("-x:c"), chain1.xyz)
+        chain1.a shouldBe true
+        chain1.b shouldBe true
+        chain1.c shouldBe false
+        chain1.xyz shouldBe listOf("-x:c")
 
         val chain2 = Args(parserOf("-axbc"))
-        assertTrue(chain2.a)
-        assertFalse(chain2.b)
-        assertFalse(chain2.c)
-        assertEquals(listOf("-x:bc"), chain2.xyz)
+        chain2.a shouldBe true
+        chain2.b shouldBe false
+        chain2.c shouldBe false
+        chain2.xyz shouldBe listOf("-x:bc")
     }
 
-    @Test
-    fun testMixedShortOptions() {
+    test("MixedShortOptions") {
         class Args(parser: ArgParser) {
             val def by parser.option<MutableList<String>>("-d", "-e", "-f",
                     errorName = "VALUE_NAME",
@@ -139,17 +134,12 @@ class ArgParserTest {
         }
 
         Args(parserOf("-adbefccbafed")).run {
-            assertEquals(
-                    listOf("-d", "-e", "-f", "-f", "-e", "-d"),
-                    def)
-            assertEquals(
-                    listOf("-a", "-b", "-c", "-c", "-b", "-a"),
-                    abc)
+            def shouldBe listOf("-d", "-e", "-f", "-f", "-e", "-d")
+            abc shouldBe listOf("-a", "-b", "-c", "-c", "-b", "-a")
         }
     }
 
-    @Test
-    fun testMixedShortOptionsWithArgs() {
+    test("MixedShortOptionsWithArgs") {
         class Args(parser: ArgParser) {
             val def by parser.option<MutableList<String>>("-d", "-e", "-f",
                     errorName = "VALUE_NAME",
@@ -178,20 +168,13 @@ class ArgParserTest {
         }
 
         Args(parserOf("-adecfy5", "-x0", "-bzxy")).run {
-            assertEquals(
-                    listOf("-a", "-c", "-b"),
-                    abc)
-            assertEquals(
-                    listOf("-d", "-e", "-f"),
-                    def)
-            assertEquals(
-                    listOf("-y:5", "-x:0", "-z:xy"),
-                    xyz)
+            abc shouldBe listOf("-a", "-c", "-b")
+            def shouldBe listOf("-d", "-e", "-f")
+            xyz shouldBe listOf("-y:5", "-x:0", "-z:xy")
         }
     }
 
-    @Test
-    fun testArglessLongOptions() {
+    test("ArglessLongOptions") {
         class Args(parser: ArgParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra",
                     errorName = "ARG_NAME",
@@ -203,17 +186,12 @@ class ArgParserTest {
             }
         }
 
-        assertEquals(
-                listOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow"),
-                Args(parserOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")).xyz)
+        Args(parserOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")).xyz shouldBe listOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")
 
-        assertEquals(
-                listOf("--xray", "--yellow", "--zebra"),
-                Args(parserOf("--xray", "--yellow", "--zebra")).xyz)
+        Args(parserOf("--xray", "--yellow", "--zebra")).xyz shouldBe listOf("--xray", "--yellow", "--zebra")
     }
 
-    @Test
-    fun testLongOptionsWithArgs() {
+    test("LongOptionsWithArgs") {
         class Args(parser: ArgParser) {
             val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod",
                     errorName = "ARG_NAME", usageArgument = "ARG_NAME",
@@ -225,78 +203,56 @@ class ArgParserTest {
         }
 
         // Test with value as separate arg
-        assertEquals(
-                listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
-                Args(parserOf("--xray", "0", "--yellow", "1", "--zaphod", "2", "--zaphod", "3", "--yellow", "4")).xyz)
+        Args(parserOf("--xray", "0", "--yellow", "1", "--zaphod", "2", "--zaphod", "3", "--yellow", "4")).xyz shouldBe listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4")
 
         // Test with = between option and value
-        assertEquals(
-                listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4"),
-                Args(parserOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz)
+        Args(parserOf("--xray=0", "--yellow=1", "--zaphod=2", "--zaphod=3", "--yellow=4")).xyz shouldBe listOf("--xray:0", "--yellow:1", "--zaphod:2", "--zaphod:3", "--yellow:4")
 
         shouldThrow<UnrecognizedOptionException> {
             Args(parserOf("--xray0", "--yellow1", "--zaphod2", "--zaphod3", "--yellow4")).xyz
         }.run {
-            assertEquals("unrecognized option '--xray0'", message)
+            message shouldBe "unrecognized option '--xray0'"
         }
     }
 
-    @Test
-    fun testDefault() {
+    test("Default") {
         class Args(parser: ArgParser) {
             val x by parser.storing("-x",
                     help = TEST_HELP) { toInt() }.default(5)
         }
 
         // Test with no value
-        assertEquals(
-                5,
-                Args(parserOf()).x)
+        Args(parserOf()).x shouldBe 5
 
         // Test with value
-        assertEquals(
-                6,
-                Args(parserOf("-x6")).x)
+        Args(parserOf("-x6")).x shouldBe 6
 
         // Test with value as separate arg
-        assertEquals(
-                7,
-                Args(parserOf("-x", "7")).x)
+        Args(parserOf("-x", "7")).x shouldBe 7
 
         // Test with multiple values
-        assertEquals(
-                8,
-                Args(parserOf("-x9", "-x8")).x)
+        Args(parserOf("-x9", "-x8")).x shouldBe 8
     }
-    @Test
-    fun testDefaultWithProvider() {
+
+    test("DefaultWithProvider") {
         class Args(parser: ArgParser) {
             val x by parser.storing(help = TEST_HELP) { toInt() }.default(5)
         }
 
         // Test with no value
-        assertEquals(
-                5,
-                Args(parserOf()).x)
+        Args(parserOf()).x shouldBe 5
 
         // Test with value
-        assertEquals(
-                6,
-                Args(parserOf("-x6")).x)
+        Args(parserOf("-x6")).x shouldBe 6
 
         // Test with value as separate arg
-        assertEquals(
-                7,
-                Args(parserOf("-x", "7")).x)
+        Args(parserOf("-x", "7")).x shouldBe 7
 
         // Test with multiple values
-        assertEquals(
-                8,
-                Args(parserOf("-x9", "-x8")).x)
+        Args(parserOf("-x9", "-x8")).x shouldBe 8
     }
 
-    @Test
-    fun testFlag() {
+    test("Flag") {
         class Args(parser: ArgParser) {
             val x by parser.flagging("-x", "--ecks",
                     help = TEST_HELP)
@@ -307,58 +263,52 @@ class ArgParserTest {
         }
 
         Args(parserOf("-x", "-y", "--zed", "--zed", "-y")).run {
-            assertTrue(x)
-            assertTrue(y)
-            assertTrue(z)
+            x shouldBe true
+            y shouldBe true
+            z shouldBe true
         }
 
         Args(parserOf()).run {
-            assertFalse(x)
-            assertFalse(y)
-            assertFalse(z)
+            x shouldBe false
+            y shouldBe false
+            z shouldBe false
         }
 
         Args(parserOf("-y", "--ecks")).run {
-            assertTrue(x)
-            assertTrue(y)
+            x shouldBe true
+            y shouldBe true
         }
 
         Args(parserOf("--zed")).run {
-            assertFalse(x)
-            assertFalse(y)
-            assertTrue(z)
+            x shouldBe false
+            y shouldBe false
+            z shouldBe true
         }
     }
 
-    @Test
-    fun testArgument_noParser() {
+    test("Argument_noParser") {
         class Args(parser: ArgParser) {
             val x by parser.storing("--ecks", "-x",
                     help = TEST_HELP)
         }
 
-        assertEquals("foo",
-                Args(parserOf("-x", "foo")).x)
+        Args(parserOf("-x", "foo")).x shouldBe "foo"
 
-        assertEquals("baz",
-                Args(parserOf("-x", "bar", "-x", "baz")).x)
+        Args(parserOf("-x", "bar", "-x", "baz")).x shouldBe "baz"
 
-        assertEquals("short",
-                Args(parserOf("--ecks", "long", "-x", "short")).x)
+        Args(parserOf("--ecks", "long", "-x", "short")).x shouldBe "short"
 
-        assertEquals("long",
-                Args(parserOf("-x", "short", "--ecks", "long")).x)
+        Args(parserOf("-x", "short", "--ecks", "long")).x shouldBe "long"
 
         val args = Args(parserOf())
         shouldThrow<MissingValueException> {
             args.x
         }.run {
-            assertEquals("missing ECKS", message)
+            message shouldBe "missing ECKS"
         }
     }
 
-    @Test
-    fun testArgument_missing_long() {
+    test("Argument_missing_long") {
         class Args(parser: ArgParser) {
             val x by parser.storing("--ecks",
                     help = TEST_HELP)
@@ -368,12 +318,11 @@ class ArgParserTest {
         shouldThrow<MissingValueException> {
             args.x
         }.run {
-            assertEquals("missing ECKS", message)
+            message shouldBe "missing ECKS"
         }
     }
 
-    @Test
-    fun testArgument_missing_short() {
+    test("Argument_missing_short") {
         class Args(parser: ArgParser) {
             val x by parser.storing("-x",
                     help = TEST_HELP)
@@ -383,80 +332,65 @@ class ArgParserTest {
         shouldThrow<MissingValueException> {
             args.x
         }.run {
-            assertEquals("missing X", message)
+            message shouldBe "missing X"
         }
     }
 
-    @Test
-    fun testArgument_withParser() {
+    test("Argument_withParser") {
         class Args(parser: ArgParser) {
             val x by parser.storing("-x", "--ecks",
                     help = TEST_HELP) { toInt() }
         }
 
         val opts1 = Args(parserOf("-x", "5"))
-        assertEquals(5, opts1.x)
+        opts1.x shouldBe 5
 
         val opts2 = Args(parserOf("-x", "1", "-x", "2"))
-        assertEquals(2, opts2.x)
+        opts2.x shouldBe 2
 
         val opts3 = Args(parserOf("--ecks", "3", "-x", "4"))
-        assertEquals(4, opts3.x)
+        opts3.x shouldBe 4
 
         val opts4 = Args(parserOf("-x", "5", "--ecks", "6"))
-        assertEquals(6, opts4.x)
+        opts4.x shouldBe 6
 
         val opts6 = Args(parserOf())
         shouldThrow<MissingValueException> {
             opts6.x
         }.run {
-            assertEquals("missing ECKS", message)
+            message shouldBe "missing ECKS"
         }
     }
 
-    @Test
-    fun testAccumulator_noParser() {
+    test("Accumulator_noParser") {
         class Args(parser: ArgParser) {
             val x by parser.adding("-x", "--ecks",
                     help = TEST_HELP)
         }
 
-        assertEquals(
-                listOf<String>(),
-                Args(parserOf()).x)
+        Args(parserOf()).x shouldBe listOf<String>()
 
-        assertEquals(
-                listOf("foo"),
-                Args(parserOf("-x", "foo")).x)
+        Args(parserOf("-x", "foo")).x shouldBe listOf("foo")
 
-        assertEquals(
-                listOf("bar", "baz"),
-                Args(parserOf("-x", "bar", "-x", "baz")).x)
+        Args(parserOf("-x", "bar", "-x", "baz")).x shouldBe listOf("bar", "baz")
 
-        assertEquals(
-                listOf("long", "short"),
-                Args(parserOf("--ecks", "long", "-x", "short")).x)
+        Args(parserOf("--ecks", "long", "-x", "short")).x shouldBe listOf("long", "short")
 
-        assertEquals(
-                listOf("short", "long"),
-                Args(parserOf("-x", "short", "--ecks", "long")).x)
+        Args(parserOf("-x", "short", "--ecks", "long")).x shouldBe listOf("short", "long")
     }
 
-    @Test
-    fun testAccumulator_withParser() {
+    test("Accumulator_withParser") {
         class Args(parser: ArgParser) {
             val x by parser.adding("-x", "--ecks",
                     help = TEST_HELP) { toInt() }
         }
 
-        assertEquals(listOf<Int>(), Args(parserOf()).x)
-        assertEquals(listOf(5), Args(parserOf("-x", "5")).x)
-        assertEquals(listOf(1, 2), Args(parserOf("-x", "1", "-x", "2")).x)
-        assertEquals(listOf(3, 4), Args(parserOf("--ecks", "3", "-x", "4")).x)
-        assertEquals(listOf(5, 6), Args(parserOf("-x", "5", "--ecks", "6")).x)
+        Args(parserOf()).x shouldBe listOf<Int>()
+        Args(parserOf("-x", "5")).x shouldBe listOf(5)
+        Args(parserOf("-x", "1", "-x", "2")).x shouldBe listOf(1, 2)
+        Args(parserOf("--ecks", "3", "-x", "4")).x shouldBe listOf(3, 4)
+        Args(parserOf("-x", "5", "--ecks", "6")).x shouldBe listOf(5, 6)
     }
-
-    enum class Color { RED, GREEN, BLUE }
 
     class ColorArgs(parser: ArgParser) {
         val color by parser.mapping(
@@ -466,22 +400,21 @@ class ArgParserTest {
                 help = TEST_HELP)
     }
 
-    @Test
-    fun testMapping() {
-        assertEquals(Color.RED, ColorArgs(parserOf("--red")).color)
-        assertEquals(Color.GREEN, ColorArgs(parserOf("--green")).color)
-        assertEquals(Color.BLUE, ColorArgs(parserOf("--blue")).color)
+    test("Mapping") {
+        ColorArgs(parserOf("--red")).color shouldBe Color.RED
+        ColorArgs(parserOf("--green")).color shouldBe Color.GREEN
+        ColorArgs(parserOf("--blue")).color shouldBe Color.BLUE
 
         // Last one takes precedence
-        assertEquals(Color.RED, ColorArgs(parserOf("--blue", "--red")).color)
-        assertEquals(Color.GREEN, ColorArgs(parserOf("--blue", "--green")).color)
-        assertEquals(Color.BLUE, ColorArgs(parserOf("--red", "--blue")).color)
+        ColorArgs(parserOf("--blue", "--red")).color shouldBe Color.RED
+        ColorArgs(parserOf("--blue", "--green")).color shouldBe Color.GREEN
+        ColorArgs(parserOf("--red", "--blue")).color shouldBe Color.BLUE
 
         val args = ColorArgs(parserOf())
         shouldThrow<MissingValueException> {
             args.color
         }.run {
-            assertEquals("missing --red|--green|--blue", message)
+            message shouldBe "missing --red|--green|--blue"
         }
     }
 
@@ -494,34 +427,30 @@ class ArgParserTest {
                 .default(Color.GREEN)
     }
 
-    @Test
-    fun testMapping_withDefault() {
-        assertEquals(Color.RED, OptionalColorArgs(parserOf("--red")).color)
-        assertEquals(Color.GREEN, OptionalColorArgs(parserOf("--green")).color)
-        assertEquals(Color.BLUE, OptionalColorArgs(parserOf("--blue")).color)
-        assertEquals(Color.GREEN, OptionalColorArgs(parserOf()).color)
+    test("Mapping_withDefault") {
+        OptionalColorArgs(parserOf("--red")).color shouldBe Color.RED
+        OptionalColorArgs(parserOf("--green")).color shouldBe Color.GREEN
+        OptionalColorArgs(parserOf("--blue")).color shouldBe Color.BLUE
+        OptionalColorArgs(parserOf()).color shouldBe Color.GREEN
     }
 
-    @Test
-    fun testUnrecognizedShortOpt() {
+    test("UnrecognizedShortOpt") {
         shouldThrow<UnrecognizedOptionException> {
             OptionalColorArgs(parserOf("-x")).color
         }.run {
-            assertEquals("unrecognized option '-x'", message)
+            message shouldBe "unrecognized option '-x'"
         }
     }
 
-    @Test
-    fun testUnrecognizedLongOpt() {
+    test("UnrecognizedLongOpt") {
         shouldThrow<UnrecognizedOptionException> {
             OptionalColorArgs(parserOf("--ecks")).color
         }.run {
-            assertEquals("unrecognized option '--ecks'", message)
+            message shouldBe "unrecognized option '--ecks'"
         }
     }
 
-    @Test
-    fun testStoringNoArg() {
+    test("StoringNoArg") {
         class Args(parser: ArgParser) {
             val x by parser.storing("-x", "--ecks",
                     help = TEST_HELP)
@@ -531,19 +460,18 @@ class ArgParserTest {
         shouldThrow<OptionMissingRequiredArgumentException> {
             Args(parserOf("-x")).x
         }.run {
-            assertEquals("option '-x' is missing a required argument", message)
+            message shouldBe "option '-x' is missing a required argument"
         }
 
         // Note that name actually used for option is used in message
         shouldThrow<OptionMissingRequiredArgumentException> {
             Args(parserOf("--ecks")).x
         }.run {
-            assertEquals("option '--ecks' is missing a required argument", message)
+            message shouldBe "option '--ecks' is missing a required argument"
         }
     }
 
-    @Test
-    fun testShortStoringNoArgChained() {
+    test("ShortStoringNoArgChained") {
         class Args(parser: ArgParser) {
             val y by parser.flagging("-y",
                     help = TEST_HELP)
@@ -555,12 +483,11 @@ class ArgParserTest {
         shouldThrow<OptionMissingRequiredArgumentException> {
             Args(parserOf("-yx")).x
         }.run {
-            assertEquals("option '-x' is missing a required argument", message)
+            message shouldBe "option '-x' is missing a required argument"
         }
     }
 
-    @Test
-    fun testInitValidation() {
+    test("InitValidation") {
         class Args(parser: ArgParser) {
             val yDelegate = parser.storing("-y",
                     help = TEST_HELP) { toInt() }
@@ -583,30 +510,29 @@ class ArgParserTest {
 
         // This should pass validation
         val opts0 = Args(parserOf("-y1", "-x10"))
-        assertEquals(1, opts0.y)
-        assertEquals(10, opts0.x)
+        opts0.y shouldBe 1
+        opts0.x shouldBe 10
 
         shouldThrow<InvalidArgumentException> {
             Args(parserOf("-y20", "-x10")).x
         }.run {
-            assertEquals("Y must be less than X", message)
+            message shouldBe "Y must be less than X"
         }
 
         shouldThrow<InvalidArgumentException> {
             Args(parserOf("-y10", "-x15")).x
         }.run {
-            assertEquals("X must be even, 15 is odd", message)
+            message shouldBe "X must be even, 15 is odd"
         }
 
         shouldThrow<InvalidArgumentException> {
             Args(parserOf("-y10", "-x15")).x
         }.run {
-            assertEquals("X must be even, 15 is odd", message)
+            message shouldBe "X must be even, 15 is odd"
         }
     }
 
-    @Test
-    fun testAddValidator() {
+    test("AddValidator") {
         class Args(parser: ArgParser) {
             val yDelegate = parser.storing("-y",
                     help = TEST_HELP) { toInt() }
@@ -628,30 +554,29 @@ class ArgParserTest {
 
         // This should pass validation
         val opts0 = Args(parserOf("-y1", "-x10"))
-        assertEquals(1, opts0.y)
-        assertEquals(10, opts0.x)
+        opts0.y shouldBe 1
+        opts0.x shouldBe 10
 
         shouldThrow<InvalidArgumentException> {
             Args(parserOf("-y20", "-x10")).x
         }.run {
-            assertEquals("Y must be less than X", message)
+            message shouldBe "Y must be less than X"
         }
 
         shouldThrow<InvalidArgumentException> {
             Args(parserOf("-y10", "-x15")).x
         }.run {
-            assertEquals("X must be even, 15 is odd", message)
+            message shouldBe "X must be even, 15 is odd"
         }
 
         shouldThrow<InvalidArgumentException> {
             Args(parserOf("-y10", "-x15")).x
         }.run {
-            assertEquals("X must be even, 15 is odd", message)
+            message shouldBe "X must be even, 15 is odd"
         }
     }
 
-    @Test
-    fun testUnconsumed() {
+    test("Unconsumed") {
         class Args(parser: ArgParser) {
             val y by parser.flagging("-y", "--why",
                     help = TEST_HELP)
@@ -661,47 +586,46 @@ class ArgParserTest {
 
         // No problem.
         Args(parserOf("-yx")).run {
-            assertTrue(x)
-            assertTrue(y)
+            x shouldBe true
+            y shouldBe true
         }
 
         // Attempting to give -y a parameter, "z", is treated as unrecognized option.
         shouldThrow<UnrecognizedOptionException> {
             Args(parserOf("-yz")).y
         }.run {
-            assertEquals("unrecognized option '-z'", message)
+            message shouldBe "unrecognized option '-z'"
         }
 
         // Unconsumed "z" again, but note that it triggers even if we don't look at y.
         shouldThrow<UnrecognizedOptionException> {
             Args(parserOf("-yz")).x
         }.run {
-            assertEquals("unrecognized option '-z'", message)
+            message shouldBe "unrecognized option '-z'"
         }
 
         // No problem again, this time with long opts.
         Args(parserOf("--why", "--ecks")).run {
-            assertTrue(x)
-            assertTrue(y)
+            x shouldBe true
+            y shouldBe true
         }
 
         // Attempting to give --why a parameter, "z" causes an error.
         shouldThrow<UnexpectedOptionArgumentException> {
             Args(parserOf("--why=z")).y
         }.run {
-            assertEquals("option '--why' doesn't allow an argument", message)
+            message shouldBe "option '--why' doesn't allow an argument"
         }
 
         // Unconsumed "z" again, but note that it triggers even if we don't look at y.
         shouldThrow<UnexpectedOptionArgumentException> {
             Args(parserOf("--why=z")).x
         }.run {
-            assertEquals("option '--why' doesn't allow an argument", message)
+            message shouldBe "option '--why' doesn't allow an argument"
         }
     }
 
-    @Test
-    fun testPositional_basic() {
+    test("Positional_basic") {
         class Args(parser: ArgParser) {
             val flag by parser.flagging("-f", "--flag",
                     help = TEST_HELP)
@@ -714,61 +638,60 @@ class ArgParserTest {
         }
 
         Args(parserOf("foo", "bar", "baz", "quux")).run {
-            assertFalse(flag)
-            assertEquals("DEFAULT", store)
-            assertEquals(listOf("foo", "bar", "baz"), sources)
-            assertEquals("quux", destination)
+            flag shouldBe false
+            store shouldBe "DEFAULT"
+            sources shouldBe listOf("foo", "bar", "baz")
+            destination shouldBe "quux"
         }
 
         Args(parserOf("-f", "foo", "bar", "baz", "quux")).run {
-            assertTrue(flag)
-            assertEquals("DEFAULT", store)
-            assertEquals(listOf("foo", "bar", "baz"), sources)
-            assertEquals("quux", destination)
+            flag shouldBe true
+            store shouldBe "DEFAULT"
+            sources shouldBe listOf("foo", "bar", "baz")
+            destination shouldBe "quux"
         }
 
         Args(parserOf("-s", "foo", "bar", "baz", "quux")).run {
-            assertFalse(flag)
-            assertEquals("foo", store)
-            assertEquals(listOf("bar", "baz"), sources)
-            assertEquals("quux", destination)
+            flag shouldBe false
+            store shouldBe "foo"
+            sources shouldBe listOf("bar", "baz")
+            destination shouldBe "quux"
         }
 
         Args(parserOf("-s", "foo", "bar", "-f", "baz", "quux")).run {
-            assertTrue(flag)
-            assertEquals("foo", store)
-            assertEquals(listOf("bar", "baz"), sources)
-            assertEquals("quux", destination)
+            flag shouldBe true
+            store shouldBe "foo"
+            sources shouldBe listOf("bar", "baz")
+            destination shouldBe "quux"
         }
 
         // "--" disables option processing for all further arguments.
         // Note that "-f" is now considered a positional argument.
         Args(parserOf("-s", "foo", "--", "bar", "-f", "baz", "quux")).run {
-            assertFalse(flag)
-            assertEquals("foo", store)
-            assertEquals(listOf("bar", "-f", "baz"), sources)
-            assertEquals("quux", destination)
+            flag shouldBe false
+            store shouldBe "foo"
+            sources shouldBe listOf("bar", "-f", "baz")
+            destination shouldBe "quux"
         }
 
         // "--" disables option processing for all further arguments.
         // Note that the second "--" is also considered a positional argument.
         Args(parserOf("-s", "foo", "--", "bar", "--", "-f", "baz", "quux")).run {
-            assertFalse(flag)
-            assertEquals("foo", store)
-            assertEquals(listOf("bar", "--", "-f", "baz"), sources)
-            assertEquals("quux", destination)
+            flag shouldBe false
+            store shouldBe "foo"
+            sources shouldBe listOf("bar", "--", "-f", "baz")
+            destination shouldBe "quux"
         }
 
         Args(parserOf("-s", "foo", "bar", "-f", "baz", "quux", mode = ArgParser.Mode.POSIX)).run {
-            assertFalse(flag)
-            assertEquals("foo", store)
-            assertEquals(listOf("bar", "-f", "baz"), sources)
-            assertEquals("quux", destination)
+            flag shouldBe false
+            store shouldBe "foo"
+            sources shouldBe listOf("bar", "-f", "baz")
+            destination shouldBe "quux"
         }
     }
 
-    @Test
-    fun testPositional_withParser() {
+    test("Positional_withParser") {
         class Args(parser: ArgParser) {
             val flag by parser.flagging("-f", "--flag",
                     help = TEST_HELP)
@@ -783,80 +706,78 @@ class ArgParserTest {
         shouldThrow<MissingRequiredPositionalArgumentException> {
             Args(parserOf("1", "2")).flag
         }.run {
-            assertEquals("missing START operand", message)
+            message shouldBe "missing START operand"
         }
 
         shouldThrow<MissingRequiredPositionalArgumentException> {
             Args(parserOf("1", "2", "3", "4", "5")).flag
         }.run {
-            assertEquals("missing END operand", message)
+            message shouldBe "missing END operand"
         }
 
         Args(parserOf("1", "2", "3", "4", "5", "6")).run {
-            assertFalse(flag)
-            assertEquals("DEFAULT", store)
+            flag shouldBe false
+            store shouldBe "DEFAULT"
 
             // end needs at least 3 args, so start only consumes 3
-            assertEquals(listOf(1, 2, 3), start)
-            assertEquals(listOf(4, 5, 6), end)
+            start shouldBe listOf(1, 2, 3)
+            end shouldBe listOf(4, 5, 6)
         }
 
         Args(parserOf("1", "2", "3", "4", "5", "6", "7")).run {
-            assertFalse(flag)
-            assertEquals("DEFAULT", store)
+            flag shouldBe false
+            store shouldBe "DEFAULT"
 
             // end only needs at 3 args, so start can consume 4
-            assertEquals(listOf(1, 2, 3, 4), start)
-            assertEquals(listOf(5, 6, 7), end)
+            start shouldBe listOf(1, 2, 3, 4)
+            end shouldBe listOf(5, 6, 7)
         }
 
         Args(parserOf("1", "2", "3", "4", "5", "6", "7", "8")).run {
-            assertFalse(flag)
-            assertEquals("DEFAULT", store)
+            flag shouldBe false
+            store shouldBe "DEFAULT"
 
             // start can't consume more than 4, so end gets the rest.
-            assertEquals(listOf(1, 2, 3, 4), start)
-            assertEquals(listOf(5, 6, 7, 8), end)
+            start shouldBe listOf(1, 2, 3, 4)
+            end shouldBe listOf(5, 6, 7, 8)
         }
 
         Args(parserOf("1", "2", "3", "4", "5", "6", "7", "8", "9")).run {
-            assertFalse(flag)
-            assertEquals("DEFAULT", store)
+            flag shouldBe false
+            store shouldBe "DEFAULT"
 
             // once again, start can't consume more than 4, so end gets the rest.
-            assertEquals(listOf(1, 2, 3, 4), start)
-            assertEquals(listOf(5, 6, 7, 8, 9), end)
+            start shouldBe listOf(1, 2, 3, 4)
+            end shouldBe listOf(5, 6, 7, 8, 9)
         }
 
         shouldThrow<UnexpectedPositionalArgumentException> {
             Args(parserOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")).flag
         }.run {
-            assertEquals("unexpected argument after END", message)
+            message shouldBe "unexpected argument after END"
         }
     }
 
-    @Test
-    fun testCounting() {
+    test("Counting") {
         class Args(parser: ArgParser) {
             val verbosity by parser.counting("-v", "--verbose",
                     help = TEST_HELP)
         }
 
         Args(parserOf()).run {
-            assertEquals(0, verbosity)
+            verbosity shouldBe 0
         }
 
         Args(parserOf("-v")).run {
-            assertEquals(1, verbosity)
+            verbosity shouldBe 1
         }
 
         Args(parserOf("-v", "-v")).run {
-            assertEquals(2, verbosity)
+            verbosity shouldBe 2
         }
     }
 
-    @Test
-    fun testHelp() {
+    test("Help") {
         class Args(parser: ArgParser) {
             val dryRun by parser.flagging("-n", "--dry-run",
                     help = "don't do anything")
@@ -885,8 +806,7 @@ class ArgParserTest {
             val writer = StringWriter()
             printUserMessage(writer, "program_name", 60)
             val help = writer.toString()
-            assertEquals(
-                    """
+            help shouldBe """
 usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT
                     [-v]... SOURCE... DEST
 
@@ -927,12 +847,11 @@ adipiscing elit. Donec vel tortor nunc. Sed eu massa sed
 turpis auctor faucibus. Donec vel pellentesque tortor. Ut
 ultrices tempus lectus fermentum vestibulum. Phasellus.
 
-""".trimStart(), help)
+""".trimStart()
         }
     }
 
-    @Test
-    fun testImplicitLongFlagName() {
+    test("ImplicitLongFlagName") {
         class Args(parser: ArgParser) {
             val flag1 by parser.flagging(help = TEST_HELP)
             val flag2 by parser.flagging(help = TEST_HELP)
@@ -954,36 +873,35 @@ ultrices tempus lectus fermentum vestibulum. Phasellus.
                 "--int-adder=2", "--int-adder=4", "--int-adder=6",
                 "--int-set-adder=64", "--int-set-adder=128", "--int-set-adder=20",
                 "1", "1", "2", "3", "5", "8"
-                )).run {
-            assertTrue(flag1)
-            assertFalse(flag2)
-            assertEquals(2, count)
-            assertEquals("hello", store)
-            assertEquals(42, store_int)
-            assertEquals(listOf("foo", "bar"), adder)
-            assertEquals(listOf(2, 4, 6), int_adder)
-            assertEquals(setOf(20, 64, 128), int_set_adder)
-            assertEquals("1", positional)
-            assertEquals(1, positional_int)
-            assertEquals(listOf("2", "3"), positionalList)
-            assertEquals(listOf(5, 8), positionalList_int)
+        )).run {
+            flag1 shouldBe true
+            flag2 shouldBe false
+            count shouldBe 2
+            store shouldBe "hello"
+            store_int shouldBe 42
+            adder shouldBe listOf("foo", "bar")
+            int_adder shouldBe listOf(2, 4, 6)
+            int_set_adder shouldBe setOf(20, 64, 128)
+            positional shouldBe "1"
+            positional_int shouldBe 1
+            positionalList shouldBe listOf("2", "3")
+            positionalList_int shouldBe listOf(5, 8)
         }
 
         shouldThrow<MissingRequiredPositionalArgumentException> {
             Args(parserOf(
                     "13", "21", "34", "55", "89"
             )).run {
-                assertFalse(flag1)
+                flag1 shouldBe false
             }
         }.run {
-            assertEquals("missing POSITIONALLIST_INT operand", message)
+            message shouldBe "missing POSITIONALLIST_INT operand"
         }
     }
 
     fun nullableString() : String? = null
 
-    @Test
-    fun testNullableOptional() {
+    test("NullableOptional") {
         class Args(parser: ArgParser) {
             val path by parser.storing("The path", ::File)
                     .default(nullableString()?.let(::File))
@@ -991,58 +909,48 @@ ultrices tempus lectus fermentum vestibulum. Phasellus.
         }
     }
 
-    @Test
-    fun testNullableOptional_withoutTransform() {
+    test("NullableOptional_withoutTransform") {
         class Args(parser: ArgParser) {
             val str by parser.storing(TEST_HELP)
                     .default(nullableString())
         }
         Args(parserOf("--str=foo")).run {
-            assertEquals("foo", str)
+            str shouldBe "foo"
         }
         Args(parserOf()).run {
-            assertEquals(null, str)
+            str shouldBe null
         }
     }
 
-    open class Shape
-
-    class Rectangle(val s: String) : Shape()
-    class Circle : Shape()
-
-    fun <T> assertStaticType(@Suppress("UNUSED_PARAMETER") x: T) {}
-
-    @Test
-    fun testDefaultGeneralization() {
+    test("DefaultGeneralization") {
         class Args(parser: ArgParser) {
             val shape by parser.storing("The path", ::Rectangle)
                     .default(Circle())
             val rect by parser.storing("The path", ::Rectangle)
         }
         val args = Args(parserOf("--rect=foo"))
-        assertStaticType<Shape>(args.shape)
-        assertTrue(args.shape is Circle)
-        assertStaticType<Rectangle>(args.rect)
+        staticType(args.shape) shouldBe Shape::class
+        args.shape should beOfType<Circle>()
+        staticType(args.rect) shouldBe Rectangle::class
 
         val args2 = Args(parserOf())
         shouldThrow<MissingValueException> {
             args2.rect
         }.run {
-            assertEquals("missing RECT", message)
+            message shouldBe "missing RECT"
         }
     }
 
-    @Test
-    fun testDefaultGeneralization_withoutTransform() {
+    test("DefaultGeneralization_withoutTransform") {
         class Args(parser: ArgParser) {
             val str by parser.storing(TEST_HELP)
                     .default(5)
         }
         Args(parserOf("--str=foo")).run {
-            assertEquals("foo", str)
+            str shouldBe "foo"
         }
         Args(parserOf()).run {
-            assertEquals(5, str)
+            str shouldBe 5
         }
     }
 
@@ -1051,4 +959,4 @@ ultrices tempus lectus fermentum vestibulum. Phasellus.
     // TODO: test default on argumentList
     // TODO: test addValidator on argument
     // TODO: test addValidator on argumentList
-}
+})
