@@ -57,19 +57,18 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
 }
 
 /**
- * Like [kotlin.run], but calls [SystemExitException.printAndExit] on any
- * `SystemExitException` that is caught.
+ * Calls [SystemExitException.printAndExit] on any `SystemExitException` that
+ * is caught.
  *
  * @param progName the name of the program, or null if not known
  * @param columns the number of columns to wrap any caught
  * `SystemExitException` to.  Specify null for reasonable defaults, or 0 to not
  * wrap at all.
- * @param f the main body. If a `SystemExitException` is caught its
- * `printAndExit` method will be invoked.
+ * @param body the code that may throw a `SystemExitException`
  */
-fun <T, R> T.runMain(progName: String? = null, columns: Int? = null, f: T.() -> R): R {
+fun <R> mainBody(progName: String? = null, columns: Int? = null, body: () -> R): R {
     try {
-        return f()
+        return body()
     } catch (e: SystemExitException) {
         e.printAndExit(progName, columns ?: System.getenv("COLUMNS")?.toInt() ?: 80)
     }

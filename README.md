@@ -186,14 +186,19 @@ throw a `SystemExitException` when parsing fails.
 Additional post-parsing validation can be performed on a delegate using
 `addValidator`.
 
-As a convenience, these exceptions can be handled by using the `runMain`
-extension function:
+As a convenience, these exceptions can be handled by using the `mainBody`
+function:
 
 ```kotlin
-fun main(args: Array<String>) =
-        MyArgs(ArgParser(args)).runMain(PROGRAM_NAME) {
+class ParsedArgs(parser: ArgParser) {
+    val name by positional("The user's name").default("world")
+}
+
+fun main(args: Array<String>) = mainBody("hello") {
+        ParsedArgs(ArgParser(args)).run {
             println("Hello, {name}!")
         }
+    }
 ```
 
 Note that parsing does not take place until at least one delegate is read, or
