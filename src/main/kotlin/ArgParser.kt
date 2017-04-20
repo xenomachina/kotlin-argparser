@@ -214,6 +214,7 @@ class ArgParser(args: Array<out String>,
      * @param handler a function that computes the value of this option from an [OptionInvocation]
      */
     fun <T> option(
+            // TODO: add optionalArg: Boolean
             vararg names: String,
             errorName: String,
             help: String,
@@ -242,6 +243,7 @@ class ArgParser(args: Array<out String>,
      * @param handler a function that computes the value of this option from an [OptionInvocation]
      */
     fun <T> option(
+            // TODO: add optionalArg: Boolean
             errorName: String,
             help: String,
             argNames: List<String> = emptyList(),
@@ -1049,3 +1051,7 @@ open class UnexpectedOptionArgumentException(val optName: String) :
  */
 open class UnexpectedPositionalArgumentException(val valueName: String?) :
         SystemExitException("unexpected argument${if (valueName == null) "" else " after $valueName"}", 2)
+
+// TODO: remove addValidator completely?
+// TODO: rename errorName to valueName?
+// TODO: add validation to option names, option arg names, and positional arg names
