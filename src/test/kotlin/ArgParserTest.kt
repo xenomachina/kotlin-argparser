@@ -19,6 +19,8 @@
 package com.xenomachina.argparser.tests
 
 import com.xenomachina.argparser.ArgParser
+import com.xenomachina.argparser.ArgParser.DelegateProvider.Companion.identifierToArgName
+import com.xenomachina.argparser.ArgParser.DelegateProvider.Companion.identifierToOptionName
 import com.xenomachina.argparser.DefaultHelpFormatter
 import com.xenomachina.argparser.HelpFormatter
 import com.xenomachina.argparser.InvalidArgumentException
@@ -335,8 +337,7 @@ class LongOptionsWithMultipleArgsTest : Test({
                 errorName = "XYZ",
                 argNames = listOf("COLOR", "SIZE", "FLAVOR"),
                 help = TEST_HELP) {
-            value.orElse { mutableListOf<String>() }.apply { add("$optionName:${arguments}")
-            }
+            value.orElse { mutableListOf<String>() }.apply { add("$optionName:${arguments}") }
         }
     }
 
@@ -367,6 +368,47 @@ class LongOptionsWithMultipleArgsTest : Test({
         Args(parserOf("--xray")).xyz
     }.run {
         message shouldBe "option '--xray' is missing the required argument COLOR"
+    }
+})
+
+class DelegateProviderTest : Test({
+    fun ArgParser.putting(help: String): ArgParser.DelegateProvider<Map<String, String>> =
+            ArgParser.DelegateProvider { identifier ->
+                option<MutableMap<String, String>>(identifierToOptionName(identifier),
+                        errorName = identifierToArgName(identifier),
+                        argNames = listOf("KEY", "VALUE"),
+                        help = help) {
+                    value.orElse { mutableMapOf<String, String>() }.apply { put(arguments.first(), arguments.last()) }
+                }
+            }
+    class Args(parser: ArgParser) {
+        val dict by parser.putting(TEST_HELP)
+    }
+
+    // Test with value as separate arg
+    Args(parserOf("--dict", "red", "5")).dict shouldBe mapOf("red" to "5")
+
+    Args(parserOf(
+            "--dict", "green", "42",
+            "--dict", "blue", "7"
+    )).dict shouldBe mapOf(
+            "green" to "42",
+            "blue" to "7")
+
+    // Note that something that looks like an option is consumed as an argument if it appears where an argument
+    // should be. This is expected behavior.
+    Args(parserOf("--dict", "green", "--dict")).dict shouldBe mapOf("green" to "--dict")
+
+    shouldThrow<OptionMissingRequiredArgumentException> {
+        Args(parserOf("--dict", "green", "42", "--dict", "blue")).dict
+    }.run {
+        message shouldBe "option '--dict' is missing the required argument VALUE"
+    }
+
+    shouldThrow<OptionMissingRequiredArgumentException> {
+        Args(parserOf("--dict")).dict
+    }.run {
+        message shouldBe "option '--dict' is missing the required argument KEY"
     }
 })
 
@@ -1354,3 +1396,5 @@ class PositionalListAddValidatorTest : Test({
         message shouldBe "X elements must be even, 37 is odd"
     }
 })
+
+// TODO test delegate provider
