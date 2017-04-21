@@ -1092,7 +1092,7 @@ fun nullableString() : String? = null
 
 class NullableOptionalTest : Test({
     class Args(parser: ArgParser) {
-        val path by parser.storing("The path", ::File)
+        val path by parser.storing("The path", transform = ::File)
                 .default(nullableString()?.let(::File))
 
     }
@@ -1113,9 +1113,9 @@ class NullableOptional_withoutTransformTest : Test({
 
 class DefaultGeneralizationTest : Test({
     class Args(parser: ArgParser) {
-        val shape by parser.storing("The path", ::Rectangle)
+        val shape by parser.storing("The path", transform = ::Rectangle)
                 .default(Circle())
-        val rect by parser.storing("The path", ::Rectangle)
+        val rect by parser.storing("The path", transform = ::Rectangle)
     }
     val args = Args(parserOf("--rect=foo"))
     staticType(args.shape) shouldBe Shape::class

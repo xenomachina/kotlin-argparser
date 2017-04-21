@@ -56,7 +56,6 @@ class ArgParser(args: Array<out String>,
     fun flagging(vararg names: String, help: String): Delegate<Boolean> =
             option<Boolean>(
                     *names,
-                    errorName = optionNamesToErrorName(names),
                     help = help) { true }.default(false)
 
     /**
@@ -71,7 +70,6 @@ class ArgParser(args: Array<out String>,
     fun counting(vararg names: String, help: String): Delegate<Int> =
             option<Int>(
                     *names,
-                    errorName = optionNamesToErrorName(names),
                     isRepeating = true,
                     help = help) { value.orElse { 0 } + 1 }.default(0)
 
@@ -86,13 +84,14 @@ class ArgParser(args: Array<out String>,
     fun <T> storing(
             vararg names: String,
             help: String,
+            argName: String? = null,
             transform: String.() -> T
     ): Delegate<T> {
-        val errorName = optionNamesToErrorName(names)
+        val nonNullArgName = argName ?: optionNameToArgName(selectRepresentativeOptionName(names))
         return option(
                 *names,
-                errorName = errorName,
-                argNames = listOf(errorName),
+                errorName = nonNullArgName,
+                argNames = listOf(nonNullArgName),
                 help = help) { transform(arguments.first()) }
     }
 
@@ -101,8 +100,9 @@ class ArgParser(args: Array<out String>,
      */
     fun <T> storing(
             help: String,
+            argName: String? = null,
             transform: String.() -> T
-    ) = DelegateProvider { identifier -> storing(identifierToOptionName(identifier), help = help, transform = transform) }
+    ) = DelegateProvider { identifier -> storing(identifierToOptionName(identifier), help = help, argName = argName, transform = transform) }
 
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's argument.
@@ -122,15 +122,15 @@ class ArgParser(args: Array<out String>,
     fun <E, T : MutableCollection<E>> adding(
             vararg names: String,
             help: String,
+            argName: String? = null,
             initialValue: T,
             transform: String.() -> E
     ): Delegate<T> {
-        val errorName = optionNamesToErrorName(names)
+        val nonNullArgName = argName ?: optionNameToArgName(selectRepresentativeOptionName(names))
         return option<T>(
                 *names,
-                errorName = errorName,
                 help = help,
-                argNames = listOf(errorName),
+                argNames = listOf(nonNullArgName),
                 isRepeating = true) {
             val result = value.orElse { initialValue }
             result.add(transform(arguments.first()))
@@ -144,10 +144,11 @@ class ArgParser(args: Array<out String>,
      */
     fun <E, T : MutableCollection<E>> adding(
             help: String,
+            argName: String? = null,
             initialValue: T,
             transform: String.() -> E
     ) = DelegateProvider { identifier ->
-                adding(identifierToOptionName(identifier), initialValue = initialValue, help = help, transform = transform) }
+                adding(identifierToOptionName(identifier), help = help, argName = argName, initialValue = initialValue, transform = transform) }
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
@@ -156,8 +157,9 @@ class ArgParser(args: Array<out String>,
     fun <T> adding(
             vararg names: String,
             help: String,
+            argName: String? = null,
             transform: String.() -> T
-    ) = adding(*names, initialValue = mutableListOf(), help = help, transform = transform)
+    ) = adding(*names, help = help, argName = argName, initialValue = mutableListOf(), transform = transform)
 
     /**
      * Creates a DelegateProvider for a single-argument option that adds the option's (transformed) argument to a
@@ -208,7 +210,8 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for an option with the specified names.
      * @param names names of options, with leading "-" or "--"
-     * @param errorName name to use when talking about this option in error messages
+     * @param errorName name to use when talking about this option in error messages, or null to base it upon the
+     * option names
      * @param help the help text for this option
      * @param argNames names of this option's arguments
      * @param isRepeating whether or not it make sense to repeat this option -- usually used for options where
@@ -219,15 +222,14 @@ class ArgParser(args: Array<out String>,
             // TODO: add optionalArg: Boolean
             vararg names: String,
             help: String,
-            // TODO: make errorName nullable, and choose name from option names if null
-            errorName: String,
+            errorName: String? = null,
             argNames: List<String> = emptyList(),
             isRepeating: Boolean = false,
             handler: OptionInvocation<T>.() -> T
     ): Delegate<T> {
         val delegate = OptionDelegate<T>(
                 parser = this,
-                errorName = errorName,
+                errorName = errorName ?: optionNameToArgName(selectRepresentativeOptionName(names)),
                 help = help,
                 optionNames = listOf(*names),
                 argNames = argNames.toList(),
@@ -758,10 +760,6 @@ class ArgParser(args: Array<out String>,
             }
             // ... but failing that just return first option.
             return names[0]
-        }
-
-        internal fun optionNamesToErrorName(names: Array<out String>): String {
-            return optionNameToArgName(selectRepresentativeOptionName(names))
         }
 
         private fun optionNameToArgName(name: String) =

@@ -22,11 +22,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- The `adding` and `positionalList` methods of `ArgParser` have had their
-  parameters slightly reordered to be consistent with the other methods. This
-  is an incompatible change. The name(s) come first, if any, followed by
+- The `storing`, `adding` and `positionalList` methods of `ArgParser` have had
+  their parameters slightly reordered to be consistent with the other methods.
+  This is an incompatible change. The name(s) come first, if any, followed by
   `help`. Other parameters appear after `help`, with the `transform` function,
-  if any, last.
+  if any, last. It is recommended that clients either pass the transform as a
+  block (ie: with braces) or as a named parameter, as any future new parameters
+  will necessarily change its position in the list.
 
 - Delegate and DelegateProvider are now abstract classes with internal
   constructors. This makes it much easier for me to separate internal and
