@@ -55,8 +55,6 @@ class ArgParser(args: Array<out String>,
             option<Boolean>(
                     *names,
                     errorName = errorNameForOptionNames(names),
-                    usageArgument = null,
-                    isRepeating = false,
                     help = help) { true }.default(false)
 
     /**
@@ -72,7 +70,6 @@ class ArgParser(args: Array<out String>,
             option<Int>(
                     *names,
                     errorName = errorNameForOptionNames(names),
-                    usageArgument = null,
                     isRepeating = true,
                     help = help) { value.orElse { 0 } + 1 }.default(0)
 
@@ -93,9 +90,8 @@ class ArgParser(args: Array<out String>,
         return option(
                 *names,
                 errorName = errorName,
-                usageArgument = errorName,
-                isRepeating = false,
-                help = help) { transform(this.next()) }
+                argNames = listOf(errorName),
+                help = help) { transform(arguments.first()) }
     }
 
     /**
@@ -123,8 +119,8 @@ class ArgParser(args: Array<out String>,
      */
     fun <E, T : MutableCollection<E>> adding(
             vararg names: String,
-            initialValue: T,
             help: String,
+            initialValue: T,
             transform: String.() -> E
     ): Delegate<T> {
         val errorName = errorNameForOptionNames(names)
@@ -132,10 +128,10 @@ class ArgParser(args: Array<out String>,
                 *names,
                 errorName = errorName,
                 help = help,
-                usageArgument = errorName,
+                argNames = listOf(errorName),
                 isRepeating = true) {
             val result = value.orElse { initialValue }
-            result.add(transform(next()))
+            result.add(transform(arguments.first()))
             result
         }.default(initialValue)
     }
@@ -145,8 +141,8 @@ class ArgParser(args: Array<out String>,
      * MutableCollection each time the option appears in args, and returns said MutableCollection.
      */
     fun <E, T : MutableCollection<E>> adding(
-            initialValue: T,
             help: String,
+            initialValue: T,
             transform: String.() -> E
     ) = DelegateProvider { name ->
                 adding(identifierToOptionName(name), initialValue = initialValue, help = help, transform = transform) }
@@ -200,9 +196,7 @@ class ArgParser(args: Array<out String>,
         val names = map.keys.toTypedArray()
         return option(*names,
                 errorName = map.keys.joinToString("|"),
-                help = help,
-                usageArgument = null,
-                isRepeating = false) {
+                help = help) {
             // This cannot be null, because the optionName was added to the map
             // at the same time it was registered with the ArgParser.
             map[optionName]!!
@@ -213,27 +207,53 @@ class ArgParser(args: Array<out String>,
      * Creates a Delegate for an option with the specified names.
      * @param names names of options, with leading "-" or "--"
      * @param errorName name to use when talking about this option in error messages
-     * @param usageArgument how to represent argument(s) in help text, or null if consumes no arguments
-     * @param handler A function that assists in parsing arguments by computing the value of this option
+     * @param help the help text for this option
+     * @param argNames names of this option's arguments
+     * @param isRepeating whether or not it make sense to repeat this option -- usually used for options where
+     * specifying the option more than once yields a value than cannot be expressed by specifying the option only once
+     * @param handler a function that computes the value of this option from an [OptionInvocation]
      */
-    internal fun <T> option(
+    fun <T> option(
             vararg names: String,
             errorName: String,
             help: String,
-            usageArgument: String?,
-            isRepeating: Boolean = true,
-            handler: OptionArgumentIterator<T>.() -> T
+            argNames: List<String> = emptyList(),
+            isRepeating: Boolean = false,
+            handler: OptionInvocation<T>.() -> T
     ): Delegate<T> {
         val delegate = OptionDelegate<T>(
                 parser = this,
                 errorName = errorName,
                 help = help,
                 optionNames = listOf(*names),
-                usageArgument = usageArgument,
+                argNames = argNames.toList(),
                 isRepeating = isRepeating,
                 handler = handler)
         return delegate
     }
+
+    /**
+     * Creates a DelegateProvider for an option
+     * @param errorName name to use when talking about this option in error messages
+     * @param help the help text for this option
+     * @param argNames names of this option's arguments
+     * @param isRepeating whether or not it make sense to repeat this option -- usually used for options where
+     * specifying the option more than once yields a value than cannot be expressed by specifying the option only once
+     * @param handler a function that computes the value of this option from an [OptionInvocation]
+     */
+    fun <T> option(
+            errorName: String,
+            help: String,
+            argNames: List<String> = emptyList(),
+            isRepeating: Boolean = false,
+            handler: OptionInvocation<T>.() -> T
+    ) = DelegateProvider { name ->
+        option(identifierToOptionName(name),
+                errorName = errorName,
+                help = help,
+                argNames = argNames,
+                isRepeating = isRepeating,
+                handler = handler) }
 
     /**
      * Creates a Delegate for a single positional argument which returns the argument's value.
@@ -255,7 +275,7 @@ class ArgParser(args: Array<out String>,
             transform: String.() -> T
     ): Delegate<T> {
         return WrappingDelegate(
-                positionalList(name, 1..1, help = help, transform = transform)
+                positionalList(name, help = help, sizeRange = 1..1, transform = transform)
         ) { it[0] }
     }
 
@@ -272,17 +292,17 @@ class ArgParser(args: Array<out String>,
      */
     fun positionalList(
             name: String,
-            sizeRange: IntRange = 1..Int.MAX_VALUE,
-            help: String
-    ) = positionalList(name, sizeRange, help = help) { this }
+            help: String,
+            sizeRange: IntRange = 1..Int.MAX_VALUE
+    ) = positionalList(name, help = help, sizeRange = sizeRange) { this }
 
     /**
      * Creates a DelegateProvider for a sequence of positional arguments which returns a List containing the arguments.
      */
     fun positionalList(
-            sizeRange: IntRange = 1..Int.MAX_VALUE,
-            help: String
-    ) = DelegateProvider { ident -> positionalList(identifierToArgName(ident), sizeRange, help = help) }
+            help: String,
+            sizeRange: IntRange = 1..Int.MAX_VALUE
+    ) = DelegateProvider { ident -> positionalList(identifierToArgName(ident), help = help, sizeRange = sizeRange) }
 
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the transformed
@@ -290,8 +310,8 @@ class ArgParser(args: Array<out String>,
      */
     fun <T> positionalList(
             name: String,
-            sizeRange: IntRange = 1..Int.MAX_VALUE,
             help: String,
+            sizeRange: IntRange = 1..Int.MAX_VALUE,
             transform: String.() -> T
     ): Delegate<List<T>> {
         sizeRange.run {
@@ -315,10 +335,10 @@ class ArgParser(args: Array<out String>,
      * arguments.
      */
     fun <T> positionalList(
-            sizeRange: IntRange = 1..Int.MAX_VALUE,
             help: String,
+            sizeRange: IntRange = 1..Int.MAX_VALUE,
             transform: String.() -> T
-    ) = DelegateProvider { ident -> positionalList(identifierToArgName(ident), sizeRange, help, transform) }
+    ) = DelegateProvider { ident -> positionalList(identifierToArgName(ident), help, sizeRange, transform) }
 
     internal class WrappingDelegate<U, W>(
             private val inner: Delegate<U>,
@@ -347,10 +367,10 @@ class ArgParser(args: Array<out String>,
         override fun toHelpFormatterValue(): HelpFormatter.Value = inner.toHelpFormatterValue()
 
         override fun addValidator(validator: Delegate<W>.() -> Unit): Delegate<W> =
-                apply { validator(this) }
+                apply { inner.addValidator { validator(this@WrappingDelegate) } }
 
-        override fun registerLeaf() {
-            inner.registerLeaf()
+        override fun registerLeaf(root: Delegate<*>) {
+            inner.registerLeaf(root)
         }
     }
 
@@ -398,10 +418,10 @@ class ArgParser(args: Array<out String>,
         internal fun registerRoot() {
             parser.checkNotParsed()
             parser.delegates.add(this)
-            registerLeaf()
+            registerLeaf(this)
         }
 
-        internal abstract fun registerLeaf()
+        internal abstract fun registerLeaf(root: Delegate<*>)
     }
 
     /**
@@ -455,28 +475,42 @@ class ArgParser(args: Array<out String>,
             errorName: String,
             help: String,
             val optionNames: List<String>,
-            val usageArgument: String?,
+            val argNames: List<String>,
             val isRepeating: Boolean,
-            val handler: OptionArgumentIterator<T>.() -> T) : ParsingDelegate<T>(parser, errorName, help) {
+            val handler: OptionInvocation<T>.() -> T) : ParsingDelegate<T>(parser, errorName, help) {
 
         fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
-            val input = OptionArgumentIterator(holder, name, firstArg, index, args)
+            val arguments = mutableListOf<String>()
+            if (!argNames.isEmpty()) {
+                if (firstArg != null) arguments.add(firstArg)
+                val required = argNames.size - arguments.size
+                if (required + index > args.size) {
+                    // Only pass an argName if more than one argument.
+                    // Naming it when there's just one seems unnecessarily verbose.
+                    val argName = if (argNames.size > 1) argNames[args.size - index] else null
+                    throw OptionMissingRequiredArgumentException(name, argName)
+                }
+                for (i in 0 until required) {
+                    arguments.add(args[index + i])
+                }
+            }
+            val input = OptionInvocation(holder, name, arguments)
             holder = Holder(handler(input))
-            return input.consumed
+            return argNames.size
         }
 
         override fun toHelpFormatterValue(): HelpFormatter.Value {
             return HelpFormatter.Value(
                     isRequired = (holder == null),
                     isRepeating = isRepeating,
-                    usages = if (usageArgument != null)
-                        optionNames.map { "$it $usageArgument" }
+                    usages = if (!argNames.isEmpty())
+                        optionNames.map { "$it ${argNames.joinToString(" ")}" }
                     else optionNames,
                     isPositional = false,
                     help = help)
         }
 
-        override fun registerLeaf() {
+        override fun registerLeaf(root: Delegate<*>) {
             for (name in optionNames) {
                 parser.registerOption(name, this)
             }
@@ -490,8 +524,15 @@ class ArgParser(args: Array<out String>,
             help: String,
             val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, errorName, help) {
 
-        override fun registerLeaf() {
-            parser.positionalDelegates.add(this)
+        override fun registerLeaf(root: Delegate<*>) {
+            assert(holder == null)
+            val hasDefault = root.hasValue
+            if (hasDefault && sizeRange.first != 1) {
+                throw IllegalStateException("default value can only be applied to positional that requires a minimum of 1 arguments")
+            }
+            // TODO: this feels like a bit of a kludge. Consider making .default only work on positional and not
+            // postionalList by having them return different types?
+            parser.positionalDelegates.add(this to hasDefault)
         }
 
         fun parseArguments(args: List<String>) {
@@ -509,60 +550,20 @@ class ArgParser(args: Array<out String>,
     }
 
     /**
-     * Iterator over arguments that follow the option being processed.
      * @property value a Holder containing the current value associated with this option, or null if unset
-     * @property optionName the name of the option
+     * @property optionName the name used for this option in this invocation
+     * @property arguments the arguments supplied for this option
      */
-    class OptionArgumentIterator<T> internal constructor(
+    data class OptionInvocation<T> internal constructor(
+            // Internal constructor so future versions can add properties
+            // without breaking compatibility.
             val value: Holder<T>?,
             val optionName: String,
-            private val firstArg: String?,
-            private val offset: Int,
-            private val args: Array<out String>) {
-
-        internal var consumed = 0
-
-        /**
-         * Returns the next argument without advancing the current position, or null if there is no next argument. This
-         * should only be used to determine if the next argument is to be consumed. If its value will impact the value
-         * associated with this option then [next()] must be called to advance the current position.
-         *
-         * Do *not* use the presence of a leading hyphen ('-') as an indication that the next argument should not be
-         * consumed.
-         */
-        fun peek(): String? {
-            return if (firstArg != null && consumed == 0) {
-                firstArg
-            } else {
-                val index = offset + consumed - (if (firstArg == null) 0 else 1)
-                if (index >= args.size) {
-                    null
-                } else {
-                    args[index]
-                }
-            }
-        }
-
-        /**
-         * Indicates whether there is another argument available to this option
-         */
-        fun hasNext(): Boolean = peek() != null
-
-        /**
-         * Advances to the next argument available to this option and returns it.
-         *
-         * @returns the next argument available to this option
-         * @throws OptionMissingRequiredArgumentException if no more arguments are available
-         */
-        fun next(): String {
-            return peek()?.apply { consumed++ }
-                    ?: throw OptionMissingRequiredArgumentException(optionName)
-        }
-    }
+            val arguments: List<String>)
 
     private val shortOptionDelegates = mutableMapOf<Char, OptionDelegate<*>>()
     private val longOptionDelegates = mutableMapOf<String, OptionDelegate<*>>()
-    private val positionalDelegates = mutableListOf<PositionalDelegate<*>>()
+    private val positionalDelegates = mutableListOf<Pair<PositionalDelegate<*>, Boolean>>()
     internal val delegates = LinkedHashSet<Delegate<*>>()
 
     private fun <T> registerOption(name: String, delegate: OptionDelegate<T>) {
@@ -653,18 +654,23 @@ class ArgParser(args: Array<out String>,
         var lastValueName: String? = null
         var index = 0
         var remaining = args.size
-        var extra = (remaining - positionalDelegates.map { it.sizeRange.first }.sum()).coerceAtLeast(0)
-        for (delegate in positionalDelegates) {
+        var extra = (remaining - positionalDelegates.map {
+            if (it.second) 0 else it.first.sizeRange.first
+        }.sum()).coerceAtLeast(0)
+        for ((delegate, hasDefault) in positionalDelegates) {
+            val minSize = if (hasDefault) 0 else delegate.sizeRange.first
             val sizeRange = delegate.sizeRange
-            val chunkSize = (sizeRange.first + extra).coerceIn(sizeRange)
+            val chunkSize = (minSize + extra).coerceAtMost(sizeRange.endInclusive)
             if (chunkSize > remaining) {
                 throw MissingRequiredPositionalArgumentException(delegate.errorName)
             }
-            delegate.parseArguments(args.subList(index, index + chunkSize))
+            if (chunkSize != 0 || !hasDefault) {
+                delegate.parseArguments(args.subList(index, index + chunkSize))
+            }
             lastValueName = delegate.errorName
             index += chunkSize
             remaining -= chunkSize
-            extra -= chunkSize - sizeRange.first
+            extra -= chunkSize - minSize
         }
         if (remaining > 0) {
             throw UnexpectedPositionalArgumentException(lastValueName)
@@ -765,9 +771,7 @@ class ArgParser(args: Array<out String>,
         if (helpFormatter != null) {
             option<Unit>("-h", "--help",
                     errorName = "HELP", // This should never be used, but we need to say something
-                    help = "show this help message and exit",
-                    usageArgument = null,
-                    isRepeating = false) {
+                    help = "show this help message and exit") {
                 throw ShowHelpException(helpFormatter, delegates.toList())
             }.default(Unit).registerRoot()
         }
@@ -809,8 +813,8 @@ fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
         override fun addValidator(validator: ArgParser.Delegate<T>.() -> Unit): ArgParser.Delegate<T> =
                 inner.addValidator() { validator(inner) }
 
-        override fun registerLeaf() {
-            inner.registerLeaf()
+        override fun registerLeaf(root: ArgParser.Delegate<*>) {
+            inner.registerLeaf(root)
         }
     }
 }
@@ -1013,9 +1017,12 @@ open class InvalidArgumentException(message: String) : SystemExitException(messa
  * Indicates that a required option argument was not supplied.
  *
  * @property optName the name of the option
+ * @property argName the name of the missing argument, or null
  */
-open class OptionMissingRequiredArgumentException(val optName: String) :
-        SystemExitException("option '$optName' is missing a required argument", 2)
+open class OptionMissingRequiredArgumentException(val optName: String, val argName: String? = null) :
+        SystemExitException("option '$optName' is missing "
+                + (if (argName == null) "a required argument" else "the required argument $argName"),
+                2)
 
 /**
  * Indicates that a required positional argument was not supplied.

@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `ArgParser.option` is now a public method, so it's possible to create many
+  new option types that were not previously possible. The existing option types
+  are all written in terms of `option`, so they can be used to get an idea of
+  how it works.
+
 ### Changed
+
+- The `adding` and `positionalList` methods of `ArgParser` have had their
+  parameters slightly reordered to be consistent with the other methods. The
+  name(s) come first, if any, followed by `help`.
+
 
 - Made Delegate and DelegateProvider into abstract classes with internal
   constructors. This makes it much easier for me to separate internal and
