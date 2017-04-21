@@ -214,11 +214,11 @@ class ArgParser(args: Array<out String>,
      * @param handler a function that computes the value of this option from an [OptionInvocation]
      */
     fun <T> option(
-            // TODO: fix ordering: help goes first
             // TODO: add optionalArg: Boolean
             vararg names: String,
-            errorName: String,
             help: String,
+            // TODO: make errorName nullable, and choose name from option names if null
+            errorName: String,
             argNames: List<String> = emptyList(),
             isRepeating: Boolean = false,
             handler: OptionInvocation<T>.() -> T
@@ -233,31 +233,6 @@ class ArgParser(args: Array<out String>,
                 handler = handler)
         return delegate
     }
-
-    /**
-     * Creates a DelegateProvider for an option
-     * @param errorName name to use when talking about this option in error messages
-     * @param help the help text for this option
-     * @param argNames names of this option's arguments
-     * @param isRepeating whether or not it make sense to repeat this option -- usually used for options where
-     * specifying the option more than once yields a value than cannot be expressed by specifying the option only once
-     * @param handler a function that computes the value of this option from an [OptionInvocation]
-     */
-    fun <T> option(
-            // TODO: fix ordering: help goes first
-            // TODO: add optionalArg: Boolean
-            errorName: String,
-            help: String,
-            argNames: List<String> = emptyList(),
-            isRepeating: Boolean = false,
-            handler: OptionInvocation<T>.() -> T
-    ) = DelegateProvider { name ->
-        option(identifierToOptionName(name),
-                errorName = errorName,
-                help = help,
-                argNames = argNames,
-                isRepeating = isRepeating,
-                handler = handler) }
 
     /**
      * Creates a Delegate for a single positional argument which returns the argument's value.
@@ -805,7 +780,6 @@ private val OPTION_NAME_RE = Regex("^(-$OPTION_CHAR_CLASS)|(--$OPTION_CHAR_CLASS
 private const val ARG_INITIAL_CHAR_CLASS = "[A-Z]"
 private const val ARG_CHAR_CLASS = "[A-Z0-9]"
 private val ARG_NAME_RE = Regex("^$ARG_INITIAL_CHAR_CLASS+([-_]$ARG_CHAR_CLASS+)*$")
-
 
 fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.DelegateProvider<T> {
     return ArgParser.DelegateProvider(ctor = ctor, defaultHolder = Holder(newDefault))
