@@ -891,6 +891,9 @@ class DefaultHelpFormatter(
         val prologue: String? = null,
         val epilogue: String? = null
 ) : HelpFormatter {
+    val indent = "  "
+    val indentWidth = indent.codePointWidth()
+
     override fun format(
             progName: String?,
             columns: Int,
@@ -918,9 +921,14 @@ class DefaultHelpFormatter(
                 else -> optional
             }.add(value)
         }
-        appendSection(sb, columns, "required", required)
-        appendSection(sb, columns, "optional", optional)
-        appendSection(sb, columns, "positional", positional)
+        // Make left column as narrow as possible without wrapping any of the individual usages, though no wider than
+        // half the screen.
+        val usageColumns = (2 * indentWidth - 1 + (
+                values.map { usageText(it).split(" ").map { it.length }.max() ?: 0 }.max() ?: 0)
+                ).coerceAtMost(columns / 2)
+        appendSection(sb, usageColumns, columns, "required", required)
+        appendSection(sb, usageColumns, columns, "optional", optional)
+        appendSection(sb, usageColumns, columns, "positional", positional)
 
         if (!epilogue.isNullOrEmpty()) {
             sb.append("\n")
@@ -932,23 +940,28 @@ class DefaultHelpFormatter(
         return sb.toString()
     }
 
-    private fun appendSection(sb: StringBuilder, columns: Int, name: String, values: List<HelpFormatter.Value>) {
-        // TODO: make these configurable or smarter?
-        val helpPos = columns * 3 / 10
-        val indent = "  "
-        val indentWidth = indent.codePointWidth()
+    private fun appendSection(
+            sb: StringBuilder,
+            usageColumns: Int,
+            columns: Int,
+            name: String,
+            values: List<HelpFormatter.Value>
+    ) {
 
         if (!values.isEmpty()) {
             sb.append("\n")
             sb.append("$name arguments:\n")
             for (value in values) {
-                val left = value.usages.map { it.replace(' ', '\u00a0') }.joinToString(", ").wrapText(helpPos - indentWidth).prependIndent(indent)
-                val right = value.help.wrapText(columns - helpPos - 2 * indentWidth).prependIndent(indent)
-                sb.append(columnize(left, right, minWidths = intArrayOf(helpPos)))
+                val left = usageText(value).wrapText(usageColumns - indentWidth).prependIndent(indent)
+                val right = value.help.wrapText(columns - usageColumns - 2 * indentWidth).prependIndent(indent)
+                sb.append(columnize(left, right, minWidths = intArrayOf(usageColumns)))
                 sb.append("\n\n")
             }
         }
     }
+
+    private fun usageText(value: HelpFormatter.Value) =
+            value.usages.map { it.replace(' ', '\u00a0') }.joinToString(", ")
 
     private fun appendUsage(sb: StringBuilder, columns: Int, progName: String?, values: List<HelpFormatter.Value>) {
         val usageStart = "usage:${if (progName != null) " $progName" else ""} "

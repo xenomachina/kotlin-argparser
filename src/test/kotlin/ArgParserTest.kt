@@ -851,26 +851,25 @@ Phasellus.
 
 
 required arguments:
-  -o OUTPUT,        directory in which all output should
-  --output OUTPUT   be generated
+  -o OUTPUT,          directory in which all output should
+  --output OUTPUT     be generated
 
 
 optional arguments:
-  -h, --help        show this help message and exit
+  -h, --help          show this help message and exit
 
-  -n, --dry-run     don't do anything
+  -n, --dry-run       don't do anything
 
-  -I INCLUDE,       search in this directory for header
-  --include INCLU   files
-  DE
+  -I INCLUDE,         search in this directory for header
+  --include INCLUDE   files
 
-  -v, --verbose     increase verbosity
+  -v, --verbose       increase verbosity
 
 
 positional arguments:
-  SOURCE            source file
+  SOURCE              source file
 
-  DEST              destination file
+  DEST                destination file
 
 
 
