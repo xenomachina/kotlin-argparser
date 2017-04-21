@@ -1396,5 +1396,3 @@ class PositionalListAddValidatorTest : Test({
         message shouldBe "X elements must be even, 37 is odd"
     }
 })
-
-// TODO test delegate provider
