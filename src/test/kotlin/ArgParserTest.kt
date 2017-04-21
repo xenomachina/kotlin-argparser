@@ -62,6 +62,110 @@ private val oneArgName = listOf("ARG_NAME")
 
 abstract class Test(body: () -> Unit) : FunSpec({ test(this::class.qualifiedName!!, body) })
 
+class OptionNameValidationTest : Test({
+    val parser = parserOf()
+
+    // These are all acceptable.
+    parser.option<Int>("-x", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--x", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--xy", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("-X", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--X", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--XY", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--X-Y", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--X_Y", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("-5", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--5", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--5Y", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--X5", errorName = "", help = TEST_HELP) { 0 }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("-_", errorName = "", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("---x", errorName = "", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("x", errorName = "", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("", errorName = "", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("-xx", errorName = "", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("--foo bar", errorName = "", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("--foo--bar", errorName = "", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("--f!oobar", errorName = "", help = TEST_HELP) { 0 }
+    }
+})
+
+class PositionalNameValidationTest : Test({
+    val parser = parserOf()
+
+    // These are all acceptable.
+    parser.positional<Int>("X", help = TEST_HELP) { 0 }
+    parser.positional<Int>("XYZ", help = TEST_HELP) { 0 }
+    parser.positional<Int>("XY-Z", help = TEST_HELP) { 0 }
+    parser.positional<Int>("XY_Z", help = TEST_HELP) { 0 }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("-", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("_", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("x", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("-X", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("X-", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("X--Y", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("X!", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("5", help = TEST_HELP) { 0 }
+    }
+
+    // This should be acceptable
+    parser.option<Int>("--foobar", argNames = listOf("X-Y"), errorName = "", help = TEST_HELP) { 0 }
+
+    // This should not
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("--foobar", argNames = listOf("X--Y"), errorName = "", help = TEST_HELP) { 0 }
+    }
+})
+
 class ArglessShortOptionsTest : Test({
     class Args(parser: ArgParser) {
         val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",

@@ -214,6 +214,7 @@ class ArgParser(args: Array<out String>,
      * @param handler a function that computes the value of this option from an [OptionInvocation]
      */
     fun <T> option(
+            // TODO: fix ordering: help goes first
             // TODO: add optionalArg: Boolean
             vararg names: String,
             errorName: String,
@@ -243,6 +244,7 @@ class ArgParser(args: Array<out String>,
      * @param handler a function that computes the value of this option from an [OptionInvocation]
      */
     fun <T> option(
+            // TODO: fix ordering: help goes first
             // TODO: add optionalArg: Boolean
             errorName: String,
             help: String,
@@ -480,6 +482,18 @@ class ArgParser(args: Array<out String>,
             val argNames: List<String>,
             val isRepeating: Boolean,
             val handler: OptionInvocation<T>.() -> T) : ParsingDelegate<T>(parser, errorName, help) {
+        init {
+            for (optionName in optionNames) {
+                if (!OPTION_NAME_RE.matches(optionName)) {
+                    throw IllegalArgumentException("$optionName is not a valid option name")
+                }
+            }
+            for (argName in argNames) {
+                if (!ARG_NAME_RE.matches(argName)) {
+                    throw IllegalArgumentException("$argName is not a valid argument name")
+                }
+            }
+        }
 
         fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
             val arguments = mutableListOf<String>()
@@ -521,10 +535,16 @@ class ArgParser(args: Array<out String>,
 
     private class PositionalDelegate<T>(
             parser: ArgParser,
-            errorName: String,
+            argName: String,
             val sizeRange: IntRange,
             help: String,
-            val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, errorName, help) {
+            val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, argName, help) {
+
+        init {
+            if (!ARG_NAME_RE.matches(argName)) {
+                throw IllegalArgumentException("$argName is not a valid argument name")
+            }
+        }
 
         override fun registerLeaf(root: Delegate<*>) {
             assert(holder == null)
@@ -779,6 +799,13 @@ class ArgParser(args: Array<out String>,
         }
     }
 }
+
+private const val OPTION_CHAR_CLASS = "[a-zA-Z0-9]"
+private val OPTION_NAME_RE = Regex("^(-$OPTION_CHAR_CLASS)|(--$OPTION_CHAR_CLASS+([-_]$OPTION_CHAR_CLASS+)*)$")
+private const val ARG_INITIAL_CHAR_CLASS = "[A-Z]"
+private const val ARG_CHAR_CLASS = "[A-Z0-9]"
+private val ARG_NAME_RE = Regex("^$ARG_INITIAL_CHAR_CLASS+([-_]$ARG_CHAR_CLASS+)*$")
+
 
 fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.DelegateProvider<T> {
     return ArgParser.DelegateProvider(ctor = ctor, defaultHolder = Holder(newDefault))
