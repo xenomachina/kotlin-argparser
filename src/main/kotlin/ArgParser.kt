@@ -934,10 +934,10 @@ class DefaultHelpFormatter(
         appendSection(sb, usageColumns, columns, "optional", optional)
         appendSection(sb, usageColumns, columns, "positional", positional)
 
-        if (!epilogue.isNullOrEmpty()) {
+        if (!epilogue?.trim().isNullOrEmpty()) {
             sb.append("\n")
             // we just checked that epilogue is non-null
-            sb.append(epilogue!!.wrapText(columns))
+            sb.append(epilogue!!.trim().wrapText(columns))
             sb.append("\n")
         }
 

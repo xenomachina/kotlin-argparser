@@ -361,14 +361,18 @@ class LongOptionsWithMultipleArgsTest : Test({
 })
 
 class DelegateProviderTest : Test({
-    fun ArgParser.putting(help: String): ArgParser.DelegateProvider<Map<String, String>> =
-            ArgParser.DelegateProvider { identifier ->
-                option<MutableMap<String, String>>(identifierToOptionName(identifier),
-                        argNames = listOf("KEY", "VALUE"),
-                        help = help) {
-                    value.orElse { mutableMapOf<String, String>() }.apply { put(arguments.first(), arguments.last()) }
-                }
+    fun ArgParser.putting(vararg names: String, help: String) =
+            option<MutableMap<String, String>>(*names,
+                    argNames = listOf("KEY", "VALUE"),
+                    help = help) {
+                value.orElse { mutableMapOf<String, String>() }.apply {
+                    put(arguments.first(), arguments.last()) }
             }
+
+    fun ArgParser.putting(help: String) =
+            ArgParser.DelegateProvider { identifier ->
+                putting(identifierToOptionName(identifier), help = help) }
+
     class Args(parser: ArgParser) {
         val dict by parser.putting(TEST_HELP)
     }
@@ -1018,12 +1022,11 @@ positional arguments:
   DEST                destination file
 
 
-
-This is the epilogue. Lorem ipsum dolor sit amet, consectetur
-adipiscing elit. Donec vel tortor nunc. Sed eu massa sed
-turpis auctor faucibus. Donec vel pellentesque tortor. Ut
-ultrices tempus lectus fermentum vestibulum. Phasellus.
-
+This is the epilogue. Lorem ipsum dolor sit amet,
+consectetur adipiscing elit. Donec vel tortor nunc. Sed eu
+massa sed turpis auctor faucibus. Donec vel pellentesque
+tortor. Ut ultrices tempus lectus fermentum vestibulum.
+Phasellus.
 """.trimStart()
     }
 })
