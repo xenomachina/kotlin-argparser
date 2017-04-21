@@ -14,16 +14,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   are all written in terms of `option`, so they can be used to get an idea of
   how it works.
 
+- More tests have been added.
+
+- Started using keepachangelog.com format for CHANGELOG.md
+
+- Made minor improvements to release process
+
 ### Changed
 
 - The `adding` and `positionalList` methods of `ArgParser` have had their
-  parameters slightly reordered to be consistent with the other methods. The
-  name(s) come first, if any, followed by `help`.
+  parameters slightly reordered to be consistent with the other methods. This
+  is an incompatible change. The name(s) come first, if any, followed by
+  `help`. Other parameters appear after `help`, with the `transform` function,
+  if any, last.
 
-
-- Made Delegate and DelegateProvider into abstract classes with internal
+- Delegate and DelegateProvider are now abstract classes with internal
   constructors. This makes it much easier for me to separate internal and
-  public parts of their API. THIS IS AN INCOMPATIBLE CHANGE, however it
+  public parts of their API. This is an incompatible change, however it
   shouldn't really affect you unless you were trying to implement `Delegate`,
   which was't supported to begin with.
 
@@ -38,9 +45,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   construction time. This should be pretty indistinguishable from the old
   behavior unless you're creating delegates without binding them.
 
-- Started using keepachangelog.com format for CHANGELOG.md
+- Help formatting has been improved so that it's far less likely to wrap option
+  names in the usage table.
 
-- Made minor improvements to release process
+- There have been numerous bugfixes, particularly around positionals
+
 
 ## 1.1.0 - 2017-03-09
 
