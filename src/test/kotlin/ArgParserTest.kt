@@ -19,7 +19,6 @@
 package com.xenomachina.argparser.tests
 
 import com.xenomachina.argparser.ArgParser
-import com.xenomachina.argparser.ArgParser.DelegateProvider.Companion.identifierToArgName
 import com.xenomachina.argparser.ArgParser.DelegateProvider.Companion.identifierToOptionName
 import com.xenomachina.argparser.DefaultHelpFormatter
 import com.xenomachina.argparser.HelpFormatter
@@ -80,49 +79,49 @@ class OptionNameValidationTest : Test({
     val parser = parserOf()
 
     // These are all acceptable.
-    parser.option<Int>("-x", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--x", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--xy", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("-X", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--X", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--XY", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--X-Y", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--X_Y", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("-5", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--5", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--5Y", errorName = "", help = TEST_HELP) { 0 }
-    parser.option<Int>("--X5", errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("-x", help = TEST_HELP) { 0 }
+    parser.option<Int>("--x", help = TEST_HELP) { 0 }
+    parser.option<Int>("--xy", help = TEST_HELP) { 0 }
+    parser.option<Int>("-X", help = TEST_HELP) { 0 }
+    parser.option<Int>("--X", help = TEST_HELP) { 0 }
+    parser.option<Int>("--XY", help = TEST_HELP) { 0 }
+    parser.option<Int>("--X-Y", help = TEST_HELP) { 0 }
+    parser.option<Int>("--X_Y", help = TEST_HELP) { 0 }
+    parser.option<Int>("-5", help = TEST_HELP) { 0 }
+    parser.option<Int>("--5", help = TEST_HELP) { 0 }
+    parser.option<Int>("--5Y", help = TEST_HELP) { 0 }
+    parser.option<Int>("--X5", help = TEST_HELP) { 0 }
 
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("-_", errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("-_", help = TEST_HELP) { 0 }
     }
 
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("---x", errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("---x", help = TEST_HELP) { 0 }
     }
 
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("x", errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("x", help = TEST_HELP) { 0 }
     }
 
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("", errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("", help = TEST_HELP) { 0 }
     }
 
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("-xx", errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("-xx", help = TEST_HELP) { 0 }
     }
 
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("--foo bar", errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("--foo bar", help = TEST_HELP) { 0 }
     }
 
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("--foo--bar", errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("--foo--bar", help = TEST_HELP) { 0 }
     }
 
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("--f!oobar", errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("--f!oobar", help = TEST_HELP) { 0 }
     }
 })
 
@@ -172,18 +171,17 @@ class PositionalNameValidationTest : Test({
     }
 
     // This should be acceptable
-    parser.option<Int>("--foobar", argNames = listOf("X-Y"), errorName = "", help = TEST_HELP) { 0 }
+    parser.option<Int>("--foobar", argNames = listOf("X-Y"), help = TEST_HELP) { 0 }
 
     // This should not
     shouldThrow<IllegalArgumentException> {
-        parser.option<Int>("--foobar", argNames = listOf("X--Y"), errorName = "", help = TEST_HELP) { 0 }
+        parser.option<Int>("--foobar", argNames = listOf("X--Y"), help = TEST_HELP) { 0 }
     }
 })
 
 class ArglessShortOptionsTest : Test({
     class Args(parser: ArgParser) {
         val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                errorName = "VALUE_NAME",
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
                 add("$optionName")
@@ -202,7 +200,6 @@ class ShortOptionsWithArgsTest : Test({
         val b by parser.flagging("-b", help = TEST_HELP)
         val c by parser.flagging("-c", help = TEST_HELP)
         val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                errorName = "VALUE_NAME",
                 argNames = oneArgName, help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
                 add("$optionName:${arguments.first()}")
@@ -236,14 +233,12 @@ class ShortOptionsWithArgsTest : Test({
 class MixedShortOptionsTest : Test({
     class Args(parser: ArgParser) {
         val def by parser.option<MutableList<String>>("-d", "-e", "-f",
-                errorName = "VALUE_NAME",
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
                 add("$optionName")
             }
         }
         val abc by parser.option<MutableList<String>>("-a", "-b", "-c",
-                errorName = "VALUE_NAME",
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
                 add("$optionName")
@@ -260,21 +255,18 @@ class MixedShortOptionsTest : Test({
 class MixedShortOptionsWithArgsTest : Test({
     class Args(parser: ArgParser) {
         val def by parser.option<MutableList<String>>("-d", "-e", "-f",
-                errorName = "VALUE_NAME",
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
                 add("$optionName")
             }
         }
         val abc by parser.option<MutableList<String>>("-a", "-b", "-c",
-                errorName = "VALUE_NAME",
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
                 add("$optionName")
             }
         }
         val xyz by parser.option<MutableList<String>>("-x", "-y", "-z",
-                errorName = "VALUE_NAME",
                 argNames = oneArgName,
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
@@ -293,7 +285,6 @@ class MixedShortOptionsWithArgsTest : Test({
 class ArglessLongOptionsTest : Test({
     class Args(parser: ArgParser) {
         val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zebra",
-                errorName = "XYZ",
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
                 add("$optionName")
@@ -309,7 +300,6 @@ class ArglessLongOptionsTest : Test({
 class LongOptionsWithOneArgTest : Test({
     class Args(parser: ArgParser) {
         val xyz by parser.option<MutableList<String>>("--xray", "--yellow", "--zaphod",
-                errorName = "XYZ",
                 argNames = oneArgName,
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply {
@@ -334,7 +324,6 @@ class LongOptionsWithOneArgTest : Test({
 class LongOptionsWithMultipleArgsTest : Test({
     class Args(parser: ArgParser) {
         val xyz by parser.option<MutableList<String>>("--xray", "--yak", "--zaphod",
-                errorName = "XYZ",
                 argNames = listOf("COLOR", "SIZE", "FLAVOR"),
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply { add("$optionName:${arguments}") }
@@ -375,7 +364,6 @@ class DelegateProviderTest : Test({
     fun ArgParser.putting(help: String): ArgParser.DelegateProvider<Map<String, String>> =
             ArgParser.DelegateProvider { identifier ->
                 option<MutableMap<String, String>>(identifierToOptionName(identifier),
-                        errorName = identifierToArgName(identifier),
                         argNames = listOf("KEY", "VALUE"),
                         help = help) {
                     value.orElse { mutableMapOf<String, String>() }.apply { put(arguments.first(), arguments.last()) }
@@ -1296,7 +1284,6 @@ class AutoNamedLongOptionWithMultipleArgsTest : Test({
     class Args(parser: ArgParser) {
         val xyz by parser.option<MutableList<String>>(
                 "--xyz",
-                errorName = "XYZ",
                 argNames = listOf("COLOR", "SIZE", "FLAVOR"),
                 help = TEST_HELP) {
             value.orElse { mutableListOf<String>() }.apply { add("$optionName:${arguments}")
