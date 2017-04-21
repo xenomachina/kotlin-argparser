@@ -52,91 +52,96 @@ class MyArgs(parser: ArgParser) {
 
 Various types of options can be parsed from the command line arguments:
 
-- Boolean flags are created by asking the parser for a `flagging` delegate.  One
-  or more option names, either short or long style, must be provided:
+### Boolean Flags
 
-  ```kotlin
-  val verbose by parser.flagging("-v", "--verbose",
-                                 help = "enable verbose mode")
-  ```
+Boolean flags are created by asking the parser for a `flagging` delegate.  One
+or more option names, either short or long style, must be provided:
 
-  Here the presence of either `-v` or `--verbose` options in the
-  arguments will cause the `Boolean` property `verbose` to be `true`, otherwise
-  it will be `false`.
+```kotlin
+val verbose by parser.flagging("-v", "--verbose",
+                               help = "enable verbose mode")
+```
 
-- Single argument options are created by asking the parser for a
-  `storing` delegate.
+Here the presence of either `-v` or `--verbose` options in the
+arguments will cause the `Boolean` property `verbose` to be `true`, otherwise
+it will be `false`.
 
-  ```kotlin
-  val name by parser.storing("-N", "--name",
-                             help = "name of the widget")
-  ```
+### Storing a Single Argument
 
-  Here either `-N` or `--name` with an argument will cause `name` to have that
-  argument as its value.
+Single argument options are created by asking the parser for a
+`storing` delegate.
 
-  A function can also be supplied to transform the argument into the desired
-  type. Here the `size` property will be an `Int` rather than a `String`:
+```kotlin
+val name by parser.storing("-N", "--name",
+                           help = "name of the widget")
+```
 
-  ```kotlin
-  val size by parser.storing("-s", "--size",
-                             help = "size of the plumbus") { toInt() }
-  ```
+Here either `-N` or `--name` with an argument will cause `name` to have that
+argument as its value.
 
-- Options that add to a `Collection` each time they
-  appear in the arguments are created with using the `adding` delegate. Just like `storing`
-  delegates, a transform function may optionally be supplied:
+A function can also be supplied to transform the argument into the desired
+type. Here the `size` property will be an `Int` rather than a `String`:
 
-  ```kotlin
-  val includeDirs by parser.adding(
-          "-I", help = "directory to search for header files") { File(this) }
-  ```
+```kotlin
+val size by parser.storing("-s", "--size",
+                           help = "size of the plumbus") { toInt() }
+```
 
-  Now each time the `-I` option appears, its argument is appended to
-  `includeDirs`.
+### Adding to a Collection
 
-- For choosing between a fixed set of values (typically, but not necessarily,
-  from an enum), a `mapping` delegate can be used:
+Options that add to a `Collection` each time they
+appear in the arguments are created with using the `adding` delegate. Just like `storing`
+delegates, a transform function may optionally be supplied:
 
-  ```kotlin
-  val mode by parser.mapping(
-          "--fast" to Mode.FAST,
-          "--small" to Mode.SMALL,
-          "--quiet" to Mode.QUIET,
-          help = "mode of operation")
-  ```
+```kotlin
+val includeDirs by parser.adding(
+        "-I", help = "directory to search for header files") { File(this) }
+```
 
-  Here the `mode` property will be set to the corresponding `Mode` value depending
-  on which of `--fast`, `--small`, and `--quiet` appears (last) in the arguments.
+Now each time the `-I` option appears, its argument is appended to
+`includeDirs`.
 
-  `mapping` is one of the few cases where it is not possible to infer the option
-  name from the property name.
+### Mapping from an option to a fixed value
 
-## Modifying Delegates
+For choosing between a fixed set of values (typically, but not necessarily,
+from an enum), a `mapping` delegate can be used:
 
-The delegates returned by any of these methods also have a few methods for setting
-optional attributes:
+```kotlin
+val mode by parser.mapping(
+        "--fast" to Mode.FAST,
+        "--small" to Mode.SMALL,
+        "--quiet" to Mode.QUIET,
+        help = "mode of operation")
+```
 
-- Some types of options (notably `storing` and `mapping`) have no
-  default value, and hence will be required options unless a default
-  value is provided. This is done with the `default` method:
+Here the `mode` property will be set to the corresponding `Mode` value depending
+on which of `--fast`, `--small`, and `--quiet` appears (last) in the arguments.
 
-  ```kotlin
-  val name by parser.storing("-N", "--name", help="...")
-          .default("John Doe")
-  ```
+`mapping` is one of the few cases where it is not possible to infer the option
+name from the property name.
 
-- Sometimes it's easier to validate an option at the end pf parsing, in which
-  case the `addValidator` method can be used.
+### More advanced options
 
-  ```kotlin
-  val percentages by parser.adding("--percentages", help="...") { toInt() }
-          .addValidator {
-                if (sum() != 100)
-                    throw InvalidArgumentException(
-                            "Percentages must add up to 100%")
+For all other types of options, the `option` method should be used. The
+methods mentioned above are, in fact, convenience methods built on top of the
+`option` method.
+
+For example, it is possible to create an option that has multiple arguments:
+
+  fun ArgParser.putting(vararg names: String, help: String) =
+          option<MutableMap<String, String>>(*names,
+                  argNames = listOf("KEY", "VALUE"),
+                  help = help) {
+              value.orElse { mutableMapOf<String, String>() }.apply {
+                  put(arguments.first(), arguments.last()) }
           }
-  ```
+
+Note that the `option` method does not have an auto-naming overload. If you
+need this capability, create a `DelegateProvider` that creates your `Delegate`:
+
+  fun ArgParser.putting(help: String) =
+          ArgParser.DelegateProvider { identifier ->
+              putting(identifierToOptionName(identifier), help = help) }
 
 
 ## Positional Arguments
@@ -174,6 +179,40 @@ val destination by parser.positional("DEST",
 val sources by parser.positionalList("SOURCE", 1..Int.MAX_VALUE,
                                      help="...") { File(this) }
 ```
+
+
+## Modifying Delegates
+
+The delegates returned by any of these methods also have a few methods for setting
+optional attributes:
+
+- Some types of delegates (notably `storing`, `mapping`, and `positional`) have no
+  default value, and hence will be required options unless a default
+  value is provided. This is done with the `default` method:
+
+  ```kotlin
+  val name by parser.storing("-N", "--name", help="...").default("John Doe")
+  ```
+
+  Note that it *is* possible to use `null` for the default:
+
+  ```kotlin
+  val name by parser.storing("-N", "--name", help="...").default(null)
+  ```
+
+  The resulting value will be nullable (a `String?` in this case).
+
+- Sometimes it's easier to validate an option at the end pf parsing, in which
+  case the `addValidator` method can be used.
+
+  ```kotlin
+  val percentages by parser.adding("--percentages", help="...") { toInt() }
+          .addValidator {
+                if (sum() != 100)
+                    throw InvalidArgumentException(
+                            "Percentages must add up to 100%")
+          }
+  ```
 
 
 ## Error Handling
@@ -265,9 +304,9 @@ my_program --foo ARGUMENT
 
 ### Multi-argument Options
 
-Multi-argument options are supported, though not by any of the convenience
-methods. Option-arguments after the first must be separate command-line
-arguments, for both an long and short forms of an option.
+Multi-argument options are supported, though currently not by any of the
+convenience methods. Option-arguments after the first must be separate
+command-line arguments, for both an long and short forms of an option.
 
 ### Positional Arguments
 
@@ -313,11 +352,56 @@ And equally easy to create a program that behaves like `cp`:
   ```
 
 
-<!--
 ## Help Formatting
 
-TODO: write an explanation of help formatting
--->
+By default, `ArgParser` will add a `--help` option (short name `-h`) for
+displaying usage information. If this option is present the program will halt
+and print a help message like the one below, based on the `ArgParser`
+configuration:
+
+    usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT
+                        [-v]... SOURCE... DEST
+
+
+    This is the prologue. Lorem ipsum dolor sit amet, consectetur
+    adipiscing elit. Aliquam malesuada maximus eros. Fusce
+    luctus risus eget quam consectetur, eu auctor est
+    ullamcorper. Maecenas eget suscipit dui, sed sodales erat.
+    Phasellus.
+
+
+    required arguments:
+      -o OUTPUT,          directory in which all output should
+      --output OUTPUT     be generated
+
+
+    optional arguments:
+      -h, --help          show this help message and exit
+
+      -n, --dry-run       don't do anything
+
+      -I INCLUDE,         search in this directory for header
+      --include INCLUDE   files
+
+      -v, --verbose       increase verbosity
+
+
+    positional arguments:
+      SOURCE              source file
+
+      DEST                destination file
+
+
+    This is the epilogue. Lorem ipsum dolor sit amet,
+    consectetur adipiscing elit. Donec vel tortor nunc. Sed eu
+    massa sed turpis auctor faucibus. Donec vel pellentesque
+    tortor. Ut ultrices tempus lectus fermentum vestibulum.
+    Phasellus.
+
+The creation of the `--help` option can be disabled by passing `null` as the
+`helpFormatter` when constructing the `ArgParser`, or configured by manually
+constructing a `HelpFormatter` instance. In the above example a
+`DefaultHelpFormatter` was created with the prologue and epilogue.
 
 
 ## Caveats
@@ -331,9 +415,31 @@ TODO: write an explanation of help formatting
   parsed. This means it's important that you don't attempt to create delegates
   on an `ArgParser` after any of its existing delegated properties have been
   read. Attempting to do so will cause an `IllegalStateException`. It would be
-  nice if Kotlin has facilities for doing some of the work of `ArgParser` at
+  nice if Kotlin had facilities for doing some of the work of `ArgParser` at
   compile time rather than run time, but so far the run time errors seem to be
   reasonably easy to avoid.
+
+
+## Configuring your Build
+
+Kotlin-argparser binaries are hosted on Bintray's center. In Gradle, use
+something like this in your `build.gradle`:
+
+    buildscript {
+        repositories {
+            jcenter()
+        }
+    }
+
+    dependencies {
+        compile "com.xenomachina:kotlin-argparser:$kotlin_argparser_version"
+    }
+
+More information on setting up your Gradle, Maven, or Ivy
+dependencies can be found under the "Maven build settings" heading on
+[Kotlin-argparser's Bintray
+page](https://bintray.com/xenomachina/maven/kotlin-argparser/_latestVersion),
+as well as the version of the latest release.
 
 
 ## Credits
