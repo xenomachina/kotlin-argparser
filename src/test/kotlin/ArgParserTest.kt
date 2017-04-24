@@ -32,8 +32,7 @@ import com.xenomachina.argparser.UnexpectedPositionalArgumentException
 import com.xenomachina.argparser.UnrecognizedOptionException
 import com.xenomachina.argparser.default
 import com.xenomachina.common.orElse
-import io.kotlintest.matchers.Matcher
-import io.kotlintest.matchers.Result
+import io.kotlintest.matchers.beOfType
 import io.kotlintest.matchers.should
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.matchers.shouldThrow
@@ -54,14 +53,6 @@ enum class Color { RED, GREEN, BLUE }
 open class Shape
 class Rectangle(val s: String) : Shape()
 class Circle : Shape()
-
-// TODO: remove this once kotlintest releases fix
-inline fun <reified T : Any> beOfType() = object : Matcher<Any> {
-    val exceptionClassName = T::class.qualifiedName
-
-    override fun test(value: Any) =
-            Result(value.javaClass == T::class.java, "$value should be of type $exceptionClassName")
-}
 
 /**
  * Helper function for getting the static (not runtime) type of an expression. This is useful for verifying that the
