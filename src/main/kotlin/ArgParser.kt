@@ -1068,5 +1068,3 @@ open class UnexpectedOptionArgumentException(val optName: String) :
  */
 open class UnexpectedPositionalArgumentException(val valueName: String?) :
         SystemExitException("unexpected argument${if (valueName == null) "" else " after $valueName"}", 2)
-
-// TODO: remove addValidator completely?
