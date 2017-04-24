@@ -856,6 +856,8 @@ interface HelpFormatter {
             val help: String)
 }
 
+private const val USAGE_PREFIX = "usage:"
+
 /**
  * Default implementation of [HelpFormatter]. Output is modelled after that of common UNIX utilities and looks
  * something like this:
@@ -968,7 +970,7 @@ class DefaultHelpFormatter(
             value.usages.map { it.replace(' ', '\u00a0') }.joinToString(", ")
 
     private fun appendUsage(sb: StringBuilder, columns: Int, progName: String?, values: List<HelpFormatter.Value>) {
-        val usageStart = "usage:${if (progName != null) " $progName" else ""} "
+        var usageStart = USAGE_PREFIX + (if (progName != null) " $progName" else "")
 
         val valueSB = StringBuilder()
         for (value in values) value.run {
@@ -988,10 +990,11 @@ class DefaultHelpFormatter(
         if (usageStart.length > columns / 2) {
             sb.append(usageStart)
             sb.append("\n")
-            val valueIndent = 8 // TODO don't hardcode this
+            val valueIndent = (USAGE_PREFIX + " " + indent).codePointWidth()
             val valueColumns = columns - valueIndent
             sb.append(valueSB.toString().wrapText(valueColumns).prependIndent(" ".repeat(valueIndent)))
         } else {
+            usageStart += " "
             val valueColumns = columns - usageStart.length
             sb.append(columnize(usageStart, valueSB.toString().wrapText(valueColumns)))
         }

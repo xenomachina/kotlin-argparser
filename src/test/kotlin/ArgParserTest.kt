@@ -976,12 +976,53 @@ class HelpTest : Test({
                             This is the epilogue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vel tortor nunc. Sed eu massa sed turpis auctor faucibus. Donec vel pellentesque tortor. Ut ultrices tempus lectus fermentum vestibulum. Phasellus.
                             """))).dryRun
     }.run {
-        val writer = StringWriter()
-        printUserMessage(writer, "program_name", 60)
-        val help = writer.toString()
+        val help = StringWriter().apply { printUserMessage(this, "program_name", 60) }.toString()
         help shouldBe """
 usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT
                     [-v]... SOURCE... DEST
+
+
+This is the prologue. Lorem ipsum dolor sit amet, consectetur
+adipiscing elit. Aliquam malesuada maximus eros. Fusce
+luctus risus eget quam consectetur, eu auctor est
+ullamcorper. Maecenas eget suscipit dui, sed sodales erat.
+Phasellus.
+
+
+required arguments:
+  -o OUTPUT,          directory in which all output should
+  --output OUTPUT     be generated
+
+
+optional arguments:
+  -h, --help          show this help message and exit
+
+  -n, --dry-run       don't do anything
+
+  -I INCLUDE,         search in this directory for header
+  --include INCLUDE   files
+
+  -v, --verbose       increase verbosity
+
+
+positional arguments:
+  SOURCE              source file
+
+  DEST                destination file
+
+
+This is the epilogue. Lorem ipsum dolor sit amet,
+consectetur adipiscing elit. Donec vel tortor nunc. Sed eu
+massa sed turpis auctor faucibus. Donec vel pellentesque
+tortor. Ut ultrices tempus lectus fermentum vestibulum.
+Phasellus.
+""".trimStart()
+
+        val help2 = StringWriter().apply { printUserMessage(this, "a_really_long_program_name", 60) }.toString()
+        help2 shouldBe """
+usage: a_really_long_program_name
+         [-h] [-n] [-I INCLUDE]... -o OUTPUT [-v]...
+         SOURCE... DEST
 
 
 This is the prologue. Lorem ipsum dolor sit amet, consectetur
