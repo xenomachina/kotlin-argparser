@@ -1418,3 +1418,33 @@ class PositionalListAddValidatorTest : Test({
         message shouldBe "X elements must be even, 37 is odd"
     }
 })
+
+class Issue15Test : Test({
+    class Args(parser: ArgParser) {
+        val manual by parser.storing("--named-by-hand", help = TEST_HELP, argName = "HANDYS-ARG")
+        val auto by parser.storing(TEST_HELP, argName = "OTTOS-ARG")
+        val foo by parser.adding(help = TEST_HELP, argName = "BAR") { toInt() }
+        val bar by parser.adding("--baz", help = TEST_HELP, argName = "QUUX")
+    }
+
+    shouldThrow<ShowHelpException> {
+        Args(parserOf("--help")).manual
+    }.run {
+        // TODO: find a way to make this less brittle (ie: don't use help text)
+        StringWriter().apply { printUserMessage(this, null, 10000) }.toString().trim() shouldBe """
+usage: [-h] --named-by-hand HANDYS-ARG --auto OTTOS-ARG [--foo BAR]... [--baz QUUX]...
+
+required arguments:
+  --named-by-hand HANDYS-ARG   test help message
+
+  --auto OTTOS-ARG             test help message
+
+
+optional arguments:
+  -h, --help                   show this help message and exit
+
+  --foo BAR                    test help message
+
+  --baz QUUX                   test help message""".trim()
+    }
+})

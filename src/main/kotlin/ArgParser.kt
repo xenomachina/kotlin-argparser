@@ -107,13 +107,15 @@ class ArgParser(args: Array<out String>,
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's argument.
      */
-    fun storing(vararg names: String, help: String): Delegate<String> =
-            storing(*names, help = help) { this }
+    fun storing(vararg names: String, help: String, argName: String? = null): Delegate<String> =
+            storing(*names, help = help, argName = argName) { this }
 
     /**
      * Creates a DelegateProvider for a single-argument option that stores and returns the option's argument.
      */
-    fun storing(help: String) = DelegateProvider { identifier -> storing(identifierToOptionName(identifier), help = help) }
+    fun storing(help: String, argName: String? = null) =
+            DelegateProvider { identifier ->
+                storing(identifierToOptionName(identifier), help = help, argName = argName) }
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
@@ -167,16 +169,17 @@ class ArgParser(args: Array<out String>,
      */
     fun <T> adding(
             help: String,
+            argName: String? = null,
             transform: String.() -> T
     ) = DelegateProvider { identifier ->
-        adding(identifierToOptionName(identifier), help = help, transform = transform) }
+        adding(identifierToOptionName(identifier), help = help, argName = argName, transform = transform) }
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's argument to a MutableList each time the
      * option appears in args, and returns said MutableCollection.
      */
-    fun adding(vararg names: String, help: String): Delegate<MutableList<String>> =
-            adding(*names, help = help) { this }
+    fun adding(vararg names: String, help: String, argName: String? = null): Delegate<MutableList<String>> =
+            adding(*names, help = help, argName = argName) { this }
 
     /**
      * Creates a DelegateProvider for a single-argument option that adds the option's argument to a MutableList each time the
