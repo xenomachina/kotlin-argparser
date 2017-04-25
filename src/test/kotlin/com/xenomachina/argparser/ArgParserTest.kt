@@ -16,21 +16,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this library; if not, see http://www.gnu.org/licenses/
 
-package com.xenomachina.argparser.tests
+package com.xenomachina.argparser
 
-import com.xenomachina.argparser.ArgParser
-import com.xenomachina.argparser.ArgParser.DelegateProvider.Companion.identifierToOptionName
-import com.xenomachina.argparser.DefaultHelpFormatter
-import com.xenomachina.argparser.HelpFormatter
-import com.xenomachina.argparser.InvalidArgumentException
-import com.xenomachina.argparser.MissingRequiredPositionalArgumentException
-import com.xenomachina.argparser.MissingValueException
-import com.xenomachina.argparser.OptionMissingRequiredArgumentException
-import com.xenomachina.argparser.ShowHelpException
-import com.xenomachina.argparser.UnexpectedOptionArgumentException
-import com.xenomachina.argparser.UnexpectedPositionalArgumentException
-import com.xenomachina.argparser.UnrecognizedOptionException
-import com.xenomachina.argparser.default
+import com.xenomachina.argparser.PosixNaming.identifierToOptionName
 import com.xenomachina.common.orElse
 import io.kotlintest.matchers.beOfType
 import io.kotlintest.matchers.should

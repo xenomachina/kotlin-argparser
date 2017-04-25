@@ -18,15 +18,12 @@
 
 package com.xenomachina.argparser
 
-import com.xenomachina.argparser.ArgParser.DelegateProvider.Companion.identifierToArgName
-import com.xenomachina.argparser.ArgParser.DelegateProvider.Companion.identifierToOptionName
+import com.xenomachina.argparser.PosixNaming.identifierToArgName
+import com.xenomachina.argparser.PosixNaming.identifierToOptionName
+import com.xenomachina.argparser.PosixNaming.optionNameToArgName
+import com.xenomachina.argparser.PosixNaming.selectRepresentativeOptionName
 import com.xenomachina.common.Holder
 import com.xenomachina.common.orElse
-import com.xenomachina.text.NBSP_CODEPOINT
-import com.xenomachina.text.term.codePointWidth
-import com.xenomachina.text.term.columnize
-import com.xenomachina.text.term.wrapText
-import java.io.Writer
 import java.util.LinkedHashSet
 import kotlin.reflect.KProperty
 
@@ -326,40 +323,6 @@ class ArgParser(args: Array<out String>,
             transform: String.() -> T
     ) = DelegateProvider { identifier -> positionalList(identifierToArgName(identifier), help, sizeRange, transform) }
 
-    internal class WrappingDelegate<U, W>(
-            private val inner: Delegate<U>,
-            private val wrap: (U) -> W
-    ) : Delegate<W>() {
-
-        override val parser: ArgParser
-            get() = inner.parser
-
-        override val value: W
-            get() = wrap(inner.value)
-
-        override val hasValue: Boolean
-            get() = inner.hasValue
-
-        override val errorName: String
-            get() = inner.errorName
-
-        override val help: String
-            get() = inner.help
-
-        override fun validate() {
-            inner.validate()
-        }
-
-        override fun toHelpFormatterValue(): HelpFormatter.Value = inner.toHelpFormatterValue()
-
-        override fun addValidator(validator: Delegate<W>.() -> Unit): Delegate<W> =
-                apply { inner.addValidator { validator(this@WrappingDelegate) } }
-
-        override fun registerLeaf(root: Delegate<*>) {
-            inner.registerLeaf(root)
-        }
-    }
-
     abstract class Delegate<out T> internal constructor() {
         /** The value associated with this delegate */
         abstract val value: T
@@ -426,151 +389,6 @@ class ArgParser(args: Array<out String>,
             else
                 delegate.default(defaultHolder.value)).provideDelegate(thisRef, prop)
         }
-
-        companion object {
-            fun identifierToOptionName(identifier: String): String {
-                return when (identifier.length) {
-                    1 -> "-" + identifier
-                    else -> "--" + identifier.camelCaseToUnderscored()
-                }
-            }
-
-            private fun String.camelCaseToUnderscored(): String {
-                return replace('_', '-')
-                        .replace(Regex("(\\p{javaLowerCase})(\\p{javaUpperCase})")) { m ->
-                            m.groups[1]!!.value + "-" + m.groups[2]!!.value.toLowerCase()
-                        }
-            }
-
-            fun identifierToArgName(identifier: String): String {
-                return identifier.camelCaseToUnderscored().toUpperCase()
-            }
-        }
-    }
-
-    internal abstract class ParsingDelegate<T>(
-            override val parser: ArgParser,
-            override val errorName: String,
-            override val help: String) : Delegate<T>() {
-
-        protected var holder: Holder<T>? = null
-
-        override fun addValidator(validator: Delegate<T>.() -> Unit): Delegate<T> = apply {
-            validators.add(validator)
-        }
-
-        override val value: T
-            get() {
-                parser.force()
-                // checkHasValue should have ensured that this is non-null
-                return holder!!.value
-            }
-
-        override val hasValue: Boolean
-            get() = holder != null
-
-        override fun validate() {
-            for (validator in validators) validator()
-        }
-
-        private val validators = mutableListOf<Delegate<T>.() -> Unit>()
-    }
-
-    private class OptionDelegate<T>(
-            parser: ArgParser,
-            errorName: String,
-            help: String,
-            val optionNames: List<String>,
-            val argNames: List<String>,
-            val isRepeating: Boolean,
-            val handler: OptionInvocation<T>.() -> T) : ParsingDelegate<T>(parser, errorName, help) {
-        init {
-            for (optionName in optionNames) {
-                if (!OPTION_NAME_RE.matches(optionName)) {
-                    throw IllegalArgumentException("$optionName is not a valid option name")
-                }
-            }
-            for (argName in argNames) {
-                if (!ARG_NAME_RE.matches(argName)) {
-                    throw IllegalArgumentException("$argName is not a valid argument name")
-                }
-            }
-        }
-
-        fun parseOption(name: String, firstArg: String?, index: Int, args: Array<out String>): Int {
-            val arguments = mutableListOf<String>()
-            if (!argNames.isEmpty()) {
-                if (firstArg != null) arguments.add(firstArg)
-                val required = argNames.size - arguments.size
-                if (required + index > args.size) {
-                    // Only pass an argName if more than one argument.
-                    // Naming it when there's just one seems unnecessarily verbose.
-                    val argName = if (argNames.size > 1) argNames[args.size - index] else null
-                    throw OptionMissingRequiredArgumentException(name, argName)
-                }
-                for (i in 0 until required) {
-                    arguments.add(args[index + i])
-                }
-            }
-            val input = OptionInvocation(holder, name, arguments)
-            holder = Holder(handler(input))
-            return argNames.size
-        }
-
-        override fun toHelpFormatterValue(): HelpFormatter.Value {
-            return HelpFormatter.Value(
-                    isRequired = (holder == null),
-                    isRepeating = isRepeating,
-                    usages = if (!argNames.isEmpty())
-                        optionNames.map { "$it ${argNames.joinToString(" ")}" }
-                    else optionNames,
-                    isPositional = false,
-                    help = help)
-        }
-
-        override fun registerLeaf(root: Delegate<*>) {
-            for (name in optionNames) {
-                parser.registerOption(name, this)
-            }
-        }
-    }
-
-    private class PositionalDelegate<T>(
-            parser: ArgParser,
-            argName: String,
-            val sizeRange: IntRange,
-            help: String,
-            val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, argName, help) {
-
-        init {
-            if (!ARG_NAME_RE.matches(argName)) {
-                throw IllegalArgumentException("$argName is not a valid argument name")
-            }
-        }
-
-        override fun registerLeaf(root: Delegate<*>) {
-            assert(holder == null)
-            val hasDefault = root.hasValue
-            if (hasDefault && sizeRange.first != 1) {
-                throw IllegalStateException("default value can only be applied to positional that requires a minimum of 1 arguments")
-            }
-            // TODO: this feels like a bit of a kludge. Consider making .default only work on positional and not
-            // postionalList by having them return different types?
-            parser.positionalDelegates.add(this to hasDefault)
-        }
-
-        fun parseArguments(args: List<String>) {
-            holder = Holder(args.map(transform))
-        }
-
-        override fun toHelpFormatterValue(): HelpFormatter.Value {
-            return HelpFormatter.Value(
-                    isRequired = sizeRange.first > 0,
-                    isRepeating = sizeRange.last > 1,
-                    usages = listOf(errorName),
-                    isPositional = true,
-                    help = help)
-        }
     }
 
     /**
@@ -588,9 +406,9 @@ class ArgParser(args: Array<out String>,
     private val shortOptionDelegates = mutableMapOf<Char, OptionDelegate<*>>()
     private val longOptionDelegates = mutableMapOf<String, OptionDelegate<*>>()
     private val positionalDelegates = mutableListOf<Pair<PositionalDelegate<*>, Boolean>>()
-    internal val delegates = LinkedHashSet<Delegate<*>>()
+    private val delegates = LinkedHashSet<Delegate<*>>()
 
-    private fun <T> registerOption(name: String, delegate: OptionDelegate<T>) {
+    internal fun registerOption(name: String, delegate: OptionDelegate<*>) {
         if (name.startsWith("--")) {
             if (name.length <= 2)
                 throw IllegalArgumentException("long option '$name' must have at least one character after hyphen")
@@ -608,6 +426,10 @@ class ArgParser(args: Array<out String>,
             throw IllegalArgumentException("illegal option name '$name' -- must start with '-' or '--'")
         }
 
+    }
+
+    internal fun registerPositional(delegate: PositionalDelegate<*>, hasDefault: Boolean) {
+        positionalDelegates.add(delegate to hasDefault)
     }
 
     private var inValidation = false
@@ -758,28 +580,6 @@ class ArgParser(args: Array<out String>,
         return 1
     }
 
-    companion object {
-        private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
-        private val LEADING_HYPHENS = Regex("^-{1,2}")
-
-        internal fun selectRepresentativeOptionName(names: Array<out String>): String {
-            if (names.size < 1)
-                throw IllegalArgumentException("need at least one option name")
-            // Return first long option...
-            for (name in names) {
-                if (name.startsWith("--")) {
-                    return name
-                }
-            }
-            // ... but failing that just return first option.
-            return names[0]
-        }
-
-        private fun optionNameToArgName(name: String) =
-                LEADING_HYPHENS.replace(name, "").toUpperCase().replace('-', '_')
-
-    }
-
     init {
         if (helpFormatter != null) {
             option<Unit>("-h", "--help",
@@ -791,296 +591,12 @@ class ArgParser(args: Array<out String>,
     }
 }
 
+private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
+internal val LEADING_HYPHENS_REGEX = Regex("^-{1,2}")
+
 private const val OPTION_CHAR_CLASS = "[a-zA-Z0-9]"
-private val OPTION_NAME_RE = Regex("^(-$OPTION_CHAR_CLASS)|(--$OPTION_CHAR_CLASS+([-_]$OPTION_CHAR_CLASS+)*)$")
+internal val OPTION_NAME_RE = Regex("^(-$OPTION_CHAR_CLASS)|(--$OPTION_CHAR_CLASS+([-_]$OPTION_CHAR_CLASS+)*)$")
+
 private const val ARG_INITIAL_CHAR_CLASS = "[A-Z]"
 private const val ARG_CHAR_CLASS = "[A-Z0-9]"
-private val ARG_NAME_RE = Regex("^$ARG_INITIAL_CHAR_CLASS+([-_]$ARG_CHAR_CLASS+)*$")
-
-fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.DelegateProvider<T> {
-    return ArgParser.DelegateProvider(ctor = ctor, defaultHolder = Holder(newDefault))
-}
-
-fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
-    val inner = this
-
-    return object : ArgParser.Delegate<T>() {
-        override fun toHelpFormatterValue(): HelpFormatter.Value = inner.toHelpFormatterValue().copy(isRequired = false)
-
-        override fun validate() {
-            inner.validate()
-        }
-
-        override val parser: ArgParser
-            get() = inner.parser
-
-        override val value: T
-            get() {
-                inner.parser.force()
-                return if (inner.hasValue) inner.value else defaultValue
-            }
-
-        override val hasValue: Boolean
-            get() = true
-
-        override val errorName: String
-            get() = inner.errorName
-
-        override val help: String
-            get() = inner.help
-
-        override fun addValidator(validator: ArgParser.Delegate<T>.() -> Unit): ArgParser.Delegate<T> =
-                inner.addValidator() { validator(inner) }
-
-        override fun registerLeaf(root: ArgParser.Delegate<*>) {
-            inner.registerLeaf(root)
-        }
-    }
-}
-
-/**
- * Formats help for an [ArgParser].
- */
-interface HelpFormatter {
-    /**
-     * Formats a help message.
-     *
-     * @param progName name of the program as it should appear in usage information, or null if
-     * program name is unknown.
-     * @param columns width of display help should be formatted for, measured in character cells.
-     * @param values [Value] objects describing the arguments types available.
-     */
-    fun format(progName: String?, columns: Int, values: List<Value>): String
-
-    /**
-     * An option or positional argument type which should be formatted for help
-     *
-     * @param usages possible usage strings for this argument type
-     * @param isRequired indicates whether this is required
-     * @param isRepeating indicates whether it makes sense to repeat this argument
-     * @param isPositional indicates whether this is a positional argument
-     * @param help help text provided at Delegate construction time
-     */
-    data class Value(
-            val usages: List<String>,
-            val isRequired: Boolean,
-            val isRepeating: Boolean,
-            val isPositional: Boolean,
-            val help: String)
-}
-
-private const val USAGE_PREFIX = "usage:"
-
-/**
- * Default implementation of [HelpFormatter]. Output is modelled after that of common UNIX utilities and looks
- * something like this:
- *
- * ```
- * usage: program_name     [-h] [-n] [-I INCLUDE]... -o OUTPUT
- *                         [-v]... SOURCE... DEST
- *
- * Does something really useful.
- *
- * required arguments:
- *   -o OUTPUT,            directory in which all output should
- *   --output OUTPUT       be generated
- *
- * optional arguments:
- *   -h, --help            show this help message and exit
- *
- *   -n, --dry-run         don't do anything
- *
- *   -I INCLUDE,           search in this directory for header
- *   --include INCLUDE     files
- *
- *  -v, --verbose         increase verbosity
- *
- * positional arguments:
- *   SOURCE                source file
- *
- *   DEST                  destination file
- *
- * More info is available at http://program-name.example.com/
- * ```
- *
- * @property prologue Text that should appear near the beginning of the help, immediately after the usage summary.
- * @property epilogue Text that should appear at the end of the help.
- */
-class DefaultHelpFormatter(
-        val prologue: String? = null,
-        val epilogue: String? = null
-) : HelpFormatter {
-    val indent = "  "
-    val indentWidth = indent.codePointWidth()
-
-    override fun format(
-            progName: String?,
-            columns: Int,
-            values: List<HelpFormatter.Value>
-    ): String {
-        val sb = StringBuilder()
-        appendUsage(sb, columns, progName, values)
-        sb.append("\n")
-
-        if (!prologue.isNullOrEmpty()) {
-            sb.append("\n")
-            // we just checked that prologue is non-null
-            sb.append(prologue!!.wrapText(columns))
-            sb.append("\n")
-        }
-
-        val required = mutableListOf<HelpFormatter.Value>()
-        val optional = mutableListOf<HelpFormatter.Value>()
-        val positional = mutableListOf<HelpFormatter.Value>()
-
-        for (value in values) {
-            when {
-                value.isPositional -> positional
-                value.isRequired -> required
-                else -> optional
-            }.add(value)
-        }
-        // Make left column as narrow as possible without wrapping any of the individual usages, though no wider than
-        // half the screen.
-        val usageColumns = (2 * indentWidth - 1 + (
-                values.map { usageText(it).split(" ").map { it.length }.max() ?: 0 }.max() ?: 0)
-                ).coerceAtMost(columns / 2)
-        appendSection(sb, usageColumns, columns, "required", required)
-        appendSection(sb, usageColumns, columns, "optional", optional)
-        appendSection(sb, usageColumns, columns, "positional", positional)
-
-        if (!epilogue?.trim().isNullOrEmpty()) {
-            sb.append("\n")
-            // we just checked that epilogue is non-null
-            sb.append(epilogue!!.trim().wrapText(columns))
-            sb.append("\n")
-        }
-
-        return sb.toString()
-    }
-
-    private fun appendSection(
-            sb: StringBuilder,
-            usageColumns: Int,
-            columns: Int,
-            name: String,
-            values: List<HelpFormatter.Value>
-    ) {
-
-        if (!values.isEmpty()) {
-            sb.append("\n")
-            sb.append("$name arguments:\n")
-            for (value in values) {
-                val left = usageText(value).wrapText(usageColumns - indentWidth).prependIndent(indent)
-                val right = value.help.wrapText(columns - usageColumns - 2 * indentWidth).prependIndent(indent)
-                sb.append(columnize(left, right, minWidths = intArrayOf(usageColumns)))
-                sb.append("\n\n")
-            }
-        }
-    }
-
-    private fun usageText(value: HelpFormatter.Value) =
-            value.usages.map { it.replace(' ', '\u00a0') }.joinToString(", ")
-
-    private fun appendUsage(sb: StringBuilder, columns: Int, progName: String?, values: List<HelpFormatter.Value>) {
-        var usageStart = USAGE_PREFIX + (if (progName != null) " $progName" else "")
-
-        val valueSB = StringBuilder()
-        for (value in values) value.run {
-            if (!usages.isEmpty()) {
-                val usage = usages[0].replace(' ', NBSP_CODEPOINT.toChar())
-                if (isRequired) {
-                    valueSB.append(" $usage")
-                } else {
-                    valueSB.append(" [$usage]")
-                }
-                if (isRepeating) {
-                    valueSB.append("...")
-                }
-            }
-        }
-
-        if (usageStart.length > columns / 2) {
-            sb.append(usageStart)
-            sb.append("\n")
-            val valueIndent = (USAGE_PREFIX + " " + indent).codePointWidth()
-            val valueColumns = columns - valueIndent
-            sb.append(valueSB.toString().wrapText(valueColumns).prependIndent(" ".repeat(valueIndent)))
-        } else {
-            usageStart += " "
-            val valueColumns = columns - usageStart.length
-            sb.append(columnize(usageStart, valueSB.toString().wrapText(valueColumns)))
-        }
-    }
-}
-
-/**
- * Indicates that the user requested that help should be shown (with the
- * `--help` option, for example).
- */
-class ShowHelpException internal constructor(
-        private val helpFormatter: HelpFormatter,
-        private val delegates: List<ArgParser.Delegate<*>>
-) : SystemExitException("Help was requested", 0) {
-    override fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
-        writer.write(helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() }))
-    }
-}
-
-/**
- * Indicates that an unrecognized option was supplied.
- *
- * @property optName the name of the option
- */
-open class UnrecognizedOptionException(val optName: String) :
-        SystemExitException("unrecognized option '$optName'", 2)
-
-/**
- * Indicates that a value is missing after parsing has completed.
- *
- * @property valueName the name of the missing value
- */
-open class MissingValueException(val valueName: String) :
-        SystemExitException("missing $valueName", 2)
-
-/**
- * Indicates that the value of a supplied argument is invalid.
- */
-open class InvalidArgumentException(message: String) : SystemExitException(message, 2)
-
-/**
- * Indicates that a required option argument was not supplied.
- *
- * @property optName the name of the option
- * @property argName the name of the missing argument, or null
- */
-open class OptionMissingRequiredArgumentException(val optName: String, val argName: String? = null) :
-        SystemExitException("option '$optName' is missing "
-                + (if (argName == null) "a required argument" else "the required argument $argName"),
-                2)
-
-/**
- * Indicates that a required positional argument was not supplied.
- *
- * @property argName the name of the positional argument
- */
-open class MissingRequiredPositionalArgumentException(val argName: String) :
-        SystemExitException("missing $argName operand", 2)
-
-/**
- * Indicates that an argument was forced upon an option that does not take one.
- *
- * For example, if the arguments contained "--foo=bar" and the "--foo" option does not consume any arguments.
- *
- * @property optName the name of the option
- */
-open class UnexpectedOptionArgumentException(val optName: String) :
-        SystemExitException("option '$optName' doesn't allow an argument", 2)
-
-/**
- * Indicates that there is an unhandled positional argument.
- *
- * @property valueName the name of the missing value
- */
-open class UnexpectedPositionalArgumentException(val valueName: String?) :
-        SystemExitException("unexpected argument${if (valueName == null) "" else " after $valueName"}", 2)
+internal val ARG_NAME_RE = Regex("^$ARG_INITIAL_CHAR_CLASS+([-_]$ARG_CHAR_CLASS+)*$")
