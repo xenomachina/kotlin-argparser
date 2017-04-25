@@ -21,25 +21,28 @@ which are in turn each represented by properties that delegate to an
 
 ```kotlin
 class MyArgs(parser: ArgParser) {
-    val verbose by parser.flagging(help = "enable verbose mode")
+    val v by parser.flagging(help = "enable verbose mode")
 
-    val name by parser.storing(help = "name of the widget")
+    val widgetName by parser.storing("name of the widget")
 
-    val size by parser.storing(help = "size of the plumbus") { toInt() }
+    val size by parser.storing("size of the plumbus") { toInt() }
 }
 ```
 
-The names of an option is inferred from the name of the property it's bound to.
-Direct control over the option name is also possible, and for most types of
-options it's also possible to have multiple names (typically used for a short
-and long name):
+The name of an option is inferred from the name of the property it is bound to.
+The options above are named "-v", "--widget-name" and "--size",
+respectively.
+
+Direct control over an option's name is also possible, and for most types of
+options it is also possible to have multiple names (typically used to have both
+a short and long name):
 
 ```kotlin
 class MyArgs(parser: ArgParser) {
     val verbose by parser.flagging("-v", "--verbose",
-                                   help="enable verbose mode")
+                                   help = "enable verbose mode")
 
-    val name by parser.storing("-N", "--name",
+    val name by parser.storing("-w", "--widget-name",
                                help = "name of the widget")
 
     val size by parser.storing("-s", "--size",
@@ -153,7 +156,7 @@ For a single positional argument:
 
 ```kotlin
 val destination by parser.positional("DEST",
-                                     help="destination filename")
+                                     help = "destination filename")
 ```
 
 The name ("DEST", here) is used in error handling and help text.
@@ -162,7 +165,7 @@ For a list of positional arguments:
 
 ```kotlin
 val sources by parser.positionalList("SOURCE", 1..Int.MAX_VALUE,
-                                     help="source filename")
+                                     help = "source filename")
 ```
 
 The range indicates how many arguments should be collected, and actually
@@ -174,10 +177,10 @@ arguments from `String` to whatever type is actually desired:
 
 ```kotlin
 val destination by parser.positional("DEST",
-                                     help="...") { File(this) }
+                                     help = "...") { File(this) }
 
 val sources by parser.positionalList("SOURCE", 1..Int.MAX_VALUE,
-                                     help="...") { File(this) }
+                                     help = "...") { File(this) }
 ```
 
 
@@ -191,13 +194,13 @@ optional attributes:
   value is provided. This is done with the `default` method:
 
   ```kotlin
-  val name by parser.storing("-N", "--name", help="...").default("John Doe")
+  val name by parser.storing("-N", "--name", help = "...").default("John Doe")
   ```
 
   Note that it *is* possible to use `null` for the default:
 
   ```kotlin
-  val name by parser.storing("-N", "--name", help="...").default(null)
+  val name by parser.storing("-N", "--name", help = "...").default(null)
   ```
 
   The resulting value will be nullable (a `String?` in this case).
@@ -206,7 +209,7 @@ optional attributes:
   case the `addValidator` method can be used.
 
   ```kotlin
-  val percentages by parser.adding("--percentages", help="...") { toInt() }
+  val percentages by parser.adding("--percentages", help = "...") { toInt() }
           .addValidator {
                 if (sum() != 100)
                     throw InvalidArgumentException(

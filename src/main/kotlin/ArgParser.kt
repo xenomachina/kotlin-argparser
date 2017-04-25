@@ -429,7 +429,13 @@ class ArgParser(args: Array<out String>,
 
         companion object {
             fun identifierToOptionName(identifier: String): String {
-                return if (identifier.length == 1) ("-" + identifier) else ("--" + identifier.replace('_', '-'))
+                return when (identifier.length) {
+                    1 -> "-" + identifier
+                    else -> "--" + identifier.replace('_', '-')
+                            .replace(Regex("(\\p{javaLowerCase})(\\p{javaUpperCase})")) { m ->
+                                m.groups[1]!!.value + "-" + m.groups[2]!!.value.toLowerCase()
+                            }
+                }
             }
 
             fun identifierToArgName(identifier: String): String {

@@ -1171,7 +1171,7 @@ class AutoNamedFlaggingTest : Test({
         val autoFlag by parser.flagging(TEST_HELP)
     }
     Args(parserOf()).autoFlag shouldBe false
-    Args(parserOf("--autoFlag")).autoFlag shouldBe true
+    Args(parserOf("--auto-flag")).autoFlag shouldBe true
 })
 
 class AutoNamedCountingTest : Test({
@@ -1179,8 +1179,8 @@ class AutoNamedCountingTest : Test({
         val autoCount by parser.counting(TEST_HELP)
     }
     Args(parserOf()).autoCount shouldBe 0
-    Args(parserOf("--autoCount")).autoCount shouldBe 1
-    Args(parserOf("--autoCount", "--autoCount")).autoCount shouldBe 2
+    Args(parserOf("--auto-count")).autoCount shouldBe 1
+    Args(parserOf("--auto-count", "--auto-count")).autoCount shouldBe 2
 })
 
 class AutoNamedStoringTest : Test({
@@ -1191,11 +1191,11 @@ class AutoNamedStoringTest : Test({
     shouldThrow<MissingValueException> {
         Args(parserOf()).autoStore
     }.run {
-        message shouldBe "missing AUTOSTORE"
+        message shouldBe "missing AUTO_STORE"
     }
 
-    Args(parserOf("--autoStore=foo")).autoStore shouldBe "foo"
-    Args(parserOf("--autoStore", "bar", "--autoStore", "baz")).autoStore shouldBe "baz"
+    Args(parserOf("--auto-store=foo")).autoStore shouldBe "foo"
+    Args(parserOf("--auto-store", "bar", "--auto-store", "baz")).autoStore shouldBe "baz"
 })
 
 class AutoNamedStoringWithTransformTest : Test({
@@ -1206,11 +1206,11 @@ class AutoNamedStoringWithTransformTest : Test({
     shouldThrow<MissingValueException> {
         Args(parserOf()).autoStore
     }.run {
-        message shouldBe "missing AUTOSTORE"
+        message shouldBe "missing AUTO_STORE"
     }
 
-    Args(parserOf("--autoStore=5")).autoStore shouldBe 5
-    Args(parserOf("--autoStore", "11", "--autoStore", "42")).autoStore shouldBe 42
+    Args(parserOf("--auto-store=5")).autoStore shouldBe 5
+    Args(parserOf("--auto-store", "11", "--auto-store", "42")).autoStore shouldBe 42
 })
 
 class AutoNamedAddingTest : Test({
@@ -1219,8 +1219,8 @@ class AutoNamedAddingTest : Test({
     }
 
     Args(parserOf()).autoAccumulator shouldBe emptyList<String>()
-    Args(parserOf("--autoAccumulator=foo")).autoAccumulator shouldBe listOf("foo")
-    Args(parserOf("--autoAccumulator", "bar", "--autoAccumulator", "baz")).autoAccumulator shouldBe listOf("bar", "baz")
+    Args(parserOf("--auto-accumulator=foo")).autoAccumulator shouldBe listOf("foo")
+    Args(parserOf("--auto-accumulator", "bar", "--auto-accumulator", "baz")).autoAccumulator shouldBe listOf("bar", "baz")
 })
 
 class AutoNamedAddingWithTransformTest : Test({
@@ -1229,8 +1229,8 @@ class AutoNamedAddingWithTransformTest : Test({
     }
 
     Args(parserOf()).autoAccumulator shouldBe emptyList<Int>()
-    Args(parserOf("--autoAccumulator=5")).autoAccumulator shouldBe listOf(5)
-    Args(parserOf("--autoAccumulator", "11", "--autoAccumulator", "42")).autoAccumulator shouldBe listOf(11, 42)
+    Args(parserOf("--auto-accumulator=5")).autoAccumulator shouldBe listOf(5)
+    Args(parserOf("--auto-accumulator", "11", "--auto-accumulator", "42")).autoAccumulator shouldBe listOf(11, 42)
 })
 
 class AutoNamedAddingWithTransformAndInitialTest : Test({
@@ -1239,8 +1239,8 @@ class AutoNamedAddingWithTransformAndInitialTest : Test({
     }
 
     Args(parserOf()).autoAccumulator shouldBe emptySet<Int>()
-    Args(parserOf("--autoAccumulator=5")).autoAccumulator shouldBe setOf(5)
-    Args(parserOf("--autoAccumulator", "11", "--autoAccumulator", "42")).autoAccumulator shouldBe setOf(42, 11)
+    Args(parserOf("--auto-accumulator=5")).autoAccumulator shouldBe setOf(5)
+    Args(parserOf("--auto-accumulator", "11", "--auto-accumulator", "42")).autoAccumulator shouldBe setOf(42, 11)
 })
 
 class AutoNamedPositionalTest : Test({

@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+
 ### Changed
 
-- Fixed [Issue #15](https://github.com/xenomachina/kotlin-argparser/issues/15)
+- [Issue #14](https://github.com/xenomachina/kotlin-argparser/issues/14) —
+  previously, automatic option naming would turn "camelCase" into
+  "--camelCase". Now it is converted to "--camel-case".
 
 - Improve help formatting w/long program names
+
+### Fixed
+
+- [Issue #15](https://github.com/xenomachina/kotlin-argparser/issues/15)
+  — make it possible to specify 'argName' on all variants of 'storing' and
+  `adding`
+
 
 ## 2.0.0 - 2017-04-21
 
