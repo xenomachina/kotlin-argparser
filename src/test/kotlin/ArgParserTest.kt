@@ -1107,7 +1107,7 @@ class ImplicitLongFlagNameTest : Test({
             flag1 shouldBe false
         }
     }.run {
-        message shouldBe "missing POSITIONALLIST_INT operand"
+        message shouldBe "missing POSITIONAL-LIST-INT operand"
     }
 })
 
@@ -1251,7 +1251,7 @@ class AutoNamedPositionalTest : Test({
     shouldThrow<MissingRequiredPositionalArgumentException> {
         Args(parserOf()).autoPositional
     }.run {
-        message shouldBe "missing AUTOPOSITIONAL operand"
+        message shouldBe "missing AUTO-POSITIONAL operand"
     }
     Args(parserOf("foo")).autoPositional shouldBe "foo"
 })
@@ -1264,7 +1264,7 @@ class AutoNamedPositionalWithTransformTest : Test({
     shouldThrow<MissingRequiredPositionalArgumentException> {
         Args(parserOf()).autoPositional
     }.run {
-        message shouldBe "missing AUTOPOSITIONAL operand"
+        message shouldBe "missing AUTO-POSITIONAL operand"
     }
     Args(parserOf("47")).autoPositional shouldBe 47
 })
@@ -1277,7 +1277,7 @@ class AutoNamedPositionalListTest : Test({
     shouldThrow<MissingRequiredPositionalArgumentException> {
         Args(parserOf()).autoPositional
     }.run {
-        message shouldBe "missing AUTOPOSITIONAL operand"
+        message shouldBe "missing AUTO-POSITIONAL operand"
     }
     Args(parserOf("foo")).autoPositional shouldBe listOf("foo")
 })
@@ -1290,7 +1290,7 @@ class AutoNamedPositionalListWithTransformTest : Test({
     shouldThrow<MissingRequiredPositionalArgumentException> {
         Args(parserOf()).autoPositional
     }.run {
-        message shouldBe "missing AUTOPOSITIONAL operand"
+        message shouldBe "missing AUTO-POSITIONAL operand"
     }
     Args(parserOf("47")).autoPositional shouldBe listOf(47)
     Args(parserOf("27", "38")).autoPositional shouldBe listOf(27, 38)

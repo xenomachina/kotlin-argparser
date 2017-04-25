@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   previously, automatic option naming would turn "camelCase" into
   "--camelCase". Now it is converted to "--camel-case".
 
+- Likewise, positinal argument auto-naming used to convert "camelCase" into
+  "CAMELCASE". Now it is converted to "CAMEL-CASE".
+
 - Improve help formatting w/long program names
 
 ### Fixed
