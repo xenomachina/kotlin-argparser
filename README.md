@@ -131,6 +131,7 @@ methods mentioned above are, in fact, convenience methods built on top of the
 
 For example, it is possible to create an option that has multiple arguments:
 
+```kotlin
   fun ArgParser.putting(vararg names: String, help: String) =
           option<MutableMap<String, String>>(*names,
                   argNames = listOf("KEY", "VALUE"),
@@ -138,13 +139,16 @@ For example, it is possible to create an option that has multiple arguments:
               value.orElse { mutableMapOf<String, String>() }.apply {
                   put(arguments.first(), arguments.last()) }
           }
+```
 
 Note that the `option` method does not have an auto-naming overload. If you
 need this capability, create a `DelegateProvider` that creates your `Delegate`:
 
+```kotlin
   fun ArgParser.putting(help: String) =
           ArgParser.DelegateProvider { identifier ->
               putting(identifierToOptionName(identifier), help = help) }
+```
 
 
 ## Positional Arguments
