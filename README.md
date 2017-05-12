@@ -429,7 +429,7 @@ constructing a `HelpFormatter` instance. In the above example a
 
 ## Configuring your Build
 
-Kotlin-argparser binaries are hosted on Bintray's center. In Gradle, use
+Kotlin-argparser binaries are hosted on Bintray's JCenter. In Gradle, use
 something like this in your `build.gradle`:
 
     buildscript {
