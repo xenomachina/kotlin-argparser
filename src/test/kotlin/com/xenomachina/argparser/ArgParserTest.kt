@@ -1048,6 +1048,38 @@ massa sed turpis auctor faucibus. Donec vel pellentesque
 tortor. Ut ultrices tempus lectus fermentum vestibulum.
 Phasellus.
 """.trimStart()
+
+        // Regression test for issue #17
+        val help_wide = StringWriter().apply { printUserMessage(this, "program_name", 0) }.toString()
+        help_wide shouldBe """
+usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT [-v]... SOURCE... DEST
+
+
+This is the prologue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam malesuada maximus eros. Fusce luctus risus eget quam consectetur, eu auctor est ullamcorper. Maecenas eget suscipit dui, sed sodales erat. Phasellus.
+
+
+required arguments:
+  -o OUTPUT, --output OUTPUT      directory in which all output should be generated
+
+
+optional arguments:
+  -h, --help                      show this help message and exit
+
+  -n, --dry-run                   don't do anything
+
+  -I INCLUDE, --include INCLUDE   search in this directory for header files
+
+  -v, --verbose                   increase verbosity
+
+
+positional arguments:
+  SOURCE                          source file
+
+  DEST                            destination file
+
+
+This is the epilogue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vel tortor nunc. Sed eu massa sed turpis auctor faucibus. Donec vel pellentesque tortor. Ut ultrices tempus lectus fermentum vestibulum. Phasellus.
+""".trimStart()
     }
 })
 

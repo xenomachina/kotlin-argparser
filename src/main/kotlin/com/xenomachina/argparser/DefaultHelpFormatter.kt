@@ -70,14 +70,19 @@ class DefaultHelpFormatter(
             columns: Int,
             values: List<HelpFormatter.Value>
     ): String {
+        val effectiveColumns = when {
+            columns < 0 -> throw IllegalArgumentException("columns must be non-negative")
+            columns == 0 -> Int.MAX_VALUE
+            else -> columns
+        }
         val sb = StringBuilder()
-        appendUsage(sb, columns, progName, values)
+        appendUsage(sb, effectiveColumns, progName, values)
         sb.append("\n")
 
         if (!prologue.isNullOrEmpty()) {
             sb.append("\n")
             // we just checked that prologue is non-null
-            sb.append(prologue!!.wrapText(columns))
+            sb.append(prologue!!.wrapText(effectiveColumns))
             sb.append("\n")
         }
 
@@ -92,19 +97,23 @@ class DefaultHelpFormatter(
                 else -> optional
             }.add(value)
         }
-        // Make left column as narrow as possible without wrapping any of the individual usages, though no wider than
-        // half the screen.
-        val usageColumns = (2 * indentWidth - 1 + (
-                values.map { usageText(it).split(" ").map { it.length }.max() ?: 0 }.max() ?: 0)
-                ).coerceAtMost(columns / 2)
-        appendSection(sb, usageColumns, columns, "required", required)
-        appendSection(sb, usageColumns, columns, "optional", optional)
-        appendSection(sb, usageColumns, columns, "positional", positional)
+        val usageColumns = 2 * indentWidth - 1 + if (columns == 0) {
+            values.map { usageText(it).length }.max() ?: 0
+        } else {
+            // Make left column as narrow as possible without wrapping any of the individual usages, though no wider than
+            // half the screen.
+                    values.map { usageText(it).split(" ").map { it.length }.max() ?: 0 }.max() ?: 0
+                    .coerceAtMost(effectiveColumns / 2)
+        }
+
+        appendSection(sb, usageColumns, effectiveColumns, "required", required)
+        appendSection(sb, usageColumns, effectiveColumns, "optional", optional)
+        appendSection(sb, usageColumns, effectiveColumns, "positional", positional)
 
         if (!epilogue?.trim().isNullOrEmpty()) {
             sb.append("\n")
             // we just checked that epilogue is non-null
-            sb.append(epilogue!!.trim().wrapText(columns))
+            sb.append(epilogue!!.trim().wrapText(effectiveColumns))
             sb.append("\n")
         }
 
