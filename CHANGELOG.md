@@ -5,8 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
-
+## 2.0.1 - 2017-05-15
 
 ### Changed
 
@@ -20,6 +19,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Improve help formatting w/long program names
 
 ### Fixed
+
+- [Issue #17](https://github.com/xenomachina/kotlin-argparser/issues/17) —
+  specifying 0 for the columns should format help without line wrapping.
+  Previously, this did not work as documented, and would instead wrap text in
+  very narrow columns.
 
 - [Issue #15](https://github.com/xenomachina/kotlin-argparser/issues/15)
   — make it possible to specify 'argName' on all variants of 'storing' and
