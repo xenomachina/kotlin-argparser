@@ -37,6 +37,7 @@ apply plugin: 'kotlin'
 apply plugin: 'java'
 apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'maven-publish'
+apply plugin: 'jacoco'
 
 assert name == 'kotlin-argparser'
 description = 'Concise, easy, powerful and robust command line argument parsing for Kotlin'
@@ -217,3 +218,14 @@ publishing {
 
 // This causes './gradlew release' to also upload release package to bintray.
 afterReleaseBuild.dependsOn bintrayUpload
+
+//////////////////////////////////////////////////////////////////////////////
+// jacoco (codecov.io) plugin config
+//////////////////////////////////////////////////////////////////////////////
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled false
+    }
+}

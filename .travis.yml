@@ -9,3 +9,7 @@ before_cache:
 cache:
     directories:
         - $HOME/.gradle/
+
+test:
+    post:
+        - ./gradlew jacocoTestReport && ./codecov.sh
