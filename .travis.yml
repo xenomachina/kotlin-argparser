@@ -10,6 +10,5 @@ cache:
     directories:
         - $HOME/.gradle/
 
-test:
-    post:
-        - ./gradlew jacocoTestReport && ./codecov.sh
+after_success:
+    - ./gradlew jacocoTestReport && ./codecov.sh
