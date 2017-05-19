@@ -2,6 +2,7 @@
 
 [![Download](https://api.bintray.com/packages/xenomachina/maven/kotlin-argparser/images/download.svg) ](https://bintray.com/xenomachina/maven/kotlin-argparser/%5FlatestVersion)
 [![Build Status](https://travis-ci.org/xenomachina/kotlin-argparser.svg?branch=master)](https://travis-ci.org/xenomachina/kotlin-argparser)
+[![Code Coverage](https://codecov.io/github/xenomachina/kotlin-argparser/coverage.svg?branch=master)](https://codecov.io/github/xenomachina/kotlin-argparser?branch=master)
 [![License: LGPL 2.1](https://img.shields.io/badge/license-LGPL--2.1-blue.svg) ](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
 
 This is a library for parsing command-line arguments.  It can parse both
