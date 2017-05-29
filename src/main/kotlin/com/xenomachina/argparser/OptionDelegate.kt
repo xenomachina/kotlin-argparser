@@ -65,9 +65,7 @@ internal class OptionDelegate<T>(
         return HelpFormatter.Value(
                 isRequired = (holder == null),
                 isRepeating = isRepeating,
-                usages = if (!argNames.isEmpty())
-                    optionNames.map { "$it ${argNames.joinToString(" ")}" }
-                else optionNames,
+                usages = if (!argNames.isEmpty()) optionNames.map { "$it ${argNames.joinToString(" ")}" } else optionNames,
                 isPositional = false,
                 help = help)
     }
