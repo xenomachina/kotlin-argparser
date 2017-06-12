@@ -216,7 +216,7 @@ optional attributes:
   ```kotlin
   val percentages by parser.adding("--percentages", help = "...") { toInt() }
           .addValidator {
-                if (sum() != 100)
+                if (value.sum() != 100)
                     throw InvalidArgumentException(
                             "Percentages must add up to 100%")
           }
