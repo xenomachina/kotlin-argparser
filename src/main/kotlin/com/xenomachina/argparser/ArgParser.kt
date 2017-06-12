@@ -371,6 +371,8 @@ class ArgParser(args: Array<out String>,
         }
 
         internal abstract fun registerLeaf(root: Delegate<*>)
+
+        abstract internal val hasValidators: Boolean
     }
 
     /**

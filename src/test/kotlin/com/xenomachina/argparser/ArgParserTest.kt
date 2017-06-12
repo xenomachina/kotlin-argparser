@@ -23,6 +23,7 @@ import com.xenomachina.common.orElse
 import io.kotlintest.matchers.beOfType
 import io.kotlintest.matchers.should
 import io.kotlintest.matchers.shouldBe
+import io.kotlintest.matchers.shouldEqual
 import io.kotlintest.matchers.shouldThrow
 import io.kotlintest.specs.FunSpec
 import java.io.File
@@ -1467,4 +1468,33 @@ optional arguments:
 
   --baz QUUX                   test help message""".trim()
     }
+})
+
+class Issue18Test_ValidatorThenDefault : Test({
+    class Args(parser: ArgParser) {
+        val x by parser.storing(
+                "-x",
+                help = TEST_HELP,
+                transform = String::toInt
+        ).addValidator {
+            value shouldEqual 0
+        }.default(0)
+    }
+    shouldThrow<IllegalStateException> {
+        Args(parserOf())
+    }.message shouldEqual "Cannot add default after adding validators"
+})
+
+class Issue18Test_DefaultThenValidator : Test({
+    class Args(parser: ArgParser) {
+        val x by parser.storing(
+                "-x",
+                help = "",
+                transform = String::toInt
+        ).default(0).addValidator {
+            value shouldEqual 0
+        }
+    }
+    val x = Args(parserOf()).x
+    x shouldEqual 0
 })

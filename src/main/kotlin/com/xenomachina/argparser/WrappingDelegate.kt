@@ -47,6 +47,9 @@ internal class WrappingDelegate<U, W>(
     override fun addValidator(validator: ArgParser.Delegate<W>.() -> Unit): ArgParser.Delegate<W> =
             apply { inner.addValidator { validator(this@WrappingDelegate) } }
 
+    override val hasValidators: Boolean
+        get() = inner.hasValidators
+
     override fun registerLeaf(root: ArgParser.Delegate<*>) {
         inner.registerLeaf(root)
     }

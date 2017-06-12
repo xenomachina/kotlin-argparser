@@ -35,9 +35,16 @@ fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.Delegate
  * @param newDefault the default value for the resulting [ArgParser.Delegate]
  */
 fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
+    if (hasValidators) {
+        throw IllegalStateException("Cannot add default after adding validators")
+    }
     val inner = this
 
     return object : ArgParser.Delegate<T>() {
+
+        override val hasValidators: Boolean
+            get() = inner.hasValidators
+
         override fun toHelpFormatterValue(): HelpFormatter.Value = inner.toHelpFormatterValue().copy(isRequired = false)
 
         override fun validate() {
@@ -63,7 +70,7 @@ fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
             get() = inner.help
 
         override fun addValidator(validator: ArgParser.Delegate<T>.() -> Unit): ArgParser.Delegate<T> =
-                inner.addValidator() { validator(inner) }
+                apply { inner.addValidator { validator(this@apply) } }
 
         override fun registerLeaf(root: ArgParser.Delegate<*>) {
             inner.registerLeaf(root)

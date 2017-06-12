@@ -31,6 +31,9 @@ internal abstract class ParsingDelegate<T>(
         validators.add(validator)
     }
 
+    override val hasValidators: Boolean
+        get() = validators.isNotEmpty()
+
     override val value: T
         get() {
             parser.force()
