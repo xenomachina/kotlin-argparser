@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.2 - 2017-06-12
+
+### Fixed
+
+- [Issue #19](https://github.com/xenomachina/kotlin-argparser/issues/19) by
+  updating xenocom dependency to 0.0.5. Also updated kotlin to 1.1.2-5 for good
+  measure.
+
 ## 2.0.1 - 2017-05-15
 
 ### Changed
