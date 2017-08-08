@@ -411,6 +411,11 @@ The creation of the `--help` option can be disabled by passing `null` as the
 constructing a `HelpFormatter` instance. In the above example a
 `DefaultHelpFormatter` was created with the prologue and epilogue.
 
+## Auto Completion
+
+To enable auto completion generation for bash & zsh you have to pass the parameter `autoCompletion` an instance of `DefaultAutoCompletion`.
+If the argument `autoCompletion` is not null the arg parser will add the `--auto-completion` option.
+If this option is present the program will halt and generate the script for bash/zsh.
 
 ## Caveats
 
