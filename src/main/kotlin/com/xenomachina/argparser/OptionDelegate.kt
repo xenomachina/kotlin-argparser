@@ -75,4 +75,8 @@ internal class OptionDelegate<T>(
             parser.registerOption(name, this)
         }
     }
+
+    override fun toAutoCompletion(): List<String> {
+        return optionNames
+    }
 }

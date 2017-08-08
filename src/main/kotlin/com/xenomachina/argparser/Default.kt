@@ -47,6 +47,8 @@ fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
 
         override fun toHelpFormatterValue(): HelpFormatter.Value = inner.toHelpFormatterValue().copy(isRequired = false)
 
+        override fun toAutoCompletion(): List<String> = inner.toAutoCompletion()
+
         override fun validate() {
             inner.validate()
         }

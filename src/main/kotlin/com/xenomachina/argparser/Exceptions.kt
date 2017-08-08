@@ -90,3 +90,16 @@ open class UnexpectedOptionArgumentException(val optName: String) :
  */
 open class UnexpectedPositionalArgumentException(val valueName: String?) :
         SystemExitException("unexpected argument${if (valueName == null) "" else " after $valueName"}", 2)
+
+/**
+ * Indicates that the user requested that the bash/zsh autocompletion
+ * script should be generated
+ */
+class ShowAutoCompletionException internal constructor(
+        private val autoCompletion: AutoCompletion,
+        private val delegates: List<ArgParser.Delegate<*>>
+) : SystemExitException("Help was requested", 0) {
+    override fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
+        writer.write(autoCompletion.format(progName, delegates))
+    }
+}

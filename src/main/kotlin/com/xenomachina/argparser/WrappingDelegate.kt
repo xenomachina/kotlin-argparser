@@ -44,6 +44,8 @@ internal class WrappingDelegate<U, W>(
 
     override fun toHelpFormatterValue(): HelpFormatter.Value = inner.toHelpFormatterValue()
 
+    override fun toAutoCompletion(): List<String> = inner.toAutoCompletion()
+
     override fun addValidator(validator: ArgParser.Delegate<W>.() -> Unit): ArgParser.Delegate<W> =
             apply { inner.addValidator { validator(this@WrappingDelegate) } }
 
