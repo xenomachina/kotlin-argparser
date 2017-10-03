@@ -1,0 +1,53 @@
+group 'com.xenomachina'
+version '1.0'
+
+buildscript {
+    ext.kotlin_version = '1.2.0-beta-31'
+
+    repositories {
+        maven { url 'http://dl.bintray.com/kotlin/kotlin-eap-1.2' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+
+sourceCompatibility = 1.8
+
+repositories {
+    jcenter()
+    maven { url 'http://dl.bintray.com/kotlin/kotlin-eap-1.2' }
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    compile "com.xenomachina:kotlin-argparser:2.0.3"
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin/'
+    test.java.srcDirs += 'src/test/kotlin/'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'MainKt'
+    }
+
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
