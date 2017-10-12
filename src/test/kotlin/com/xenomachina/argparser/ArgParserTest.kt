@@ -306,7 +306,7 @@ class LongOptionsWithMultipleArgsTest : Test({
         val xyz by parser.option<MutableList<String>>("--xray", "--yak", "--zaphod",
                 argNames = listOf("COLOR", "SIZE", "FLAVOR"),
                 help = TEST_HELP) {
-            value.orElse { mutableListOf<String>() }.apply { add("$optionName:${arguments}") }
+            value.orElse { mutableListOf<String>() }.apply { add("$optionName:$arguments") }
         }
     }
 
@@ -1132,7 +1132,7 @@ class ImplicitLongFlagNameTest : Test({
     }
 })
 
-fun nullableString() : String? = null
+fun nullableString(): String? = null
 
 class NullableOptionalTest : Test({
     class Args(parser: ArgParser) {
@@ -1342,7 +1342,7 @@ class AutoNamedLongOptionWithMultipleArgsTest : Test({
                 "--xyz",
                 argNames = listOf("COLOR", "SIZE", "FLAVOR"),
                 help = TEST_HELP) {
-            value.orElse { mutableListOf<String>() }.apply { add("$optionName:${arguments}")
+            value.orElse { mutableListOf<String>() }.apply { add("$optionName:$arguments")
             }
         }
     }
