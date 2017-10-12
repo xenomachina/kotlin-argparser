@@ -349,7 +349,7 @@ class ArgParser(args: Array<out String>,
             return this
         }
 
-        abstract internal val parser: ArgParser
+        internal abstract val parser: ArgParser
 
         /**
          * Indicates whether or not a value has been set for this delegate
@@ -372,7 +372,7 @@ class ArgParser(args: Array<out String>,
 
         internal abstract fun registerLeaf(root: Delegate<*>)
 
-        abstract internal val hasValidators: Boolean
+        internal abstract val hasValidators: Boolean
     }
 
     /**
