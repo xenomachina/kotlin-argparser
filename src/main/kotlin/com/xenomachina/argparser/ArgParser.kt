@@ -381,7 +381,7 @@ class ArgParser(args: Array<out String>,
      * specifying a name explicitly.
      */
     class DelegateProvider<out T>(
-            private val defaultHolder: Holder<T>? = null,
+            private val defaultHolder: Holder<() -> T>? = null,
             internal val ctor: (identifier: String) -> Delegate<T>
     ) {
         operator fun provideDelegate(thisRef: Any?, prop: KProperty<*>): Delegate<T> {

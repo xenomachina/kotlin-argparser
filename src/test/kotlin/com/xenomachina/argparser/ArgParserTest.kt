@@ -421,6 +421,24 @@ class DefaultWithProviderTest : Test({
     Args(parserOf("-x9", "-x8")).x shouldBe 8
 })
 
+class DefaultWithLambda : Test({
+
+    var a = 1
+
+    class Args(parser: ArgParser) {
+        val x by parser.storing(help = TEST_HELP) { toInt() }.default { a += 1; a }
+    }
+
+    // Test with value
+    Args(parserOf("-x6")).x shouldBe 6
+
+    // Test default hasn't been called
+    a shouldBe 1
+
+    // Test with no value
+    Args(parserOf()).x shouldBe 2
+})
+
 class FlagTest : Test({
     class Args(parser: ArgParser) {
         val x by parser.flagging("-x", "--ecks",

@@ -26,6 +26,15 @@ import com.xenomachina.common.Holder
  * @param newDefault the default value for the resulting [ArgParser.Delegate]
  */
 fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.DelegateProvider<T> {
+    return ArgParser.DelegateProvider(ctor = ctor, defaultHolder = Holder { newDefault })
+}
+
+/**
+ * Returns a new `DelegateProvider` with the specified default value from a lambda.
+ *
+ * @param newDefault the default value for the resulting [ArgParser.Delegate]
+ */
+fun <T> ArgParser.DelegateProvider<T>.default(newDefault: () -> T): ArgParser.DelegateProvider<T> {
     return ArgParser.DelegateProvider(ctor = ctor, defaultHolder = Holder(newDefault))
 }
 
@@ -34,7 +43,14 @@ fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.Delegate
  *
  * @param newDefault the default value for the resulting [ArgParser.Delegate]
  */
-fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
+fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> = default { defaultValue }
+
+/**
+ * Returns a new `Delegate` with the specified default value as a lambda.
+ *
+ * @param newDefault the default value for the resulting [ArgParser.Delegate]
+ */
+fun <T> ArgParser.Delegate<T>.default(defaultValue: () -> T): ArgParser.Delegate<T> {
     if (hasValidators) {
         throw IllegalStateException("Cannot add default after adding validators")
     }
@@ -57,7 +73,7 @@ fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
         override val value: T
             get() {
                 inner.parser.force()
-                return if (inner.hasValue) inner.value else defaultValue
+                return if (inner.hasValue) inner.value else defaultValue()
             }
 
         override val hasValue: Boolean
@@ -70,7 +86,7 @@ fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> {
             get() = inner.help
 
         override fun addValidator(validator: ArgParser.Delegate<T>.() -> Unit): ArgParser.Delegate<T> =
-                apply { inner.addValidator { validator(this@apply) } }
+            apply { inner.addValidator { validator(this@apply) } }
 
         override fun registerLeaf(root: ArgParser.Delegate<*>) {
             inner.registerLeaf(root)
