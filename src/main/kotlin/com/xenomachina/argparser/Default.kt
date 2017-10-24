@@ -18,15 +18,13 @@
 
 package com.xenomachina.argparser
 
-import com.xenomachina.common.Holder
-
 /**
  * Returns a new `DelegateProvider` with the specified default value.
  *
  * @param newDefault the default value for the resulting [ArgParser.Delegate]
  */
 fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.DelegateProvider<T> {
-    return ArgParser.DelegateProvider(ctor = ctor, defaultHolder = Holder { newDefault })
+    return ArgParser.DelegateProvider(ctor = ctor, default = { newDefault })
 }
 
 /**
@@ -35,7 +33,7 @@ fun <T> ArgParser.DelegateProvider<T>.default(newDefault: T): ArgParser.Delegate
  * @param newDefault the default value for the resulting [ArgParser.Delegate]
  */
 fun <T> ArgParser.DelegateProvider<T>.default(newDefault: () -> T): ArgParser.DelegateProvider<T> {
-    return ArgParser.DelegateProvider(ctor = ctor, defaultHolder = Holder(newDefault))
+    return ArgParser.DelegateProvider(ctor = ctor, default = newDefault)
 }
 
 /**
