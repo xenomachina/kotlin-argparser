@@ -362,6 +362,28 @@ And equally easy to create a program that behaves like `cp`:
   ```
 
 
+## Forcing Parsing
+
+It is possible to enforce the parsing of arguments into a class of values. This 
+ensures that all arguments that are required are provided, and all arguments 
+provided are consumed. Forcing can be done in separate steps:
+
+  ```kotlin
+  val parser = ArgParser(args)
+  val parsedArgs = ParsedArgs(parser)
+  parser.force()
+  // now you can use parsedArgs
+  ```
+  
+Alternatively forcing of parsing and validation can be done inline:
+
+  ```kotlin
+  val parsedArgs = ArgParser(args).parseInto(::ParsedArgs)
+  // now you can use parsedArgs
+  ```
+  
+In both cases exceptions will be thrown where parsing or validation errors are found.    
+
 ## Help Formatting
 
 By default, `ArgParser` will add a `--help` option (short name `-h`) for
