@@ -427,7 +427,6 @@ class ArgParser(args: Array<out String>,
         } else {
             throw IllegalArgumentException("illegal option name '$name' -- must start with '-' or '--'")
         }
-
     }
 
     internal fun registerPositional(delegate: PositionalDelegate<*>, hasDefault: Boolean) {

@@ -1138,7 +1138,6 @@ class NullableOptionalTest : Test({
     class Args(parser: ArgParser) {
         val path by parser.storing("The path", transform = ::File)
                 .default(nullableString()?.let(::File))
-
     }
 })
 
