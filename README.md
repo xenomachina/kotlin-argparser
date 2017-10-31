@@ -21,6 +21,8 @@ which are in turn each represented by properties that delegate to an
 `ArgParser`:
 
 ```kotlin
+import com.xenomachina.argparser.ArgParser
+
 class MyArgs(parser: ArgParser) {
     val v by parser.flagging(help = "enable verbose mode")
 
@@ -118,7 +120,7 @@ val mode by parser.mapping(
         help = "mode of operation")
 ```
 
-Here the `mode` property will be set to the corresponding `Mode` value depending
+Here the `mode` property will be set to the corresponding `com.xenomachina.argparser.ArgParser.Mode` value depending
 on which of `--fast`, `--small`, and `--quiet` appears (last) in the arguments.
 
 `mapping` is one of the few cases where it is not possible to infer the option
