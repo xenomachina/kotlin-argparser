@@ -1,0 +1,41 @@
+buildscript {
+    ext.kotlin_version = '1.1.60'
+
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'application'
+
+mainClassName = 'MainKt'
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+    compile project(':kotlin-argparser')
+}
+
+// Pack the code as calculator.jar
+shadowJar {
+    baseName = 'calculator'
+    classifier = null
+    version = null
+    destinationDir = file('./')
+}
+
+// Delete generated jar when run ./gradlew clean
+clean.doLast {
+    file('./calculator.jar').delete()
+}
