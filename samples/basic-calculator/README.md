@@ -1,24 +1,34 @@
 # Calculator CLI
 
-This sample is a basic calculator that works via CLI.
+This sample is a basic calculator that works via CLI. It shows how to pass parameters of types boolean, string and list.
 
 ## Usage
 
-**1. Generate the JAR file**
+Use the command below in a terminal to compile the project. Make sure you are in the sample folder.
 
-```
+```bash
 $ ./gradlew shadowJar
 ```
 
-**2. Run the code with the desired parameters**
+It it works, a file named `calculator.jar` will appear in the sample directory.
 
-```
-$ java -jar calculator.jar --sum -n 4 -n 6 --show-result
+## Examples
+
+**Sum of 2, 2 and 6**
+```text
+$ java -jar calculator.jar --sum -n 2 -n 2 -n 6
+$ 10
 ```
 
-**Output**
-```
-$ The SUM of [4, 6] is equal to 10
+**User-friendly multiplication of 3 and 5**
+```text
+$ java -jar calculator.jar --mul -n 3 -n 5 --pretty
+$ The MUL of [3, 5] is equal to 15
 ```
 
-All available parameters can be found in [this file](src/main/kotlin/Main.kt)
+**Show all options**
+```text
+$ java -jar calculator.jar --help
+```
+
+The complete implementation is available in [this file](src/main/kotlin/Main.kt)
