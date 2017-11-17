@@ -1,2 +1,4 @@
-rootProject.name = 'sample'
+rootProject.name = 'basic-calculator'
 
+include ":kotlin-argparser"
+project(":kotlin-argparser").projectDir = file("../../")

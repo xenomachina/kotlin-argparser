@@ -7,13 +7,13 @@ This sample is a basic calculator that works via CLI.
 **1. Generate the JAR file**
 
 ```
-$ ./gradlew jar
+$ ./gradlew shadowJar
 ```
 
-**2. Run the code with the parameters**
+**2. Run the code with the desired parameters**
 
 ```
-$ java -jar build/libs/sample-1.0.jar --show-result --sum -n 4 -n 6
+$ java -jar calculator.jar --sum -n 4 -n 6 --show-result
 ```
 
 **Output**
