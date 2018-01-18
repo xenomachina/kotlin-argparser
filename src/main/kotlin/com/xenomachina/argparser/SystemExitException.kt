@@ -56,11 +56,14 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
     }
 }
 
+internal val PROGRAM_NAME_PROPERTY = "com.xenomachina.argparser.programName"
+
 /**
  * Calls [SystemExitException.printAndExit] on any `SystemExitException` that
  * is caught.
  *
- * @param programName the name of the program, or null if not known
+ * @param programName the name of the program. If null, the system property com.xenomachina.argparser.programName will
+ * be used, if set.
  * @param columns the number of columns to wrap any caught
  * `SystemExitException` to.  Specify null for reasonable defaults, or 0 to not
  * wrap at all.
@@ -70,6 +73,8 @@ fun <R> mainBody(programName: String? = null, columns: Int? = null, body: () -> 
     try {
         return body()
     } catch (e: SystemExitException) {
-        e.printAndExit(programName, columns ?: System.getenv("COLUMNS")?.toInt() ?: 80)
+        e.printAndExit(
+                programName ?: System.getProperty(PROGRAM_NAME_PROPERTY),
+                columns ?: System.getenv("COLUMNS")?.toInt() ?: 80)
     }
 }
