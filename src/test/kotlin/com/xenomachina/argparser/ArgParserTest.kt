@@ -1471,7 +1471,7 @@ class ParseIntoUnrecognizedOptionFailureTest : Test({
 
     shouldThrow<UnrecognizedOptionException> {
         parserOf("--str=foo", "--eggs=bacon").parseInto(::Args)
-    }.run { }
+    }
 })
 
 class ParseIntoMissingValueFailureTest : Test({
@@ -1482,7 +1482,7 @@ class ParseIntoMissingValueFailureTest : Test({
 
     shouldThrow<MissingValueException> {
         parserOf("--str=foo").parseInto(::Args)
-    }.run { }
+    }
 })
 
 class ParseIntoIllegalStateTest : Test ({
@@ -1494,7 +1494,7 @@ class ParseIntoIllegalStateTest : Test ({
         val parser = parserOf("--str=foo")
         val oops by parser.storing("--oops", help = TEST_HELP).default("oops")
         parser.parseInto(::Args)
-    }.run { }
+    }
 })
 
 class Issue15Test : Test({
