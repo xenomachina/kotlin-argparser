@@ -457,6 +457,18 @@ class ArgParser(args: Array<out String>,
         finished = true
     }
 
+    /**
+     * Provides an instance of T, where all arguments have already been parsed and validated
+     */
+    fun <T> parseInto(constructor: (ArgParser) -> T): T {
+        if (builtinDelegateCount != delegates.size) {
+            throw IllegalStateException("You can only use the parseInto function with a clean ArgParser instance")
+        }
+        val provided = constructor(this)
+        force()
+        return provided
+    }
+
     private var parseStarted = false
 
     internal fun checkNotParsed() {
@@ -590,6 +602,8 @@ class ArgParser(args: Array<out String>,
             }.default(Unit).registerRoot()
         }
     }
+
+    private val builtinDelegateCount = delegates.size
 }
 
 private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")

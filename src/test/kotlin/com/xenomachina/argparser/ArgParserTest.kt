@@ -1454,6 +1454,49 @@ class PositionalListAddValidatorTest : Test({
     }
 })
 
+class ParseIntoTest : Test({
+    class Args(parser: ArgParser) {
+        val str by parser.storing(TEST_HELP)
+    }
+
+    parserOf("--str=foo").parseInto(::Args).run {
+        str shouldBe "foo"
+    }
+})
+
+class ParseIntoUnrecognizedOptionFailureTest : Test({
+    class Args(parser: ArgParser) {
+        val str by parser.storing(TEST_HELP)
+    }
+
+    shouldThrow<UnrecognizedOptionException> {
+        parserOf("--str=foo", "--eggs=bacon").parseInto(::Args)
+    }.run { }
+})
+
+class ParseIntoMissingValueFailureTest : Test({
+    class Args(parser: ArgParser) {
+        val str by parser.storing(TEST_HELP)
+        val eggs by parser.storing(TEST_HELP)
+    }
+
+    shouldThrow<MissingValueException> {
+        parserOf("--str=foo").parseInto(::Args)
+    }.run { }
+})
+
+class ParseIntoIllegalStateTest : Test ({
+    class Args(parser: ArgParser) {
+        val str by parser.storing(TEST_HELP)
+    }
+
+    shouldThrow<IllegalStateException> {
+        val parser = parserOf("--str=foo")
+        val oops by parser.storing("--oops", help = TEST_HELP).default("oops")
+        parser.parseInto(::Args)
+    }.run { }
+})
+
 class Issue15Test : Test({
     class Args(parser: ArgParser) {
         val manual by parser.storing("--named-by-hand", help = TEST_HELP, argName = "HANDYS-ARG")
