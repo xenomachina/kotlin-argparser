@@ -1492,6 +1492,7 @@ class ParseIntoIllegalStateTest : Test ({
 
     shouldThrow<IllegalStateException> {
         val parser = parserOf("--str=foo")
+        @Suppress("unused_variable")
         val oops by parser.storing("--oops", help = TEST_HELP).default("oops")
         parser.parseInto(::Args)
     }
