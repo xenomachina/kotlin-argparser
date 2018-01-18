@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.4 - 2018-01-18
+
+### Added
+
+- if the `programName` passed to `mainBody` is null, then the
+  system property `com.xenomachina.argparser.programName` is used, if set.
+
+- the `parseInto` method can be used as an inline alternative to `force`.
+
+- [Issue #24](https://github.com/xenomachina/kotlin-argparser/issues/18):
+ `default` can now accept a lambda, making it possible to defer computation of
+  defaults until actually required.
+
+### Changed
+
+- all instances of `progName` have been renamed to `programName`.
+
+- many dependencies, and the gradle wrapper, have been updated.
+
 ## 2.0.3 - 2017-06-12
 
 ### Fixed
