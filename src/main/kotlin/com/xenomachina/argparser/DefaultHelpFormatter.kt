@@ -66,7 +66,7 @@ class DefaultHelpFormatter(
     val indentWidth = indent.codePointWidth()
 
     override fun format(
-            progName: String?,
+            programName: String?,
             columns: Int,
             values: List<HelpFormatter.Value>
     ): String {
@@ -76,7 +76,7 @@ class DefaultHelpFormatter(
             else -> columns
         }
         val sb = StringBuilder()
-        appendUsage(sb, effectiveColumns, progName, values)
+        appendUsage(sb, effectiveColumns, programName, values)
         sb.append("\n")
 
         if (!prologue.isNullOrEmpty()) {
@@ -143,8 +143,8 @@ class DefaultHelpFormatter(
     private fun usageText(value: HelpFormatter.Value) =
             value.usages.map { it.replace(' ', '\u00a0') }.joinToString(", ")
 
-    private fun appendUsage(sb: StringBuilder, columns: Int, progName: String?, values: List<HelpFormatter.Value>) {
-        var usageStart = USAGE_PREFIX + (if (progName != null) " $progName" else "")
+    private fun appendUsage(sb: StringBuilder, columns: Int, programName: String?, values: List<HelpFormatter.Value>) {
+        var usageStart = USAGE_PREFIX + (if (programName != null) " $programName" else "")
 
         val valueSB = StringBuilder()
         for (value in values) value.run {

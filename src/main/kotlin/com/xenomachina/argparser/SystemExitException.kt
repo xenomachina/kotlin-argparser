@@ -33,12 +33,12 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
      * Prints a message for the user to either `System.err` or `System.out`, and then exits with the appropriate
      * return code.
      *
-     * @param progName the name of this program as invoked, or null if not known
+     * @param programName the name of this program as invoked, or null if not known
      * @param columns the number of columns to wrap at, or 0 if not to wrap at all
      */
-    fun printAndExit(progName: String? = null, columns: Int = 0): Nothing {
+    fun printAndExit(programName: String? = null, columns: Int = 0): Nothing {
         val writer = OutputStreamWriter(if (returnCode == 0) System.out else System.err)
-        printUserMessage(writer, progName, columns)
+        printUserMessage(writer, programName, columns)
         writer.flush()
         exitProcess(returnCode)
     }
@@ -47,11 +47,11 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
      * Prints a message for the user to the specified `Writer`.
      *
      * @param writer where to write message for the user
-     * @param progName the name of this program as invoked, or null if not known
+     * @param programName the name of this program as invoked, or null if not known
      * @param columns the number of columns to wrap at, or 0 if not to wrap at all
      */
-    open fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
-        val leader = if (progName == null) "" else "$progName: "
+    open fun printUserMessage(writer: Writer, programName: String?, columns: Int) {
+        val leader = if (programName == null) "" else "$programName: "
         writer.write("$leader$message\n")
     }
 }
@@ -60,16 +60,16 @@ open class SystemExitException(message: String, val returnCode: Int) : Exception
  * Calls [SystemExitException.printAndExit] on any `SystemExitException` that
  * is caught.
  *
- * @param progName the name of the program, or null if not known
+ * @param programName the name of the program, or null if not known
  * @param columns the number of columns to wrap any caught
  * `SystemExitException` to.  Specify null for reasonable defaults, or 0 to not
  * wrap at all.
  * @param body the code that may throw a `SystemExitException`
  */
-fun <R> mainBody(progName: String? = null, columns: Int? = null, body: () -> R): R {
+fun <R> mainBody(programName: String? = null, columns: Int? = null, body: () -> R): R {
     try {
         return body()
     } catch (e: SystemExitException) {
-        e.printAndExit(progName, columns ?: System.getenv("COLUMNS")?.toInt() ?: 80)
+        e.printAndExit(programName, columns ?: System.getenv("COLUMNS")?.toInt() ?: 80)
     }
 }

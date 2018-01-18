@@ -25,13 +25,13 @@ interface HelpFormatter {
     /**
      * Formats a help message.
      *
-     * @param progName name of the program as it should appear in usage information, or null if
+     * @param programName name of the program as it should appear in usage information, or null if
      * program name is unknown.
      * @param columns width of display help should be formatted for, measured in character cells, or 0 for infinite
      * width.
      * @param values [Value] objects describing the arguments types available.
      */
-    fun format(progName: String?, columns: Int, values: List<Value>): String
+    fun format(programName: String?, columns: Int, values: List<Value>): String
 
     /**
      * An option or positional argument type which should be formatted for help

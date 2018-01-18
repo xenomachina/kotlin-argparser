@@ -28,8 +28,8 @@ class ShowHelpException internal constructor(
         private val helpFormatter: HelpFormatter,
         private val delegates: List<ArgParser.Delegate<*>>
 ) : SystemExitException("Help was requested", 0) {
-    override fun printUserMessage(writer: Writer, progName: String?, columns: Int) {
-        writer.write(helpFormatter.format(progName, columns, delegates.map { it.toHelpFormatterValue() }))
+    override fun printUserMessage(writer: Writer, programName: String?, columns: Int) {
+        writer.write(helpFormatter.format(programName, columns, delegates.map { it.toHelpFormatterValue() }))
     }
 }
 
