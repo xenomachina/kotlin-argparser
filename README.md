@@ -364,9 +364,12 @@ And equally easy to create a program that behaves like `cp`:
 
 ## Forcing Parsing
 
-It is possible to enforce the parsing of arguments into a class of values. This 
-ensures that all arguments that are required are provided, and all arguments 
-provided are consumed. Forcing can be done in separate steps:
+Parsing normally does not begin until a delegate's value is accessed. Sometimes
+this is not desirable, so it is possible to enforce the parsing of arguments
+into a class of values. This ensures that all arguments that are required are
+provided, and all arguments provided are consumed.
+
+Forcing can be done in a separate step using the `force` method:
 
   ```kotlin
   val parser = ArgParser(args)
@@ -374,14 +377,14 @@ provided are consumed. Forcing can be done in separate steps:
   parser.force()
   // now you can use parsedArgs
   ```
-  
-Alternatively forcing of parsing and validation can be done inline:
+
+Alternatively, forcing can be done inline via the `parseInto` method:
 
   ```kotlin
   val parsedArgs = ArgParser(args).parseInto(::ParsedArgs)
   // now you can use parsedArgs
   ```
-  
+
 In both cases exceptions will be thrown where parsing or validation errors are found.    
 
 ## Help Formatting
@@ -452,7 +455,7 @@ constructing a `HelpFormatter` instance. In the above example a
   reasonably easy to avoid.
 
 
-## Configuring your Build
+## Configuring Your Build
 
 Kotlin-argparser binaries are hosted on Bintray's JCenter. In Gradle, use
 something like this in your `build.gradle`:
@@ -473,11 +476,19 @@ dependencies can be found under the "Maven build settings" heading on
 page](https://bintray.com/xenomachina/maven/kotlin-argparser/_latestVersion),
 as well as the version of the latest release.
 
+## A Complete Example
 
-## Credits
+See [kotlin-argparser-example](https://github.com/xenomachina/kotlin-argparser-example)
+for a complete example of how to use Kotlin-argparser.
 
-This library was created by [Laurence Gonsalves](http://laurence.gonsalv.es).
+## Thanks
 
-I'd also like to thank the creators of Python's
+Thanks to the creators of Python's
 [`argparse`](https://docs.python.org/3/library/argparse.html) module, which
 provided the initial inspiration for this library.
+
+Thanks also to the team behind [Kotlin](https://kotlinlang.org/).
+
+Finally, thanks to all of the
+[contributors](https://github.com/xenomachina/kotlin-argparser/graphs/contributors)
+and folks who have contributed [issues](https://github.com/xenomachina/kotlin-argparser/issues).
