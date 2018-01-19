@@ -30,6 +30,7 @@ buildscript {
 plugins {
     id "com.jfrog.bintray" version "1.8.0"
     id 'net.researchgate.release' version "2.6.0"
+    id 'org.jmailen.kotlinter' version '1.7.0'
 }
 
 apply plugin: 'maven'
@@ -67,35 +68,6 @@ dependencies {
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
 }
-
-//////////////////////////////////////////////////////////////////////////////
-// ktlint config
-//////////////////////////////////////////////////////////////////////////////
-
-// Based on https://github.com/shyiko/ktlint
-
-configurations {
-    ktlint
-}
-
-dependencies {
-    ktlint "com.github.shyiko:ktlint:$ktlint_version"
-}
-
-task ktlint(type: JavaExec) {
-    main = "com.github.shyiko.ktlint.Main"
-    classpath = configurations.ktlint
-    args "src/**/*.kt"
-}
-
-check.dependsOn ktlint
-
-task ktlintFormat(type: JavaExec) {
-    main = "com.github.shyiko.ktlint.Main"
-    classpath = configurations.ktlint
-    args "-F", "src/**/*.kt"
-}
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Dokka config

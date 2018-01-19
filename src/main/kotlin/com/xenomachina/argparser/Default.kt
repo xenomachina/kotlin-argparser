@@ -84,7 +84,7 @@ fun <T> ArgParser.Delegate<T>.default(defaultValue: () -> T): ArgParser.Delegate
             get() = inner.help
 
         override fun addValidator(validator: ArgParser.Delegate<T>.() -> Unit): ArgParser.Delegate<T> =
-            apply { inner.addValidator { validator(this@apply) } }
+                apply { inner.addValidator { validator(this@apply) } }
 
         override fun registerLeaf(root: ArgParser.Delegate<*>) {
             inner.registerLeaf(root)

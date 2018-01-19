@@ -386,10 +386,8 @@ class ArgParser(args: Array<out String>,
     ) {
         operator fun provideDelegate(thisRef: Any?, prop: KProperty<*>): Delegate<T> {
             val delegate = ctor(prop.name)
-            return (if (default == null)
-                delegate
-            else
-                delegate.default(default)).provideDelegate(thisRef, prop)
+            return (if (default == null) delegate
+                    else delegate.default(default)).provideDelegate(thisRef, prop)
         }
     }
 
