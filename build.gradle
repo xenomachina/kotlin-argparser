@@ -22,7 +22,6 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.github.ben-manes:gradle-versions-plugin:0.17.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version"
     }
@@ -32,10 +31,6 @@ plugins {
     id "com.jfrog.bintray" version "1.8.0"
     id 'net.researchgate.release' version "2.6.0"
 }
-
-// run task dependencyUpdates to check for updates of dependencies
-apply plugin: 'com.github.ben-manes.versions'
-
 
 apply plugin: 'maven'
 apply plugin: 'kotlin'
