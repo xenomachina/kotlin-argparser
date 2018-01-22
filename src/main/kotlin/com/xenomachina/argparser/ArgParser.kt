@@ -37,7 +37,8 @@ import kotlin.reflect.KProperty
  */
 class ArgParser(args: Array<out String>,
                 mode: Mode = Mode.GNU,
-                helpFormatter: HelpFormatter? = DefaultHelpFormatter()) {
+                helpFormatter: HelpFormatter? = DefaultHelpFormatter(),
+                autoCompletion: AutoCompletion? = null) {
 
     enum class Mode {
         /** For GNU-style option parsing, where options may appear after positional arguments. */
@@ -364,6 +365,8 @@ class ArgParser(args: Array<out String>,
 
         internal abstract fun toHelpFormatterValue(): HelpFormatter.Value
 
+        internal abstract fun toAutoCompletion(): List<String>
+
         internal fun registerRoot() {
             parser.checkNotParsed()
             parser.delegates.add(this)
@@ -598,6 +601,15 @@ class ArgParser(args: Array<out String>,
                     help = "show this help message and exit") {
                 throw ShowHelpException(helpFormatter, delegates.toList())
             }.default(Unit).registerRoot()
+        }
+        if (autoCompletion != null) {
+            option<Unit>("--auto-completion",
+                    errorName = "AUTOCOMPLETION", // This should never be used, but we need to say something
+                    help = "generates the autocompletion script for bash/zsh") {
+                throw ShowAutoCompletionException(autoCompletion, delegates.toList())
+            }.default(Unit).registerRoot()
+        } else {
+            println("No auto completion!")
         }
     }
 

@@ -34,8 +34,9 @@ val TEST_HELP = "test help message"
 fun parserOf(
         vararg args: String,
         mode: ArgParser.Mode = ArgParser.Mode.GNU,
-        helpFormatter: HelpFormatter? = DefaultHelpFormatter()
-) = ArgParser(args, mode, helpFormatter)
+        helpFormatter: HelpFormatter? = DefaultHelpFormatter(),
+        autoCompletion: AutoCompletion? = null
+) = ArgParser(args, mode, helpFormatter, autoCompletion)
 
 enum class Color { RED, GREEN, BLUE }
 
@@ -1555,4 +1556,34 @@ class Issue18Test_DefaultThenValidator : Test({
     }
     val x = Args(parserOf()).x
     x shouldEqual 0
+})
+
+class AutoCompletionTest : Test({
+    class Args(parser: ArgParser) {
+        val manual by parser.storing("--named-by-hand", help = TEST_HELP, argName = "HANDYS-ARG")
+        val auto by parser.storing(TEST_HELP, argName = "OTTOS-ARG")
+        val foo by parser.adding(help = TEST_HELP, argName = "BAR") { toInt() }
+        val bar by parser.adding("--baz", help = TEST_HELP, argName = "QUUX")
+    }
+
+    shouldThrow<ShowAutoCompletionException> {
+        Args(parserOf("--auto-completion", autoCompletion = DefaultAutoCompletion())).manual
+    }.run {
+        // TODO: find a way to make this less brittle (ie: don't use help text)
+        StringWriter().apply { printUserMessage(this, "testcase", 10000) }.toString().trim() shouldBe """
+_testcase()
+{
+	local cur prev opts
+	COMPREPLY=()
+	cur="${'$'}{COMP_WORDS[COMP_CWORD]}"
+	prev="${'$'}{COMP_WORDS[COMP_CWORD - 1]}"
+	opts="-h --help --auto-completion --named-by-hand --auto --foo --baz "
+
+	if [[ ${'$'}{cur} == -* ]] ; then
+		COMPREPLY=( ${'$'}(compgen -W "${'$'}{opts}" -- ${'$'}{cur}) )
+		return 0
+	fi
+}
+complete -F _testcase testcase""".trim()
+    }
 })

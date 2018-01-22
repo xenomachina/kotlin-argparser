@@ -56,4 +56,8 @@ internal class PositionalDelegate<T>(
                 isPositional = true,
                 help = help)
     }
+
+    override fun toAutoCompletion(): List<String> {
+        return listOf()
+    }
 }
