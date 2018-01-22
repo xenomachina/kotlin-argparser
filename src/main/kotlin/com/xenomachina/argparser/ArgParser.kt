@@ -37,7 +37,8 @@ import kotlin.reflect.KProperty
  */
 class ArgParser(args: Array<out String>,
                 mode: Mode = Mode.GNU,
-                helpFormatter: HelpFormatter? = DefaultHelpFormatter()) {
+                helpFormatter: HelpFormatter? = DefaultHelpFormatter(),
+                val skipUnknown: Boolean = false) {
 
     enum class Mode {
         /** For GNU-style option parsing, where options may appear after positional arguments. */
@@ -553,7 +554,11 @@ class ArgParser(args: Array<out String>,
         }
         val delegate = longOptionDelegates.get(name)
         if (delegate == null) {
-            throw UnrecognizedOptionException(name)
+            if (!skipUnknown) {
+                throw UnrecognizedOptionException(name)
+            } else {
+                return 2 // @todo rewrite to correct count detection
+            }
         } else {
             var consumedArgs = delegate.parseOption(name, firstArg, index + 1, args)
             if (firstArg != null) {
@@ -579,7 +584,11 @@ class ArgParser(args: Array<out String>,
 
             val delegate = shortOptionDelegates.get(optKey)
             if (delegate == null) {
-                throw UnrecognizedOptionException(optName)
+                if (!skipUnknown) {
+                    throw UnrecognizedOptionException(optName)
+                } else {
+                    return 2 // @todo rewrite to correct count detection
+                }
             } else {
                 val firstArg = if (optIndex >= opts.length) null else opts.substring(optIndex)
                 val consumed = delegate.parseOption(optName, firstArg, index + 1, args)
