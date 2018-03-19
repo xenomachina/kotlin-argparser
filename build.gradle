@@ -189,7 +189,7 @@ publishing {
 // Based on https://github.com/researchgate/gradle-release
 
 // This causes './gradlew release' to also upload release package to bintray.
-afterReleaseBuild.dependsOn bintrayUpload
+//afterReleaseBuild.dependsOn bintrayUpload
 
 //////////////////////////////////////////////////////////////////////////////
 // jacoco (codecov.io) plugin config
