@@ -190,6 +190,11 @@ publishing {
 
 // This causes './gradlew release' to also upload release package to bintray.
 //afterReleaseBuild.dependsOn bintrayUpload
+release {
+    git {
+        requireBranch = "signing-test"
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // jacoco (codecov.io) plugin config
