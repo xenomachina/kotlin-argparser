@@ -39,6 +39,8 @@ apply plugin: 'java'
 apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'maven-publish'
 apply plugin: 'jacoco'
+apply plugin: 'signing'
+
 
 assert name == 'kotlin-argparser'
 description = 'Concise, easy, powerful and robust command line argument parsing for Kotlin'
@@ -205,4 +207,11 @@ jacocoTestReport {
         xml.enabled true
         html.enabled false
     }
+}
+
+// TODO: only sign when releasing
+
+signing {
+    useGpgCmd()
+    sign configurations.archives
 }
