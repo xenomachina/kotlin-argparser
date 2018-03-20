@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.5 - 2018-03-20
+
+### Changed
+
+- Releasing to Maven Central in addition to Bintray. This is probably the only
+  really externally visible change.
+
+- Upgraded a bunch of dependencies, including gradlew.
+    - gradle -> 4.5.1
+    - dokka -> = 0.9.16
+    - gradle_bintray -> = 1.8.0
+    - gradle_release -> = 2.6.0
+    - kotlin -> 1.2.30
+    - xenocom -> 0.0.6
+
 ## 2.0.4 - 2018-01-18
 
 ### Added
