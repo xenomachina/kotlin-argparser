@@ -21,9 +21,10 @@ package com.xenomachina.argparser
 import com.xenomachina.common.Holder
 
 internal abstract class ParsingDelegate<T>(
-        override val parser: ArgParser,
-        override val errorName: String,
-        override val help: String) : ArgParser.Delegate<T>() {
+    override val parser: ArgParser,
+    override val errorName: String,
+    override val help: String
+) : ArgParser.Delegate<T>() {
 
     protected var holder: Holder<T>? = null
 

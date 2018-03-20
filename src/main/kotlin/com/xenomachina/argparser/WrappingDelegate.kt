@@ -19,8 +19,8 @@
 package com.xenomachina.argparser
 
 internal class WrappingDelegate<U, W>(
-        private val inner: ArgParser.Delegate<U>,
-        private val wrap: (U) -> W
+    private val inner: ArgParser.Delegate<U>,
+    private val wrap: (U) -> W
 ) : ArgParser.Delegate<W>() {
 
     override val parser: ArgParser

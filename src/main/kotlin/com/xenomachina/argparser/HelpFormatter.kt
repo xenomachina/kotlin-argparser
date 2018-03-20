@@ -43,9 +43,10 @@ interface HelpFormatter {
      * @param help help text provided at Delegate construction time
      */
     data class Value(
-            val usages: List<String>,
-            val isRequired: Boolean,
-            val isRepeating: Boolean,
-            val isPositional: Boolean,
-            val help: String)
+        val usages: List<String>,
+        val isRequired: Boolean,
+        val isRepeating: Boolean,
+        val isPositional: Boolean,
+        val help: String
+    )
 }

@@ -21,13 +21,14 @@ package com.xenomachina.argparser
 import com.xenomachina.common.Holder
 
 internal class OptionDelegate<T>(
-        parser: ArgParser,
-        errorName: String,
-        help: String,
-        val optionNames: List<String>,
-        val argNames: List<String>,
-        val isRepeating: Boolean,
-        val handler: ArgParser.OptionInvocation<T>.() -> T) : ParsingDelegate<T>(parser, errorName, help) {
+    parser: ArgParser,
+    errorName: String,
+    help: String,
+    val optionNames: List<String>,
+    val argNames: List<String>,
+    val isRepeating: Boolean,
+    val handler: ArgParser.OptionInvocation<T>.() -> T
+) : ParsingDelegate<T>(parser, errorName, help) {
     init {
         for (optionName in optionNames) {
             if (!OPTION_NAME_RE.matches(optionName)) {

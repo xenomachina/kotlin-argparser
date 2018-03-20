@@ -59,16 +59,16 @@ import com.xenomachina.text.term.wrapText
  * @property epilogue Text that should appear at the end of the help.
  */
 class DefaultHelpFormatter(
-        val prologue: String? = null,
-        val epilogue: String? = null
+    val prologue: String? = null,
+    val epilogue: String? = null
 ) : HelpFormatter {
     val indent = "  "
     val indentWidth = indent.codePointWidth()
 
     override fun format(
-            programName: String?,
-            columns: Int,
-            values: List<HelpFormatter.Value>
+        programName: String?,
+        columns: Int,
+        values: List<HelpFormatter.Value>
     ): String {
         val effectiveColumns = when {
             columns < 0 -> throw IllegalArgumentException("columns must be non-negative")
@@ -121,11 +121,11 @@ class DefaultHelpFormatter(
     }
 
     private fun appendSection(
-            sb: StringBuilder,
-            usageColumns: Int,
-            columns: Int,
-            name: String,
-            values: List<HelpFormatter.Value>
+        sb: StringBuilder,
+        usageColumns: Int,
+        columns: Int,
+        name: String,
+        values: List<HelpFormatter.Value>
     ) {
 
         if (!values.isEmpty()) {

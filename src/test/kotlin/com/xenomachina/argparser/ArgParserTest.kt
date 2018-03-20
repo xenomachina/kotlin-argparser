@@ -32,9 +32,9 @@ import java.io.StringWriter
 val TEST_HELP = "test help message"
 
 fun parserOf(
-        vararg args: String,
-        mode: ArgParser.Mode = ArgParser.Mode.GNU,
-        helpFormatter: HelpFormatter? = DefaultHelpFormatter()
+    vararg args: String,
+    mode: ArgParser.Mode = ArgParser.Mode.GNU,
+    helpFormatter: HelpFormatter? = DefaultHelpFormatter()
 ) = ArgParser(args, mode, helpFormatter)
 
 enum class Color { RED, GREEN, BLUE }

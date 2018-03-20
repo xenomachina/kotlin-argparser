@@ -25,8 +25,8 @@ import java.io.Writer
  * `--help` option, for example).
  */
 class ShowHelpException internal constructor(
-        private val helpFormatter: HelpFormatter,
-        private val delegates: List<ArgParser.Delegate<*>>
+    private val helpFormatter: HelpFormatter,
+    private val delegates: List<ArgParser.Delegate<*>>
 ) : SystemExitException("Help was requested", 0) {
     override fun printUserMessage(writer: Writer, programName: String?, columns: Int) {
         writer.write(helpFormatter.format(programName, columns, delegates.map { it.toHelpFormatterValue() }))
@@ -61,9 +61,11 @@ open class InvalidArgumentException(message: String) : SystemExitException(messa
  * @property argName the name of the missing argument, or null
  */
 open class OptionMissingRequiredArgumentException(val optName: String, val argName: String? = null) :
-        SystemExitException("option '$optName' is missing "
-                + (if (argName == null) "a required argument" else "the required argument $argName"),
-                2)
+        SystemExitException(
+            "option '$optName' is missing " + (
+                if (argName == null) "a required argument"
+                else "the required argument $argName"),
+            2)
 
 /**
  * Indicates that a required positional argument was not supplied.

@@ -21,11 +21,12 @@ package com.xenomachina.argparser
 import com.xenomachina.common.Holder
 
 internal class PositionalDelegate<T>(
-        parser: ArgParser,
-        argName: String,
-        val sizeRange: IntRange,
-        help: String,
-        val transform: String.() -> T) : ParsingDelegate<List<T>>(parser, argName, help) {
+    parser: ArgParser,
+    argName: String,
+    val sizeRange: IntRange,
+    help: String,
+    val transform: String.() -> T
+) : ParsingDelegate<List<T>>(parser, argName, help) {
 
     init {
         if (!ARG_NAME_RE.matches(argName)) {
