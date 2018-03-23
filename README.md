@@ -62,9 +62,9 @@ class MyArgs(parser: ArgParser) {
         "-N", "--name",
         help = "name of the user")
 
-    val size by parser.storing(
-        "-s", "--size",
-        help = "size of the plumbus") { toInt() }
+    val count by parser.storing(
+        "-c", "--count",
+        help = "number of widgets") { toInt() }
 
     val source by parser.positional(
         "SOURCE",
@@ -97,11 +97,11 @@ for a complete example project.
 
 Options, arguments, flags... what's the difference?
 
-Your application's `main` function is passed an array of strings. These are
+An application's `main` function is passed an array of strings. These are
 the *unparsed command-line arguments*, or *unparsed arguments* for short.
 
-These unparsed arguments can then be parsed into either *options*, which start
-with a hyphen ("`-`"), or *positional arguments*. For example, in the command
+The unparsed arguments can then be parsed into *options*, which start
+with a hyphen ("`-`"), and *positional arguments*. For example, in the command
 `ls -l /tmp/`, the unparsed arguments would be `"-l", "/tmp"` where `-l`
 is an option, while `/tmp/` is a positional argument.
 
@@ -111,7 +111,7 @@ parsing a single unparsed argument can be split into an option and an option
 argument, or even into multiple options in some cases.
 
 A *flag* is a boolean option which has no arguments and which is false if not
-provided, but true if provided.
+provided, but true if provided. The `-l` option of `ls` is a flag.
 
 ## Option Types
 
@@ -136,7 +136,7 @@ Single argument options are created by asking the parser for a
 
 ```kotlin
 val name by parser.storing("-N", "--name",
-                           help = "name of the widget")
+                           help = "name of the user")
 ```
 
 Here either `-N` or `--name` with an argument will cause the `name` property to
@@ -146,8 +146,8 @@ A function can also be supplied to transform the argument into the desired
 type. Here the `size` property will be an `Int` rather than a `String`:
 
 ```kotlin
-val size by parser.storing("-s", "--size",
-                           help = "size of the plumbus") { toInt() }
+val size by parser.storing("-c", "--count",
+                           help = "number of widgets") { toInt() }
 ```
 
 ### Adding to a Collection
