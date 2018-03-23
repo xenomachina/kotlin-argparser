@@ -1,8 +1,16 @@
 # ![Kotlin --argparser](https://rawgit.com/xenomachina/kotlin-argparser/master/logo.svg)
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.xenomachina/kotlin-argparser.svg)](https://mvnrepository.com/artifact/com.xenomachina/kotlin-argparser)
+<!--
+Removed until either Bintray makes a badge with a configurable label, or
+shields.io can make a reliable bintray badge.
+
 [![Bintray](https://img.shields.io/bintray/v/xenomachina/maven/kotlin-argparser.svg)](https://bintray.com/xenomachina/maven/kotlin-argparser/%5FlatestVersion)
+-->
+
+[![Maven Central](https://img.shields.io/maven-central/v/com.xenomachina/kotlin-argparser.svg)](https://mvnrepository.com/artifact/com.xenomachina/kotlin-argparser)
 [![Build Status](https://travis-ci.org/xenomachina/kotlin-argparser.svg?branch=master)](https://travis-ci.org/xenomachina/kotlin-argparser)
+[![codebeat badge](https://codebeat.co/badges/902174e2-31be-4f9d-a4ba-40178b075d2a)](https://codebeat.co/projects/github-com-xenomachina-kotlin-argparser-master)
+[![Awesome Kotlin Badge](https://kotlin.link/awesome-kotlin.svg)](https://github.com/KotlinBy/awesome-kotlin)
 [![Javadocs](https://www.javadoc.io/badge/com.xenomachina/kotlin-argparser.svg)](https://www.javadoc.io/doc/com.xenomachina/kotlin-argparser)
 [![License: LGPL 2.1](https://img.shields.io/badge/license-LGPL--2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
 
@@ -14,56 +22,103 @@ powerful and robust.
 
 ## Overview
 
-The main class in this library is `ArgParser`. It handles the parsing of
-command-line arguments, and also acts as a factory for creating property
-delegates. These delegates help to keep client code clear and concise.
-
-Typical usage is to create a class to represent the set of parsed arguments,
-which are in turn each represented by properties that delegate to an
-`ArgParser`:
+Defining options and positional arguments is as simple as:
 
 ```kotlin
 import com.xenomachina.argparser.ArgParser
 
 class MyArgs(parser: ArgParser) {
-    val v by parser.flagging(help = "enable verbose mode")
+    val v by parser.flagging("enable verbose mode")
 
-    val widgetName by parser.storing("name of the widget")
+    val name by parser.storing("name of the user")
 
-    val size by parser.storing("size of the plumbus") { toInt() }
+    val count by parser.storing("number of the widgets") { toInt() }
+
+    val source by parser.positional("source filename")
+
+    val destination by parser.positional("destination filename")
 }
 ```
 
+An instance of `MyArgs` will represent the set of parsed arguments. Each option
+and positional argument is declared as a poperty that delegates through a
+delegate factory method on an instance of `ArgParser`.
+
 The name of an option is inferred from the name of the property it is bound to.
-The options above are named "-v", "--widget-name" and "--size",
-respectively.
+The options above are named `-v`, `--name` and `--count`, respectively. There
+are also two positional arguments.
 
 Direct control over an option's name is also possible, and for most types of
-options it is also possible to have multiple names (typically used to have both
-a short and long name):
+options it is also possible to have multiple names, like a short and long name:
+
 
 ```kotlin
 class MyArgs(parser: ArgParser) {
-    val verbose by parser.flagging("-v", "--verbose",
-                                   help = "enable verbose mode")
+    val verbose by parser.flagging(
+        "-v", "--verbose",
+        help = "enable verbose mode")
 
-    val name by parser.storing("-w", "--widget-name",
-                               help = "name of the widget")
+    val name by parser.storing(
+        "-N", "--name",
+        help = "name of the user")
 
-    val size by parser.storing("-s", "--size",
-                               help = "size of the plumbus") { toInt() }
+    val size by parser.storing(
+        "-s", "--size",
+        help = "size of the plumbus") { toInt() }
+
+    val source by parser.positional(
+        "SOURCE",
+        help = "source filename")
+
+    val destination by parser.positional(
+        "DEST",
+        help = "destination filename")
 }
 ```
 
+The unparsed command-line arguments are passed to the `ArgParser` instance at
+construction:
+
+```kotlin
+fun main(args: Array<String>) = mainBody {
+    ArgParser(args).parseInto(::MyArgs).run {
+        println("Hello, {name}!")
+        println("I'm going to move {count} widgets from {source} to {destination}.")
+        // TODO: move widgets
+    }
+}
+```
+
+See [kotlin-argparser-example](https://github.com/xenomachina/kotlin-argparser-example)
+for a complete example project.
+
+
+## Nomenclature
+
+Options, arguments, flags... what's the difference?
+
+Your application's `main` function is passed an array of strings. These are
+the *unparsed command-line arguments*, or *unparsed arguments* for short.
+
+These unparsed arguments can then be parsed into either *options*, which start
+with a hyphen ("`-`"), or *positional arguments*. For example, in the command
+`ls -l /tmp/`, the unparsed arguments would be `"-l", "/tmp"` where `-l`
+is an option, while `/tmp/` is a positional argument.
+
+Options can also have *option arguments*. In the command `ls --time-style=iso`,
+the option is `--time-style` and that options argument is `iso`. Note that in
+parsing a single unparsed argument can be split into an option and an option
+argument, or even into multiple options in some cases.
+
+A *flag* is a boolean option which has no arguments and which is false if not
+provided, but true if provided.
 
 ## Option Types
-
-Various types of options can be parsed from the command line arguments:
 
 ### Boolean Flags
 
 Boolean flags are created by asking the parser for a `flagging` delegate.  One
-or more option names, either short or long style, must be provided:
+or more option names, may be provided:
 
 ```kotlin
 val verbose by parser.flagging("-v", "--verbose",
@@ -84,8 +139,8 @@ val name by parser.storing("-N", "--name",
                            help = "name of the widget")
 ```
 
-Here either `-N` or `--name` with an argument will cause `name` to have that
-argument as its value.
+Here either `-N` or `--name` with an argument will cause the `name` property to
+have that argument as its value.
 
 A function can also be supplied to transform the argument into the desired
 type. Here the `size` property will be an `Int` rather than a `String`:
@@ -97,16 +152,16 @@ val size by parser.storing("-s", "--size",
 
 ### Adding to a Collection
 
-Options that add to a `Collection` each time they
-appear in the arguments are created with using the `adding` delegate. Just like `storing`
-delegates, a transform function may optionally be supplied:
+Options that add to a `Collection` each time they appear in the arguments are
+created with using the `adding` delegate. Just like `storing` delegates, a
+transform function may optionally be supplied:
 
 ```kotlin
 val includeDirs by parser.adding(
         "-I", help = "directory to search for header files") { File(this) }
 ```
 
-Now each time the `-I` option appears, its argument is appended to
+Now each time the `-I` option appears, its transformed argument is appended to
 `includeDirs`.
 
 ### Mapping from an option to a fixed value
@@ -122,7 +177,7 @@ val mode by parser.mapping(
         help = "mode of operation")
 ```
 
-Here the `mode` property will be set to the corresponding `com.xenomachina.argparser.ArgParser.Mode` value depending
+Here the `mode` property will be set to the corresponding `ArgParser.Mode` value depending
 on which of `--fast`, `--small`, and `--quiet` appears (last) in the arguments.
 
 `mapping` is one of the few cases where it is not possible to infer the option
@@ -164,6 +219,12 @@ Positional arguments are collected by using the `positional` and
 For a single positional argument:
 
 ```kotlin
+val destination by parser.positional("destination filename")
+```
+
+An explicit name may also be specified:
+
+```kotlin
 val destination by parser.positional("DEST",
                                      help = "destination filename")
 ```
@@ -177,9 +238,9 @@ val sources by parser.positionalList("SOURCE", 1..Int.MAX_VALUE,
                                      help = "source filename")
 ```
 
-The range indicates how many arguments should be collected, and actually
-defaults to the value shown in this example. As the name suggests, the
-resulting property will be a `List`.
+The range indicates how many arguments should be collected, and defaults to the
+value shown in this example. As the name suggests, the resulting property will
+be a `List`.
 
 Both of these methods accept an optional transform function for converting
 arguments from `String` to whatever type is actually desired:
@@ -198,44 +259,51 @@ val sources by parser.positionalList("SOURCE", 1..Int.MAX_VALUE,
 The delegates returned by any of these methods also have a few methods for setting
 optional attributes:
 
-- Some types of delegates (notably `storing`, `mapping`, and `positional`) have no
-  default value, and hence will be required options unless a default
-  value is provided. This is done with the `default` method:
+### Adding a Default Value
 
-  ```kotlin
-  val name by parser.storing("-N", "--name", help = "...").default("John Doe")
-  ```
+Certain types of delegates (notably `storing`, `mapping`, and `positional`)
+have no default value, and hence will be required options unless a default
+value is provided. This is done with the `default` method:
 
-  Note that it *is* possible to use `null` for the default:
+```kotlin
+val name by parser.storing("-N", "--name", help = "...").default("John Doe")
+```
 
-  ```kotlin
-  val name by parser.storing("-N", "--name", help = "...").default(null)
-  ```
+Note that it *is* possible to use `null` for the default:
 
-  The resulting value will be nullable (a `String?` in this case).
+```kotlin
+val name by parser.storing("-N", "--name", help = "...").default(null)
+```
 
-- Sometimes it's easier to validate an option at the end pf parsing, in which
-  case the `addValidator` method can be used.
+The resulting value will be nullable (a `String?` in this case).
 
-  ```kotlin
-  val percentages by parser.adding("--percentages", help = "...") { toInt() }
-          .addValidator {
-                if (value.sum() != 100)
-                    throw InvalidArgumentException(
-                            "Percentages must add up to 100%")
-          }
-  ```
 
+### Adding a Validator
+
+Sometimes it's easier to validate an option at the end of parsing, in which
+case the `addValidator` method can be used.
+
+```kotlin
+val percentages by parser.adding("--percentages", help = "...") { toInt() }
+        .addValidator {
+              if (value.sum() != 100)
+                  throw InvalidArgumentException(
+                          "Percentages must add up to 100%")
+        }
+```
 
 ## Error Handling
 
-Exceptions caused by user error will all derive from `SystemExitException`, and
-include a status code appropriate for passing to `exitProcess`.  It is
-recommended that transform functions (given to `storing`, `positionalList`, etc.)
-throw a `SystemExitException` when parsing fails.
+If the parser determines that execution should not continue it will throw a
+`SystemExitException` which has a status code appropriate for passing to
+`exitProcess` as well as a message for the user.
 
-Additional post-parsing validation can be performed on a delegate using
-`addValidator`.
+These exceptions can be caused by user error, or even if the user requests help
+(eg: via the `--help` option).
+
+It is recommended that transform functions (given to `storing`,
+`positionalList`, etc.) and post-parsing validation, including that performed
+via, `addValidator` also throw a `SystemExitException` on failure.
 
 As a convenience, these exceptions can be handled by using the `mainBody`
 function:
@@ -245,18 +313,12 @@ class ParsedArgs(parser: ArgParser) {
     val name by positional("The user's name").default("world")
 }
 
-fun main(args: Array<String>) = mainBody("hello") {
-        ParsedArgs(ArgParser(args)).run {
-            println("Hello, {name}!")
-        }
+fun main(args: Array<String>) = mainBody {
+    ArgParser(args).parseInto(::ParsedArgs).run {
+        println("Hello, {name}!")
     }
+}
 ```
-
-Note that parsing does not take place until at least one delegate is read, or
-`force` is called manually. It may be desirable to call `force` on the parser
-in the `init` of your args object after declaring all of your parsed
-properties.
-
 
 ## Parsing
 
@@ -326,7 +388,7 @@ In GNU mode (the default), options can be interspersed with positional
 arguments, but in POSIX mode the first positional argument that is encountered
 disables option processing for the remaining arguments. In either mode, if the
 argument "--" is encountered while option processing is enabled, then option
-processing is for the rest of the command-line. Once the options and
+processing is disabled for the rest of the command-line. Once the options and
 option-arguments have been eliminated, what remains are considered to be
 positional arguments.
 
@@ -335,33 +397,33 @@ arguments it is willing to collect.
 
 The positional arguments are distributed to the delegates by allocating each
 positional delegate at least as many arguments as it requires. If more than the
-minimum number of positional arguments have been supplied then additional arguments
-will be allocated to the first delegate up to its maximum, then the second, and so
-on, until all arguments have been allocated to a delegate.
+minimum number of positional arguments have been supplied then additional
+arguments will be allocated to the first delegate up to its maximum, then the
+second, and so on, until all arguments have been allocated to a delegate.
 
 This makes it easy to create a program that behaves like `grep`:
 
-  ```kotlin
-  class Args(parser: ArgParser) {
-      // accept 1 regex followed by n filenames
-      val regex by parser.positional("REGEX",
-              help = "regular expression to search for")
-      val files by parser.positionalList("FILE",
-              help = "file to search in")
-  }
-  ```
+```kotlin
+class Args(parser: ArgParser) {
+    // accept 1 regex followed by n filenames
+    val regex by parser.positional("REGEX",
+            help = "regular expression to search for")
+    val files by parser.positionalList("FILE",
+            help = "file to search in")
+}
+```
 
 And equally easy to create a program that behaves like `cp`:
 
-  ```kotlin
-  class Args(parser: ArgParser) {
-      // accept n source files followed by 1 destination
-      val sources by parser.positionalList("SOURCE",
-              help = "source file")
-      val destination by parser.positional("DEST",
-              help = "destination file")
-  }
-  ```
+```kotlin
+class Args(parser: ArgParser) {
+    // accept n source files followed by 1 destination
+    val sources by parser.positionalList("SOURCE",
+            help = "source file")
+    val destination by parser.positional("DEST",
+            help = "destination file")
+}
+```
 
 
 ## Forcing Parsing
@@ -373,19 +435,19 @@ provided, and all arguments provided are consumed.
 
 Forcing can be done in a separate step using the `force` method:
 
-  ```kotlin
-  val parser = ArgParser(args)
-  val parsedArgs = ParsedArgs(parser)
-  parser.force()
-  // now you can use parsedArgs
-  ```
+```kotlin
+val parser = ArgParser(args)
+val parsedArgs = ParsedArgs(parser)
+parser.force()
+// now you can use parsedArgs
+```
 
 Alternatively, forcing can be done inline via the `parseInto` method:
 
-  ```kotlin
-  val parsedArgs = ArgParser(args).parseInto(::ParsedArgs)
-  // now you can use parsedArgs
-  ```
+```kotlin
+val parsedArgs = ArgParser(args).parseInto(::ParsedArgs)
+// now you can use parsedArgs
+```
 
 In both cases exceptions will be thrown where parsing or validation errors are found.    
 
@@ -459,29 +521,39 @@ constructing a `HelpFormatter` instance. In the above example a
 
 ## Configuring Your Build
 
-Kotlin-argparser binaries are hosted on Bintray's JCenter. In Gradle, use
-something like this in your `build.gradle`:
+<!-- TODO move detailed instructions elsewhere, just have brief instructions here -->
 
-    buildscript {
-        repositories {
-            jcenter()
-        }
+Kotlin-argparser binaries are hosted on Maven Central and also Bintray's
+JCenter.
+
+In Gradle, add something like this in your `build.gradle`:
+
+```groovy
+// you probably already have this part
+buildscript {
+    repositories {
+        mavenCentral() // or jcenter()
     }
+}
 
-    dependencies {
-        compile "com.xenomachina:kotlin-argparser:$kotlin_argparser_version"
-    }
+dependencies {
+    compile "com.xenomachina:kotlin-argparser:$kotlin_argparser_version"
+}
+```
 
-More information on setting up your Gradle, Maven, or Ivy
-dependencies can be found under the "Maven build settings" heading on
-[Kotlin-argparser's Bintray
-page](https://bintray.com/xenomachina/maven/kotlin-argparser/_latestVersion),
-as well as the version of the latest release.
+In Maven add something like this to your `pom.xml`:
 
-## A Complete Example
+```xml
+<dependency>
+    <groupId>com.xenomachina</groupId>
+    <artifactId>kotlin-argparser</artifactId>
+    <version>VERSION</version>
+</dependency>
+```
 
-See [kotlin-argparser-example](https://github.com/xenomachina/kotlin-argparser-example)
-for a complete example of how to use Kotlin-argparser.
+Information on setting up other build systems, as well as the current version
+number, can be found on
+[MVN Repository's page for Kotlin-argparser](https://mvnrepository.com/artifact/com.xenomachina/kotlin-argparser/latest).
 
 ## Thanks
 
@@ -491,6 +563,7 @@ provided the initial inspiration for this library.
 
 Thanks also to the team behind [Kotlin](https://kotlinlang.org/).
 
-Finally, thanks to all of the
-[contributors](https://github.com/xenomachina/kotlin-argparser/graphs/contributors)
-and folks who have contributed [issues](https://github.com/xenomachina/kotlin-argparser/issues).
+Finally, thanks to all of the people who have contributed
+[code](https://github.com/xenomachina/kotlin-argparser/graphs/contributors)
+and/or
+[issues](https://github.com/xenomachina/kotlin-argparser/issues).
