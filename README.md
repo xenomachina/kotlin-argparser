@@ -440,6 +440,15 @@ The creation of the `--help` option can be disabled by passing `null` as the
 constructing a `HelpFormatter` instance. In the above example a
 `DefaultHelpFormatter` was created with the prologue and epilogue.
 
+For correct show help message you must add handler for help exception:
+```
+val parser = try {
+    ArgParser(args).parseInfo(::YourParser)
+} catch (e: ShowHelpException) {
+    e.printAndExit()
+}
+```
+
 
 ## Caveats
 
