@@ -1,4 +1,4 @@
-# ![Kotlin --argparser](https://rawgit.com/xenomachina/kotlin-argparser/master/logo.svg)
+# <img alt="Kotlin --argparser" src="https://rawgit.com/xenomachina/kotlin-argparser/master/logo.svg" style="transform:scale(.6)" >
 
 <!--
 Removed until either Bintray makes a badge with a configurable label, or
