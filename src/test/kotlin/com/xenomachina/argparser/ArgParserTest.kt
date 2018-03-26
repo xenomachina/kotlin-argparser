@@ -1621,3 +1621,36 @@ class DependentArgsTest_withDefaultUnsetIsOk : Test({
     DependentArgsWithDefault(parserOf("-x", "foo", "-x", "dry", "--suffix", "fish", "-x", "cat")).x shouldEqual
             listOf("foo:", "dry:", "cat:fish")
 })
+
+class DependentArgsWithDependentDefault(parser: ArgParser) {
+    val a by parser.storing(TEST_HELP).default("")
+
+    val b by parser.storing(TEST_HELP).default { "=$a" }
+}
+
+class DependentArgsTest_withDependentDefault : Test({
+    DependentArgsWithDependentDefault(parserOf()).run {
+        a shouldEqual ""
+        b shouldEqual "="
+    }
+
+    DependentArgsWithDependentDefault(parserOf("-aFoo")).run {
+        a shouldEqual "Foo"
+        b shouldEqual "=Foo"
+    }
+
+    DependentArgsWithDependentDefault(parserOf("-bBar")).run {
+        a shouldEqual ""
+        b shouldEqual "Bar"
+    }
+
+    DependentArgsWithDependentDefault(parserOf("-aFoo", "-bBar")).run {
+        a shouldEqual "Foo"
+        b shouldEqual "Bar"
+    }
+
+    DependentArgsWithDependentDefault(parserOf("-bBar", "-aFoo")).run {
+        a shouldEqual "Foo"
+        b shouldEqual "Bar"
+    }
+})
