@@ -974,7 +974,12 @@ class HelpTest : Test({
         Args(parserOf("--help",
                 helpFormatter = DefaultHelpFormatter(
                         prologue = """
-                            This is the prologue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam malesuada maximus eros. Fusce luctus risus eget quam consectetur, eu auctor est ullamcorper. Maecenas eget suscipit dui, sed sodales erat. Phasellus.
+                            This is the prologue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam
+                            malesuada maximus eros. Fusce luctus risus eget quam consectetur, eu auctor est ullamcorper.
+                            Maecenas eget suscipit dui, sed sodales erat. Phasellus.
+
+                            This is the second paragraph of the prologue. I don't have anything else to say, but I'd
+                            like there to be enough text that it wraps to the next line.
                             """,
                         epilogue = """
                             This is the epilogue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vel tortor nunc. Sed eu massa sed turpis auctor faucibus. Donec vel pellentesque tortor. Ut ultrices tempus lectus fermentum vestibulum. Phasellus.
@@ -991,6 +996,10 @@ consectetur adipiscing elit. Aliquam malesuada maximus eros.
 Fusce luctus risus eget quam consectetur, eu auctor est
 ullamcorper. Maecenas eget suscipit dui, sed sodales erat.
 Phasellus.
+
+This is the second paragraph of the prologue. I don't have
+anything else to say, but I'd like there to be enough text
+that it wraps to the next line.
 
 
 required arguments:
@@ -1035,6 +1044,10 @@ Fusce luctus risus eget quam consectetur, eu auctor est
 ullamcorper. Maecenas eget suscipit dui, sed sodales erat.
 Phasellus.
 
+This is the second paragraph of the prologue. I don't have
+anything else to say, but I'd like there to be enough text
+that it wraps to the next line.
+
 
 required arguments:
   -o OUTPUT,          directory in which all output should
@@ -1072,6 +1085,8 @@ usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT [-v]... SOURCE... DEST
 
 
 This is the prologue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam malesuada maximus eros. Fusce luctus risus eget quam consectetur, eu auctor est ullamcorper. Maecenas eget suscipit dui, sed sodales erat. Phasellus.
+
+This is the second paragraph of the prologue. I don't have anything else to say, but I'd like there to be enough text that it wraps to the next line.
 
 
 required arguments:
