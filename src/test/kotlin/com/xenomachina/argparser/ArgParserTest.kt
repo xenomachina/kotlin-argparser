@@ -1571,3 +1571,40 @@ class Issue18Test_DefaultThenValidator : Test({
     val x = Args(parserOf()).x
     x shouldEqual 0
 })
+
+class Issue47Test : Test({
+    class Args(parser: ArgParser) {
+        val caseInsensitive by parser.flagging("-c", "--case_insensitive", help = TEST_HELP)
+
+        val includedExtensions by parser.adding("-e", "--include_ext", help = TEST_HELP) {
+            extensionCheckCaseInsensitive()
+        }
+
+        private fun String.extensionCheckCaseInsensitive() =
+                if (caseInsensitive) this.toLowerCase() else this
+    }
+
+    val includeExtensions = Args(parserOf("-e", "Foo", "-c", "-e", "Bar")).includedExtensions
+    includeExtensions shouldEqual listOf("Foo", "bar")
+})
+
+class DependentArgs(parser: ArgParser) {
+    val suffix by parser.storing(TEST_HELP)
+
+    val x by parser.adding(TEST_HELP) {
+        "$this:$suffix"
+    }
+}
+
+class DependentArgsTest_orderMatters : Test({
+    val result = DependentArgs(parserOf("--suffix", "bar", "-x", "foo", "-x", "dry", "--suffix", "fish", "-x", "cat")).x
+    result shouldEqual listOf("foo:bar", "dry:bar", "cat:fish")
+})
+
+class DependentArgsTest_unsetThrowsMissingValueException : Test({
+    shouldThrow<MissingValueException> {
+        DependentArgs(parserOf("-x", "foo", "-x", "dry", "--suffix", "fish", "-x", "cat")).x
+    }.run {
+        message shouldEqual "missing SUFFIX"
+    }
+})

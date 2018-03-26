@@ -38,7 +38,7 @@ internal abstract class ParsingDelegate<T>(
     override val value: T
         get() {
             parser.force()
-            // checkHasValue should have ensured that this is non-null
+            checkHasValue()
             return holder!!.value
         }
 

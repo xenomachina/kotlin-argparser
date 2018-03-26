@@ -443,19 +443,20 @@ class ArgParser(
      * @throws SystemExitException if parsing or validation failed.
      */
     fun force() {
-        if (!finished) {
-            parseOptions
-            if (!inValidation) {
-                inValidation = true
-                try {
-                    for (delegate in delegates) delegate.checkHasValue()
-                    for (delegate in delegates) delegate.validate()
-                } finally {
-                    inValidation = false
+        if (!inParse) {
+            if (!finished) {
+                parseOptions
+                if (!inValidation) {
+                    inValidation = true
+                    try {
+                        for (delegate in delegates) delegate.checkHasValue()
+                        for (delegate in delegates) delegate.validate()
+                    } finally {
+                        inValidation = false
+                    }
                 }
             }
         }
-        finished = true
     }
 
     /**
@@ -470,44 +471,49 @@ class ArgParser(
         return provided
     }
 
-    private var parseStarted = false
+    private var inParse = false
 
     internal fun checkNotParsed() {
-        if (parseStarted) throw IllegalStateException("arguments have already been parsed")
+        if (inParse || finished) throw IllegalStateException("arguments have already been parsed")
     }
 
     private val parseOptions by lazy {
         val positionalArguments = mutableListOf<String>()
-        parseStarted = true
-        var i = 0
-        optionLoop@ while (i < args.size) {
-            val arg = args[i]
-            i += when {
-                arg == "--" -> {
-                    i++
-                    break@optionLoop
-                }
-                arg.startsWith("--") ->
-                    parseLongOpt(i, args)
-                arg.startsWith("-") ->
-                    parseShortOpts(i, args)
-                else -> {
-                    positionalArguments.add(arg)
-                    when (mode) {
-                        Mode.GNU -> 1
-                        Mode.POSIX -> {
-                            i++
-                            break@optionLoop
+        inParse = true
+        try {
+            var i = 0
+            optionLoop@ while (i < args.size) {
+                val arg = args[i]
+                i += when {
+                    arg == "--" -> {
+                        i++
+                        break@optionLoop
+                    }
+                    arg.startsWith("--") ->
+                        parseLongOpt(i, args)
+                    arg.startsWith("-") ->
+                        parseShortOpts(i, args)
+                    else -> {
+                        positionalArguments.add(arg)
+                        when (mode) {
+                            Mode.GNU -> 1
+                            Mode.POSIX -> {
+                                i++
+                                break@optionLoop
+                            }
                         }
                     }
                 }
             }
+
+            // Collect remaining arguments as positional-only arguments
+            positionalArguments.addAll(args.slice(i..args.size - 1))
+
+            parsePositionalArguments(positionalArguments)
+            finished = true
+        } finally {
+            inParse = false
         }
-
-        // Collect remaining arguments as positional-only arguments
-        positionalArguments.addAll(args.slice(i..args.size - 1))
-
-        parsePositionalArguments(positionalArguments)
     }
 
     private fun parsePositionalArguments(args: List<String>) {
