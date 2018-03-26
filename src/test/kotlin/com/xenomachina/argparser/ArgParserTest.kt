@@ -1608,3 +1608,16 @@ class DependentArgsTest_unsetThrowsMissingValueException : Test({
         message shouldEqual "missing SUFFIX"
     }
 })
+
+class DependentArgsWithDefault(parser: ArgParser) {
+    val suffix by parser.storing(TEST_HELP).default("")
+
+    val x by parser.adding(TEST_HELP) {
+        "$this:$suffix"
+    }
+}
+
+class DependentArgsTest_withDefaultUnsetIsOk : Test({
+    DependentArgsWithDefault(parserOf("-x", "foo", "-x", "dry", "--suffix", "fish", "-x", "cat")).x shouldEqual
+            listOf("foo:", "dry:", "cat:fish")
+})
