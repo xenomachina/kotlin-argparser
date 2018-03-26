@@ -18,7 +18,7 @@
 
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
     }
 
     dependencies {
@@ -30,7 +30,7 @@ buildscript {
 }
 
 plugins {
-    id 'org.jmailen.kotlinter' version '1.9.0'
+    id 'org.jmailen.kotlinter' version '1.10.0'
 }
 
 apply plugin: 'net.researchgate.release'

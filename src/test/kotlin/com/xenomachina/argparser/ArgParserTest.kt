@@ -986,9 +986,9 @@ usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT
                     [-v]... SOURCE... DEST
 
 
-This is the prologue. Lorem ipsum dolor sit amet, consectetur
-adipiscing elit. Aliquam malesuada maximus eros. Fusce
-luctus risus eget quam consectetur, eu auctor est
+This is the prologue. Lorem ipsum dolor sit amet,
+consectetur adipiscing elit. Aliquam malesuada maximus eros.
+Fusce luctus risus eget quam consectetur, eu auctor est
 ullamcorper. Maecenas eget suscipit dui, sed sodales erat.
 Phasellus.
 
@@ -1029,9 +1029,9 @@ usage: a_really_long_program_name
          SOURCE... DEST
 
 
-This is the prologue. Lorem ipsum dolor sit amet, consectetur
-adipiscing elit. Aliquam malesuada maximus eros. Fusce
-luctus risus eget quam consectetur, eu auctor est
+This is the prologue. Lorem ipsum dolor sit amet,
+consectetur adipiscing elit. Aliquam malesuada maximus eros.
+Fusce luctus risus eget quam consectetur, eu auctor est
 ullamcorper. Maecenas eget suscipit dui, sed sodales erat.
 Phasellus.
 

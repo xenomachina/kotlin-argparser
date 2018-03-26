@@ -80,10 +80,10 @@ class DefaultHelpFormatter(
         sb.append("\n")
 
         if (!prologue.isNullOrEmpty()) {
-            sb.append("\n")
+            sb.append("\n\n")
             // we just checked that prologue is non-null
             sb.append(prologue!!.wrapText(effectiveColumns))
-            sb.append("\n")
+            sb.append("\n\n")
         }
 
         val required = mutableListOf<HelpFormatter.Value>()
