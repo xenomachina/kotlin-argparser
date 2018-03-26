@@ -25,7 +25,6 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version"
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$gradle_bintray_version"
-        classpath "net.researchgate:gradle-release:$gradle_release_version"
     }
 }
 
@@ -33,7 +32,6 @@ plugins {
     id 'org.jmailen.kotlinter' version '1.10.0'
 }
 
-apply plugin: 'net.researchgate.release'
 apply plugin: 'maven'
 apply plugin: 'kotlin'
 apply plugin: 'java'
@@ -236,17 +234,6 @@ if (System.env.CI != "true") {
             }
         }
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // gradle-release plugin config
-    ///////////////////////////////////////////////////////////////////////////
-
-    // Based on https://github.com/researchgate/gradle-release
-
-    // This causes './gradlew release' to also upload release packages to maven
-    // central and bintray
-    afterReleaseBuild.dependsOn bintrayUpload
-    bintrayUpload.dependsOn uploadArchives
 }
 
 //////////////////////////////////////////////////////////////////////////////
