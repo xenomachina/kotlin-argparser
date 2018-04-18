@@ -41,7 +41,7 @@ class MyArgs(parser: ArgParser) {
 ```
 
 An instance of `MyArgs` will represent the set of parsed arguments. Each option
-and positional argument is declared as a poperty that delegates through a
+and positional argument is declared as a property that delegates through a
 delegate factory method on an instance of `ArgParser`.
 
 The name of an option is inferred from the name of the property it is bound to.
