@@ -617,8 +617,8 @@ private val NAME_EQUALS_VALUE_REGEX = Regex("^([^=]+)=(.*)$")
 internal val LEADING_HYPHENS_REGEX = Regex("^-{1,2}")
 
 private const val OPTION_CHAR_CLASS = "[a-zA-Z0-9]"
-internal val OPTION_NAME_RE = Regex("^(-$OPTION_CHAR_CLASS)|(--$OPTION_CHAR_CLASS+([-_]$OPTION_CHAR_CLASS+)*)$")
+internal val OPTION_NAME_RE = Regex("^(-$OPTION_CHAR_CLASS)|(--$OPTION_CHAR_CLASS+([-_\\.]$OPTION_CHAR_CLASS+)*)$")
 
 private const val ARG_INITIAL_CHAR_CLASS = "[A-Z]"
 private const val ARG_CHAR_CLASS = "[A-Z0-9]"
-internal val ARG_NAME_RE = Regex("^$ARG_INITIAL_CHAR_CLASS+([-_]$ARG_CHAR_CLASS+)*$")
+internal val ARG_NAME_RE = Regex("^$ARG_INITIAL_CHAR_CLASS+([-_\\.]$ARG_CHAR_CLASS+)*$")

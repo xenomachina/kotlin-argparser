@@ -71,6 +71,7 @@ class OptionNameValidationTest : Test({
     parser.option<Int>("--5", help = TEST_HELP) { 0 }
     parser.option<Int>("--5Y", help = TEST_HELP) { 0 }
     parser.option<Int>("--X5", help = TEST_HELP) { 0 }
+    parser.option<Int>("--x.y", help = TEST_HELP) { 0 }
 
     shouldThrow<IllegalArgumentException> {
         parser.option<Int>("-_", help = TEST_HELP) { 0 }
@@ -103,6 +104,18 @@ class OptionNameValidationTest : Test({
     shouldThrow<IllegalArgumentException> {
         parser.option<Int>("--f!oobar", help = TEST_HELP) { 0 }
     }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("--.", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("--.foo", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.option<Int>("--foo.", help = TEST_HELP) { 0 }
+    }
 })
 
 class PositionalNameValidationTest : Test({
@@ -113,6 +126,7 @@ class PositionalNameValidationTest : Test({
     parser.positional<Int>("XYZ", help = TEST_HELP) { 0 }
     parser.positional<Int>("XY-Z", help = TEST_HELP) { 0 }
     parser.positional<Int>("XY_Z", help = TEST_HELP) { 0 }
+    parser.positional<Int>("XY.Z", help = TEST_HELP) { 0 }
 
     shouldThrow<IllegalArgumentException> {
         parser.positional<Int>("-", help = TEST_HELP) { 0 }
@@ -148,6 +162,18 @@ class PositionalNameValidationTest : Test({
 
     shouldThrow<IllegalArgumentException> {
         parser.positional<Int>("5", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>(".", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>(".XY", help = TEST_HELP) { 0 }
+    }
+
+    shouldThrow<IllegalArgumentException> {
+        parser.positional<Int>("XY.", help = TEST_HELP) { 0 }
     }
 
     // This should be acceptable
@@ -275,6 +301,19 @@ class ArglessLongOptionsTest : Test({
     Args(parserOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")).xyz shouldBe listOf("--xray", "--yellow", "--zebra", "--zebra", "--yellow")
 
     Args(parserOf("--xray", "--yellow", "--zebra")).xyz shouldBe listOf("--xray", "--yellow", "--zebra")
+})
+
+class DottedLongOptionsTest : Test({
+    class Args(parser: ArgParser) {
+        val xyz by parser.option<MutableList<String>>("--x.ray", "--color.yellow", "--animal.zebra",
+                help = TEST_HELP) {
+            value.orElse { mutableListOf<String>() }.apply {
+                add("$optionName")
+            }
+        }
+    }
+
+    Args(parserOf("--x.ray", "--animal.zebra", "--color.yellow", "--x.ray")).xyz shouldBe listOf("--x.ray", "--animal.zebra", "--color.yellow", "--x.ray")
 })
 
 class LongOptionsWithOneArgTest : Test({
