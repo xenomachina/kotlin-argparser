@@ -29,6 +29,7 @@ buildscript {
 }
 
 plugins {
+    id 'com.palantir.git-version' version '0.12.0-rc2'
     id 'org.jmailen.kotlinter' version '1.10.0'
 }
 
@@ -45,6 +46,8 @@ assert name == 'kotlin-argparser'
 description = 'Concise, easy, powerful and robust command line argument parsing for Kotlin'
 
 group 'com.xenomachina'
+version = gitVersion()
+
 project.ext {
     githubUser = "xenomachina"
     vcsDev = "https://github.com/$githubUser"
