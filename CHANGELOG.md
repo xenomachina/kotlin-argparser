@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.7 - 2018-05-08
+
+### Fixed
+
+- [Issue #54](https://github.com/xenomachina/kotlin-argparser/issues/54)
+  Allow the dot character in options and arguments. Thanks @tgockel!
+
+- [Issue #47](https://github.com/xenomachina/kotlin-argparser/issues/47)
+  If an option looks at the value of another option it can see the
+  current value. If no value has been set a `MissingValueException` is thrown.
+
 ## 2.0.6 - 2018-03-26
 
 ### Changed
@@ -31,20 +42,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- if the `programName` passed to `mainBody` is null, then the
+- If the `programName` passed to `mainBody` is null, then the
   system property `com.xenomachina.argparser.programName` is used, if set.
 
-- the `parseInto` method can be used as an inline alternative to `force`.
+- The `parseInto` method can be used as an inline alternative to `force`.
+  Thanks @shanethehat!
 
 - [Issue #24](https://github.com/xenomachina/kotlin-argparser/issues/18):
  `default` can now accept a lambda, making it possible to defer computation of
   defaults until actually required.
+  Thanks @shanethehat!
 
 ### Changed
 
-- all instances of `progName` have been renamed to `programName`.
+- All instances of `progName` have been renamed to `programName`.
 
-- many dependencies, and the gradle wrapper, have been updated.
+- The gradle wrapper has been updated.
+  Thanks @ColinHebert!
 
 ## 2.0.3 - 2017-06-12
 
@@ -72,6 +86,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   "CAMELCASE". Now it is converted to "CAMEL-CASE".
 
 - Improve help formatting w/long program names
+
+- README formatting improved.
+  Thanks @konfilios!
 
 ### Fixed
 
@@ -147,31 +164,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 
-    - `addValidtator` is now deprecated. Use `addValidator` instead.
+- `addValidtator` is now deprecated. Use `addValidator` instead.
 
 ### Fixed
 
-    - Removed documentation of `option` from `README.md`, as it is internal
+- Removed documentation of `option` from `README.md`, as it is internal
 
-    - Corrected spelling of `addValidator`. `addValidtator` is still there, but
-      deprecated. It'll probably be removed in the next release, barring the
-      addition of potato functionality.
+- Corrected spelling of `addValidator`. `addValidtator` is still there, but
+  deprecated. It'll probably be removed in the next release, barring the
+  addition of potato functionality.
 
 ## 1.0.2 - 2017-03-07
 
 ### Changed
 
-  - Upgrade to Kotlin 1.1, extract xenocom package.
+- Upgrade to Kotlin 1.1, extract xenocom package.
 
 ## 1.0.1 - 2017-01-30
 
 ### Fixed
 
-  - Fix small bug where `runMain` didn't have a default value for `columns`
-    parameter. (Now defaults to null.)
+- Fix small bug where `runMain` didn't have a default value for `columns`
+  parameter. (Now defaults to null.)
 
 ## 1.0.0 - 2017-01-27
 
 ### Added
 
-  - Initial release
+- Initial release
