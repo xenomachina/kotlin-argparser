@@ -29,9 +29,7 @@ internal class PositionalDelegate<T>(
 ) : ParsingDelegate<List<T>>(parser, argName, help) {
 
     init {
-        if (!ARG_NAME_RE.matches(argName)) {
-            throw IllegalArgumentException("$argName is not a valid argument name")
-        }
+        require(ARG_NAME_RE.matches(argName)) { "$argName is not a valid argument name" }
     }
 
     override fun registerLeaf(root: ArgParser.Delegate<*>) {

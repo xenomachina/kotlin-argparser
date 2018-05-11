@@ -300,16 +300,13 @@ class ArgParser(
         transform: String.() -> T
     ): Delegate<List<T>> {
         sizeRange.run {
-            if (step != 1)
-                throw IllegalArgumentException("step must be 1, not $step")
-            if (first > last)
-                throw IllegalArgumentException("backwards ranges are not allowed: $first > $last")
-            if (first < 0)
-                throw IllegalArgumentException("sizeRange cannot start at $first, must be non-negative")
-            // technically last == 0 is ok, but not especially useful so we
-            // disallow it as it's probably unintentional
-            if (last < 1)
-                throw IllegalArgumentException("sizeRange only allows $last arguments, must allow at least 1")
+            require(step == 1) { "step must be 1, not $step" }
+            require(first <= last) { "backwards ranges are not allowed: $first > $last" }
+            require(first >= 0) { "sizeRange cannot start at $first, must be non-negative" }
+
+            // Technically, last == 0 is ok but not especially useful, so we
+            // disallow it as it's probably unintentional.
+            require(last > 0) { "sizeRange only allows $last arguments, must allow at least 1" }
         }
 
         return PositionalDelegate<T>(this, name, sizeRange, help = help, transform = transform)
@@ -413,17 +410,13 @@ class ArgParser(
 
     internal fun registerOption(name: String, delegate: OptionDelegate<*>) {
         if (name.startsWith("--")) {
-            if (name.length <= 2)
-                throw IllegalArgumentException("long option '$name' must have at least one character after hyphen")
-            if (name in longOptionDelegates)
-                throw IllegalStateException("long option '$name' already in use")
+            require(name.length > 2) { "long option '$name' must have at least one character after hyphen" }
+            require(name !in longOptionDelegates) { "long option '$name' already in use" }
             longOptionDelegates.put(name, delegate)
         } else if (name.startsWith("-")) {
-            if (name.length != 2)
-                throw IllegalArgumentException("short option '$name' can only have one character after hyphen")
+            require(name.length == 2) { "short option '$name' can only have one character after hyphen" }
             val key = name.get(1)
-            if (key in shortOptionDelegates)
-                throw IllegalStateException("short option '$name' already in use")
+            require(key !in shortOptionDelegates) { "short option '$name' already in use" }
             shortOptionDelegates.put(key, delegate)
         } else {
             throw IllegalArgumentException("illegal option name '$name' -- must start with '-' or '--'")
