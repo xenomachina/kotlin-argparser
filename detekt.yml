@@ -18,7 +18,7 @@ test-pattern: # Configure exclusions for test sources
     - 'ForEachOnRange'
 
 build:
-  maxIssues: 26
+  maxIssues: 14 # TODO: reduce this threshhold
   weights:
     # complexity: 2
     # LongParameterList: 1
@@ -470,3 +470,5 @@ style:
   WildcardImport:
     active: true
     excludeImports: 'java.util.*,kotlinx.android.synthetic.*'
+
+# vim: sw=2
