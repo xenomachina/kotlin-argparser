@@ -1,12 +1,9 @@
-autoCorrect: true
-failFast: false
+# `git diff detekt-default detekt.yml` to see what's changed from default
+# settings
 
 test-pattern: # Configure exclusions for test sources
-  active: true
   patterns: # Test file regexes
     - '.*/test/.*'
-    - '.*Test.kt'
-    - '.*Spec.kt'
   exclude-rule-sets:
     - 'comments'
   exclude-rules:
@@ -21,7 +18,7 @@ test-pattern: # Configure exclusions for test sources
     - 'ForEachOnRange'
 
 build:
-  maxIssues: 10
+  maxIssues: 26
   weights:
     # complexity: 2
     # LongParameterList: 1
@@ -340,7 +337,7 @@ performance:
   ForEachOnRange:
     active: true
   SpreadOperator:
-    active: true
+    active: false
   UnnecessaryTemporaryInstantiation:
     active: true
 
@@ -390,7 +387,7 @@ style:
     active: false
   ForbiddenComment:
     active: true
-    values: 'TODO:,FIXME:,STOPSHIP:'
+    values: 'FIXME:,STOPSHIP:'
   ForbiddenImport:
     active: false
     imports: ''

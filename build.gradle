@@ -20,18 +20,21 @@ buildscript {
     repositories {
         mavenCentral()
         jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version"
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$gradle_bintray_version"
+        classpath "gradle.plugin.io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detekt_version"
     }
 }
 
 plugins {
     id 'com.palantir.git-version' version '0.12.0-rc2'
-    id "io.gitlab.arturbosch.detekt" version "1.0.0.RC7"
     id 'org.jmailen.kotlinter' version '1.12.0'
 }
 
@@ -43,6 +46,7 @@ apply plugin: 'signing'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven-publish'
 apply plugin: 'jacoco'
+apply plugin: "io.gitlab.arturbosch.detekt"
 
 assert name == 'kotlin-argparser'
 description = 'Concise, easy, powerful and robust command line argument parsing for Kotlin'
@@ -83,10 +87,14 @@ sourceSets {
 //////////////////////////////////////////////////////////////////////////////
 
 detekt {
-    // version = "1.0.0.RC7" // TODO: ok to leave this out?
+    // remove this when plugin stops choosing latest version by default
+    version = "$detekt_version"
+
     defaultProfile {
         input = file("src/main/kotlin")
+
         filters = ".*/resources/.*,.*/build/.*"
+        config = file("detekt.yml")
     }
 }
 
