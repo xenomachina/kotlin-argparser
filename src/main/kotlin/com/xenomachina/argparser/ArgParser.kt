@@ -58,13 +58,15 @@ class ArgParser(
                     help = help) { true }.default(false)
 
     /**
-     * Creates a DelegateProvider for a zero-argument option that returns true if and only the option is present in args.
+     * Creates a DelegateProvider for a zero-argument option that returns true if and only the option is present in
+     * args.
      */
     fun flagging(help: String) =
             DelegateProvider { identifier -> flagging(identifierToOptionName(identifier), help = help) }
 
     /**
-     * Creates a Delegate for a zero-argument option that returns the count of how many times the option appears in args.
+     * Creates a Delegate for a zero-argument option that returns the count of how many times the option appears in
+     * args.
      */
     fun counting(vararg names: String, help: String): Delegate<Int> =
             option<Int>(
@@ -73,7 +75,8 @@ class ArgParser(
                     help = help) { value.orElse { 0 } + 1 }.default(0)
 
     /**
-     * Creates a DelegateProvider for a zero-argument option that returns the count of how many times the option appears in args.
+     * Creates a DelegateProvider for a zero-argument option that returns the count of how many times the option appears
+     * in args.
      */
     fun counting(help: String) = DelegateProvider { identifier -> counting(identifierToOptionName(identifier), help = help) }
 
@@ -95,13 +98,16 @@ class ArgParser(
     }
 
     /**
-     * Creates a DelegateProvider for a single-argument option that stores and returns the option's (transformed) argument.
+     * Creates a DelegateProvider for a single-argument option that stores and returns the option's (transformed)
+     * argument.
      */
     fun <T> storing(
         help: String,
         argName: String? = null,
         transform: String.() -> T
-    ) = DelegateProvider { identifier -> storing(identifierToOptionName(identifier), help = help, argName = argName, transform = transform) }
+    ) = DelegateProvider { identifier ->
+        storing(identifierToOptionName(identifier), help = help, argName = argName, transform = transform)
+    }
 
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's argument.
@@ -149,7 +155,13 @@ class ArgParser(
         initialValue: T,
         transform: String.() -> E
     ) = DelegateProvider { identifier ->
-                adding(identifierToOptionName(identifier), help = help, argName = argName, initialValue = initialValue, transform = transform) }
+        adding(
+            identifierToOptionName(identifier),
+            help = help,
+            argName = argName,
+            initialValue = initialValue,
+            transform = transform)
+    }
 
     /**
      * Creates a Delegate for a single-argument option that adds the option's (transformed) argument to a
@@ -181,8 +193,8 @@ class ArgParser(
             adding(*names, help = help, argName = argName) { this }
 
     /**
-     * Creates a DelegateProvider for a single-argument option that adds the option's argument to a MutableList each time the
-     * option appears in args, and returns said MutableCollection.
+     * Creates a DelegateProvider for a single-argument option that adds the option's argument to a MutableList each
+     * time the option appears in args, and returns said MutableCollection.
      */
     fun adding(help: String) = DelegateProvider { identifier ->
         adding(identifierToOptionName(identifier), help = help) }
@@ -270,7 +282,9 @@ class ArgParser(
     fun <T> positional(
         help: String,
         transform: String.() -> T
-    ) = DelegateProvider { identifier -> positional(identifierToArgName(identifier), help = help, transform = transform) }
+    ) = DelegateProvider { identifier ->
+        positional(identifierToArgName(identifier), help = help, transform = transform)
+    }
 
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the arguments.
@@ -287,7 +301,9 @@ class ArgParser(
     fun positionalList(
         help: String,
         sizeRange: IntRange = 1..Int.MAX_VALUE
-    ) = DelegateProvider { identifier -> positionalList(identifierToArgName(identifier), help = help, sizeRange = sizeRange) }
+    ) = DelegateProvider { identifier ->
+        positionalList(identifierToArgName(identifier), help = help, sizeRange = sizeRange)
+    }
 
     /**
      * Creates a Delegate for a sequence of positional arguments which returns a List containing the transformed
