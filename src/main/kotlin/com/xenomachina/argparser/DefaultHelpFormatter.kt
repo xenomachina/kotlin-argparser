@@ -100,10 +100,11 @@ class DefaultHelpFormatter(
         val usageColumns = 2 * indentWidth - 1 + if (columns == 0) {
             values.map { usageText(it).length }.max() ?: 0
         } else {
-            // Make left column as narrow as possible without wrapping any of the individual usages, though no wider than
-            // half the screen.
-                    values.map { usageText(it).split(" ").map { it.length }.max() ?: 0 }.max() ?: 0
-                    .coerceAtMost(effectiveColumns / 2)
+            // Make left column as narrow as possible without wrapping any of the individual usages, though no wider
+            // than half the screen.
+            (values.map {
+                usageText(it).split(" ").map { it.length }.max() ?: 0
+            }.max() ?: 0).coerceAtMost(effectiveColumns / 2)
         }
 
         appendSection(sb, usageColumns, effectiveColumns, "required", required)

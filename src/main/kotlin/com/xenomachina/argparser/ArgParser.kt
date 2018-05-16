@@ -78,7 +78,9 @@ class ArgParser(
      * Creates a DelegateProvider for a zero-argument option that returns the count of how many times the option appears
      * in args.
      */
-    fun counting(help: String) = DelegateProvider { identifier -> counting(identifierToOptionName(identifier), help = help) }
+    fun counting(help: String) = DelegateProvider {
+        identifier -> counting(identifierToOptionName(identifier), help = help)
+    }
 
     /**
      * Creates a Delegate for a single-argument option that stores and returns the option's (transformed) argument.

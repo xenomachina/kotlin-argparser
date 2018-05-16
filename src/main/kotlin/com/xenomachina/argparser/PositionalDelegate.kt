@@ -36,7 +36,8 @@ internal class PositionalDelegate<T>(
         assert(holder == null)
         val hasDefault = root.hasValue
         if (hasDefault && sizeRange.first != 1) {
-            throw IllegalStateException("default value can only be applied to positional that requires a minimum of 1 arguments")
+            throw IllegalStateException(
+                    "default value can only be applied to positional that requires a minimum of 1 arguments")
         }
         // TODO: this feels like a bit of a kludge. Consider making .default only work on positional and not
         // postionalList by having them return different types?
