@@ -269,13 +269,14 @@ value is provided. This is done with the `default` method:
 val name by parser.storing("-N", "--name", help = "...").default("John Doe")
 ```
 
-Note that it *is* possible to use `null` for the default:
+Note that it *is* possible to use `null` for the default, though this may
+require specifying the type parameter for `default` explicitly:
 
 ```kotlin
-val name by parser.storing("-N", "--name", help = "...").default(null)
+val name by parser.storing("-N", "--name", help = "...").default<String?>(null)
 ```
 
-The resulting value will be nullable (a `String?` in this case).
+The type of the resulting property be nullable (a `String?` in this case).
 
 
 ### Adding a Validator
