@@ -82,8 +82,8 @@ construction:
 ```kotlin
 fun main(args: Array<String>) = mainBody {
     ArgParser(args).parseInto(::MyArgs).run {
-        println("Hello, {name}!")
-        println("I'm going to move {count} widgets from {source} to {destination}.")
+        println("Hello, ${name}!")
+        println("I'm going to move ${count} widgets from ${source} to ${destination}.")
         // TODO: move widgets
     }
 }
