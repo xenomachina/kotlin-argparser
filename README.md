@@ -455,8 +455,9 @@ In both cases exceptions will be thrown where parsing or validation errors are f
 ## Help Formatting
 
 By default, `ArgParser` will add a `--help` option (short name `-h`) for
-displaying usage information. If this option is present the program will halt
-and print a help message like the one below, based on the `ArgParser`
+displaying usage information. If this option is present a `ShowHelpException` will be thrown.
+If the default exception handling is being used (see [Error Handling](#error-handling)) the
+program will halt and print a help message like the one below, based on the `ArgParser`
 configuration:
 
     usage: program_name [-h] [-n] [-I INCLUDE]... -o OUTPUT
