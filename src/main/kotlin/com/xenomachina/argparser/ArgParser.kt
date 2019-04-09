@@ -38,7 +38,8 @@ import kotlin.reflect.KProperty
 class ArgParser(
     args: Array<out String>,
     mode: Mode = Mode.GNU,
-    helpFormatter: HelpFormatter? = DefaultHelpFormatter()
+    helpFormatter: HelpFormatter? = DefaultHelpFormatter(),
+    version: String? = null
 ) {
 
     enum class Mode {
@@ -617,6 +618,13 @@ class ArgParser(
                     errorName = "HELP", // This should never be used, but we need to say something
                     help = "show this help message and exit") {
                 throw ShowHelpException(helpFormatter, delegates.toList())
+            }.default(Unit).registerRoot()
+        }
+        if (version != null) {
+            option<Unit>("-v", "--version",
+                    errorName = "VERSION", // This should never be used, but we need to say something
+                    help = "show the version and exit") {
+                throw ShowVersionException(version)
             }.default(Unit).registerRoot()
         }
     }

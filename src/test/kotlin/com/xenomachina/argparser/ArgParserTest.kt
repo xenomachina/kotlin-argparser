@@ -1126,6 +1126,20 @@ This is the epilogue. Lorem ipsum dolor sit amet, consectetur adipiscing elit. D
         }
     }
 
+    test("Version") {
+        class Args(parser: ArgParser) {
+            val flag by parser.flagging(help = TEST_HELP)
+        }
+
+        shouldThrow<ShowVersionException> {
+            Args(parserOf("--version",
+                    version = "1.0.0")).flag
+        }.run {
+            val help = StringWriter().apply { printUserMessage(this, "program_name", 60) }.toString()
+            help shouldBe "1.0.0"
+        }
+    }
+
     test("Implicit long flag name") {
         class Args(parser: ArgParser) {
             val flag1 by parser.flagging(help = TEST_HELP)
@@ -1680,8 +1694,9 @@ class Circle : Shape()
 fun parserOf(
     vararg args: String,
     mode: ArgParser.Mode = ArgParser.Mode.GNU,
-    helpFormatter: HelpFormatter? = DefaultHelpFormatter()
-) = ArgParser(args, mode, helpFormatter)
+    helpFormatter: HelpFormatter? = DefaultHelpFormatter(),
+    version: String? = null
+) = ArgParser(args, mode, helpFormatter, version)
 
 /**
  * Helper function for getting the static (not runtime) type of an expression. This is useful for verifying that the
