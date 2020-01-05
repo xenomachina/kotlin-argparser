@@ -230,7 +230,7 @@ class ArgParser(
      * option names
      * @param help the help text for this option
      * @param argNames names of this option's arguments
-     * @param isRepeating whether or not it make sense to repeat this option -- usually used for options where
+     * @param isRepeating whether or not it makes sense to repeat this option -- usually used for options where
      * specifying the option more than once yields a value than cannot be expressed by specifying the option only once
      * @param handler a function that computes the value of this option from an [OptionInvocation]
      */
