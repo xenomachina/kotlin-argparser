@@ -34,6 +34,18 @@ class ShowHelpException internal constructor(
 }
 
 /**
+ * Indicates that the user requested that the version should be shown (with the
+ * `--version` option, for example).
+ */
+class ShowVersionException internal constructor(
+    private val version: String
+) : SystemExitException("version was requested", 0) {
+    override fun printUserMessage(writer: Writer, programName: String?, columns: Int) {
+        writer.write(version)
+    }
+}
+
+/**
  * Indicates that an unrecognized option was supplied.
  *
  * @property optName the name of the option
