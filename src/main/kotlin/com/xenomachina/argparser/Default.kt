@@ -39,14 +39,14 @@ fun <T> ArgParser.DelegateProvider<T>.default(newDefault: () -> T): ArgParser.De
 /**
  * Returns a new `Delegate` with the specified default value.
  *
- * @param newDefault the default value for the resulting [ArgParser.Delegate]
+ * @param defaultValue the default value for the resulting [ArgParser.Delegate]
  */
 fun <T> ArgParser.Delegate<T>.default(defaultValue: T): ArgParser.Delegate<T> = default { defaultValue }
 
 /**
  * Returns a new `Delegate` with the specified default value as a lambda.
  *
- * @param newDefault the default value for the resulting [ArgParser.Delegate]
+ * @param defaultValue the default value for the resulting [ArgParser.Delegate]
  */
 fun <T> ArgParser.Delegate<T>.default(defaultValue: () -> T): ArgParser.Delegate<T> {
     if (hasValidators) {
@@ -55,6 +55,8 @@ fun <T> ArgParser.Delegate<T>.default(defaultValue: () -> T): ArgParser.Delegate
     val inner = this
 
     return object : ArgParser.Delegate<T>() {
+
+        private val computedDefault by lazy(defaultValue)
 
         override val hasValidators: Boolean
             get() = inner.hasValidators
@@ -71,7 +73,7 @@ fun <T> ArgParser.Delegate<T>.default(defaultValue: () -> T): ArgParser.Delegate
         override val value: T
             get() {
                 inner.parser.force()
-                return if (inner.hasValue) inner.value else defaultValue()
+                return if (inner.hasValue) inner.value else computedDefault
             }
 
         override val hasValue: Boolean
