@@ -255,6 +255,43 @@ class ArgParser(
     }
 
     /**
+     * Creates a Delegate for an option with a list of hardcoded acceptable values
+     * @param names names of options, with leading "-" or "--"
+     * @param errorName name to use when talking about this option in error messages, or null to base it upon the
+     * option names
+     * @param help the help text for this option
+     * @param values the valid values the argument can have
+     * @param transform transforms the value after parsing
+     */
+    fun <T> option(
+        vararg names: String,
+        help: String,
+        errorName: String?,
+        values: List<String>,
+        transform: String.() -> T): Delegate<T> {
+
+        return option(
+            *names,
+            errorName = errorName,
+            help = help
+        ) {
+            if (!values.contains(arguments.first()))
+                throw SystemExitException("Invalid option '${arguments.first()}', valid options are: $values", -1)
+
+            transform(arguments.first())
+        }
+    }
+
+    /**
+     * Creates a Delegate for an optional with hardcoded acceptable values, which returns the argument's value
+     */
+    fun option(
+        vararg names: String,
+        errorName: String? = null,
+        values: List<String>,
+        help: String): Delegate<String> = option(*names, errorName = errorName, values = values, help = help) { this }
+
+    /**
      * Creates a Delegate for a single positional argument which returns the argument's value.
      */
     fun positional(name: String, help: String) = positional(name, help = help) { this }
