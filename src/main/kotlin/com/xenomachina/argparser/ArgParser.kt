@@ -266,7 +266,7 @@ class ArgParser(
     fun <T> option(
         vararg names: String,
         help: String,
-        errorName: String?,
+        errorName: String? = null,
         values: List<String>,
         transform: String.() -> T): Delegate<T> {
 
