@@ -270,9 +270,12 @@ class ArgParser(
         values: List<String>,
         transform: String.() -> T): Delegate<T> {
 
+        val nonNullArgName = optionNameToArgName(selectRepresentativeOptionName(names))
+
         return option(
             *names,
             errorName = errorName,
+            argNames = listOf(nonNullArgName),
             help = help
         ) {
             if (!values.contains(arguments.first()))
